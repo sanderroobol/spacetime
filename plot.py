@@ -43,7 +43,7 @@ class Plot(object):
 
 		ret = []
 		for i, (p, r) in enumerate(req):
-			if i > 0 and r.sharex:
+			if i > 0 and not r.no_sharex:
 				axes = self.figure.add_subplot(total, 1, i+1, sharex=top)
 			else:
 				axes = self.figure.add_subplot(total, 1, i+1)

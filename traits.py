@@ -78,11 +78,11 @@ class SubgraphCamera(Subgraph):
 	@on_trait_change('channel, bgsubtract, clip')
 	def settings_changed(self):
 		data = self.data.selectchannel(self.channel)
-		self.plot.retarget(data)
 		if self.bgsubtract:
 			data = data.apply_filter(filters.BGSubtractLineByLine)
 		if self.clip > 0:
 			data = data.apply_filter(filters.ClipStdDev(self.clip))
+		self.plot.retarget(data)
 		self.update()
 
 	traits_view = View(
