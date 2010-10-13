@@ -4,10 +4,7 @@ import wx
 import matplotlib
 # We want matplotlib to use a wxPython backend
 matplotlib.use('WXAgg')
-from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
-from matplotlib.figure import Figure
-from matplotlib.axes import Axes
-from matplotlib.backends.backend_wx import NavigationToolbar2Wx
+import matplotlib.figure, matplotlib.axes, matplotlib.backends.backend_wx, matplotlib.backends.backend_wxagg
 
 from enthought.traits.api import *
 from enthought.traits.ui.api import *
@@ -20,10 +17,10 @@ import os
 import numpy
 
 
-from redesign import MainFigure
 import subplots
 import datasources
 import filters
+import plot
 
 
 class _MPLFigureEditor(Editor):
@@ -43,9 +40,9 @@ class _MPLFigureEditor(Editor):
 		sizer = wx.BoxSizer(wx.VERTICAL)
 		panel.SetSizer(sizer)
 		# matplotlib commands to create a canvas
-		mpl_control = FigureCanvas(panel, -1, self.value)
+		mpl_control = matplotlib.backends.backend_wxagg.FigureCanvasWxAgg(panel, -1, self.value)
 		sizer.Add(mpl_control, 1, wx.LEFT | wx.TOP | wx.GROW)
-		toolbar = NavigationToolbar2Wx(mpl_control)
+		toolbar = matplotlib.backends.backend_wx.NavigationToolbar2Wx(mpl_control)
 		sizer.Add(toolbar, 0, wx.EXPAND)
 		self.value.canvas.SetMinSize((10,10))
 		return panel
@@ -56,7 +53,7 @@ class MPLFigureEditor(BasicEditorFactory):
 
 class Subgraph(HasTraits):
 	filename = File
-	axes = Instance(Axes)
+	axes = Instance(matplotlib.axes.Axes)
 	plot = Instance(subplots.Subplot)
 	redraw = Callable
 
@@ -145,7 +142,7 @@ class SubgraphGasCabinet(TimeTrendSubgraph):
 	ymin2 = Float
 	ymax2 = Float
 
-	secondaryaxes = Instance(Axes) # FIXME: hack
+	secondaryaxes = Instance(matplotlib.axes.Axes) # FIXME: hack
 	secondarydata = True
 
 	def _ymin2_changed(self):
@@ -201,8 +198,8 @@ class GeneralSettings(HasTraits):
 
 
 class MainWindow(HasTraits):
-	mainfig = Instance(MainFigure)
-	figure = Instance(Figure)
+	mainfig = Instance(plot.Plot)
+	figure = Instance(matplotlib.figure.Figure)
 
 	camera = Instance(SubgraphCamera)
 	qms = Instance(SubgraphQMS)
@@ -223,10 +220,10 @@ class MainWindow(HasTraits):
 		return SubgraphGasCabinet(redraw=self.redraw_graph)
 
 	def _mainfig_default(self):
-		figure = MainFigure()
-		figure.add_plot(self.camera)
-		figure.add_plot(self.qms)
-		figure.add_plot(self.gascab)
+		figure = plot.Plot.newmatplotlibfigure()
+		figure.add_subplot(self.camera)
+		figure.add_subplot(self.qms)
+		figure.add_subplot(self.gascab)
 		figure.build()
 		return figure
 
