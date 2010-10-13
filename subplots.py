@@ -140,18 +140,10 @@ class Image(Subplot):
 			return
 		for d in self.data.iterframes():
 			# map the linenunumber to the time axis and the individual points to some arbitrary unit axis
-
-			ysize, xsize = d.image.shape
-
 			# transpose the image data to plot scanlines vertical
-			axesimage = matplotlib.image.AxesImage(self.axes, extent=(d.tstart, d.tend, 0, ysize+1))
-			axesimage.set_data(d.image.T)
-			self.axes.update_datalim(((d.tstart, 0), (d.tend, ysize+1)))
-			self.axes.images.append(axesimage)
-			self.axes.autoscale_view(True, True)
+			ysize, xsize = d.image.shape
+			self.axes.imshow(d.image.T, extent=(d.tstart, d.tend, 0, ysize+1), aspect='auto', zorder=1)
 
 			# indicate beginning and end of frames
 			self.axes.axvline(d.tstart, color='g', zorder=0)
 			self.axes.axvline(d.tend, color='r', zorder=0)
-
-
