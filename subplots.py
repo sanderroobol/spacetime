@@ -3,14 +3,30 @@ from __future__ import division
 import numpy
 
 import datasources
+from util import *
 
 class Subplot(object):
 	axes = None
 
-	def build(self, axes):
+	def __init__(self, data=None):
+		self.data = data
+
+	def retarget(self, data):
+		self.data = data
+
+	def axes_requirements(self):
+		return [Struct()] # request a single subplot
+
+	def register_axes(self, axes):
+		self.axes = axes[0]
+
+	def setup(self):
+		pass
+
+	def draw(self):
 		raise NotImplementedError
 
-	def clean(self):
+	def clear(self):
 		while self.axes and len(self.axes.lines):
 			del self.axes.lines[-1]
 
@@ -30,6 +46,10 @@ class MultiTrendFormatter(object):
 class GasCabinetFormatter(MultiTrendFormatter):
 	prevcontroller = None
 
+	def reset(self):
+		self.prevcontroller = None
+		super(GasCabinetFormatter, self).reset()
+
 	def __call__(self, data):
 		if data.parameter == 'set point':
 			linestyle = '--' # dashed
@@ -44,15 +64,8 @@ class GasCabinetFormatter(MultiTrendFormatter):
 
 
 class MultiTrend(Subplot):
-	secondaryaxes = None
-
-	def __init__(self, data, secondarydata=None, formatter=None):
-		if not isinstance(data, datasources.MultiTrend):
-			raise TypeError("data must be a datasources.MultiTrend object (got '%s')" % data.__class__.__name__)
-		if secondarydata is not None and not isinstance(data, datasources.MultiTrend):
-			raise TypeError("secondarydata must be a datasources.MultiTrend object (got '%s')" % secondarydata.__class__.__name__)
+	def __init__(self, data=None, formatter=None):
 		self.data = data
-		self.secondarydata = secondarydata
 		if formatter is None:
 			self.formatter = MultiTrendFormatter()
 		else:
@@ -60,11 +73,27 @@ class MultiTrend(Subplot):
 				raise TypeError("formatter must be a MultiTrendFormatter object (got '%s')" % formatter.__class__.__name__)
 			self.formatter = formatter
 
-	def build(self, axes):
-		self.axes = axes
+	def draw(self):
+		if not self.data:
+			return
 		self.formatter.reset()
 		for d in self.data.iterchannels():
 			self.axes.plot(d.time, d.value, self.formatter(d), label=d.label)
+		if len(self.axes.get_legend_handles_labels()[0]):
+			self.axes.legend()
+
+
+class DoubleMultiTrend(MultiTrend):
+	def __init__(self, data=None, secondarydata=None, formatter=None):
+		self.secondarydata = secondarydata
+		super(DoubleMultiTrend, self).__init__(data, formatter)
+
+	def retarget(self, data, secondarydata=None):
+		self.secondarydata = secondarydata
+		super(DoubleMultiTrend, self).retarget(data)
+
+	def draw(self):
+		super(DoubleMultiTrend, self).draw()
 		if self.secondarydata:
 			for d in self.secondarydata.iterchannels():
 				self.secondaryaxes.plot(d.time, d.value, self.formatter(d), label=d.label)
@@ -76,31 +105,39 @@ class MultiTrend(Subplot):
 			labels.extend(labels2)
 			if len(handles):
 				self.axes.legend(handles, labels)
-		else:
-			if len(self.axes.get_legend_handles_labels()[0]):
-				self.axes.legend()
 
-	def clean(self):
+	def axes_requirements(self):
+		return [Struct(twinx=True)]
+
+	def register_axes(self, axes):
+		self.axes, self.secondaryaxes = axes[0]
+
+	def clear(self):
 		while self.secondaryaxes and len(self.secondaryaxes.lines):
 			del self.secondaryaxes.lines[-1]
-		super(MultiTrend, self).clean()
+		super(DoubleMultiTrend, self).clear()
 
 
 class QMS(MultiTrend):
-	def build(self, axes):
-		super(QMS, self).build(axes)
+	def setup(self):
 		self.axes.set_ylabel('Ion current (A)')
 		self.axes.set_yscale('log')
 
 
+class GasCabinet(DoubleMultiTrend):
+	def __init__(self, data=None, secondarydata=None, formatter=None):
+		if formatter is None:
+			formatter = GasCabinetFormatter()
+		super(GasCabinet, self).__init__(data, secondarydata, formatter)
+
+
 class Image(Subplot):
-	def __init__(self, data):
-		if not isinstance(data, datasources.Image):
-			raise TypeError("data must be a datasources.Image object (got '%s')" % data.__class__.__name__)
-		self.data = data
+	def setup(self):
+		self.axes.set_yticks([])
 	
-	def build(self, axes):
-		self.axes = axes
+	def draw(self):
+		if not self.data:
+			return
 		for d in self.data.iterframes():
 			ysize, xsize = d.image.shape
 
@@ -111,4 +148,3 @@ class Image(Subplot):
 
 			# transpose the image data to plot scanlines vertical
 			self.axes.pcolormesh(time, pixel, d.image.T, zorder=1)
-		self.axes.set_yticks([])

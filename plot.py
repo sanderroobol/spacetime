@@ -1,3 +1,4 @@
+import itertools
 import matplotlib, matplotlib.figure
 
 class Plot(object):
@@ -26,7 +27,7 @@ class Plot(object):
 		plot = klass.newpyplotfigure(**kwargs)
 		for p in subplots:
 			plot.add_subplot(p)
-		plot.build()
+		plot.setup()
 		plot.draw()
 		matplotlib.pylab.show()
 		return plot
@@ -34,36 +35,44 @@ class Plot(object):
 	def add_subplot(self, subplot):
 		self.subplots.append(subplot)
 
-	def build(self):
-		top = None
-		for i, p in enumerate(self.subplots):
-			if top:
-				axes = self.figure.add_subplot(len(self.subplots), 1, i+1, sharex=top)
+	def setup(self):
+		req = []
+		for p in self.subplots:
+			req.extend((p, r) for r in p.axes_requirements())
+		total = len(req)
+
+		ret = []
+		for i, (p, r) in enumerate(req):
+			if i > 0 and r.sharex:
+				axes = self.figure.add_subplot(total, 1, i+1, sharex=top)
 			else:
-				top = axes = self.figure.add_subplot(len(self.subplots), 1, i+1)
-			try:
-				if p.secondarydata: # FIXME: this is not really nice
-					p.secondaryaxes = axes.twinx()
-					p.secondaryaxes.xaxis_date()
-			except AttributeError:
-				pass
-			if i + 1 != len(self.subplots):
-				self.hide_xticklabels(axes)
-			p.build(axes)
-			axes.xaxis_date()
-		self.reformat_xaxis()
+				axes = self.figure.add_subplot(total, 1, i+1)
 
-	def draw(self):
-		pass
+			if i == 0: # first
+				top = axes
 
-	def reformat_xaxis(self):
-		if self.figure.axes:
-			self.figure.axes[-1].xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%H:%M:%S'))
+			self.general_axes_setup(axes, i+1 != total)
+
+			if r.twinx:
+				axes = (axes, axes.twinx())
+				self.general_axes_setup(axes[1], i+1 != total)
+			
+			ret.append((p, axes))
+
+		for p, groups in itertools.groupby(ret, key=lambda x: x[0]):
+			p.register_axes(list(axes for (subplot, axes) in groups))
 
 	@staticmethod
-	def hide_xticklabels(ax):
-		for label in ax.get_xticklabels():
-			label.set_visible(False)
+	def general_axes_setup(axes, hide_xticklabels=False):
+		axes.xaxis_date()
+		axes.xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%H:%M:%S'))
+		if hide_xticklabels:
+			for label in axes.get_xticklabels():
+				label.set_visible(False)
+		
+	def draw(self):
+		for p in self.subplots:
+			p.draw()
 
 	def figsetup(self, size=(14,8), legend=0):
 		width, height = self.figure.get_size_inches()

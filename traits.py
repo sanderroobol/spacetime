@@ -4,7 +4,7 @@ import wx
 import matplotlib
 # We want matplotlib to use a wxPython backend
 matplotlib.use('WXAgg')
-import matplotlib.figure, matplotlib.axes, matplotlib.backends.backend_wx, matplotlib.backends.backend_wxagg
+import matplotlib.figure, matplotlib.backends.backend_wx, matplotlib.backends.backend_wxagg
 
 from enthought.traits.api import *
 from enthought.traits.ui.api import *
@@ -53,17 +53,12 @@ class MPLFigureEditor(BasicEditorFactory):
 
 class Subgraph(HasTraits):
 	filename = File
-	axes = Instance(matplotlib.axes.Axes)
 	plot = Instance(subplots.Subplot)
 	redraw = Callable
 
-	def build(self, axes):
-		self.axes = axes
-
 	def update(self):
-		while len(self.axes.lines):
-			del self.axes.lines[-1]
-		self.plot.build(self.axes)
+		self.plot.clear()
+		self.plot.draw()
 		self.redraw()
 
 
@@ -73,6 +68,9 @@ class SubgraphCamera(Subgraph):
 	clip = Float(4.)
 	data = Instance(datasources.Camera)
 
+	def _plot_default(self):
+		return subplots.Image()
+
 	def _filename_changed(self):
 		self.data = datasources.Camera(self.filename)
 		self.settings_changed()
@@ -80,11 +78,11 @@ class SubgraphCamera(Subgraph):
 	@on_trait_change('channel, bgsubtract, clip')
 	def settings_changed(self):
 		data = self.data.selectchannel(self.channel)
+		self.plot.retarget(data)
 		if self.bgsubtract:
 			data = data.apply_filter(filters.BGSubtractLineByLine)
 		if self.clip > 0:
 			data = data.apply_filter(filters.ClipStdDev(self.clip))
-		self.plot = subplots.Image(data)
 		self.update()
 
 	traits_view = View(
@@ -101,11 +99,11 @@ class TimeTrendSubgraph(Subgraph):
 	ymax = Float
 
 	def _ymin_changed(self):
-		self.axes.set_ylim(ymin=self.ymin)
+		self.plot.axes.set_ylim(ymin=self.ymin)
 		self.redraw()
 
 	def _ymax_changed(self):
-		self.axes.set_ylim(ymax=self.ymax)
+		self.plot.axes.set_ylim(ymax=self.ymax)
 		self.redraw()
 
 
@@ -113,6 +111,9 @@ class SubgraphQMS(TimeTrendSubgraph):
 	channels = List(Str)
 	selected_channels = List(Str)
 	data = Instance(datasources.QMS)
+
+	def _plot_default(self):
+		return subplots.QMS()
 
 	def _filename_changed(self):
 		self.data = datasources.QMS(self.filename)
@@ -122,7 +123,7 @@ class SubgraphQMS(TimeTrendSubgraph):
 	@on_trait_change('selected_channels')
 	def settings_changed(self):
 		masses = [int(i) for i in self.selected_channels]
-		self.plot = subplots.QMS(self.data.selectchannels(lambda d: d.mass in masses)) # FIXME
+		self.plot.retarget(self.data.selectchannels(lambda d: d.mass in masses))
 		self.update()
 
 	traits_view = View(
@@ -142,22 +143,16 @@ class SubgraphGasCabinet(TimeTrendSubgraph):
 	ymin2 = Float
 	ymax2 = Float
 
-	secondaryaxes = Instance(matplotlib.axes.Axes) # FIXME: hack
-	secondarydata = True
+	def _plot_default(self):
+		return subplots.GasCabinet()
 
 	def _ymin2_changed(self):
-		self.secondaryaxes.set_ylim(ymin=self.ymin)
+		self.plot.secondaryaxes.set_ylim(ymin=self.ymin)
 		self.redraw()
 
 	def _ymax2_changed(self):
-		self.secondaryaxes.set_ylim(ymax=self.ymax)
+		self.plot.secondaryaxes.set_ylim(ymax=self.ymax)
 		self.redraw()
-
-	def update(self):
-		while len(self.secondaryaxes.lines):
-			del self.secondaryaxes.lines[-1]
-		self.plot.secondaryaxes = self.secondaryaxes # FIXME: hack continued
-		super(SubgraphGasCabinet, self).update()
 
 	def _filename_changed(self):
 		self.data = datasources.GasCabinet(self.filename)
@@ -173,10 +168,10 @@ class SubgraphGasCabinet(TimeTrendSubgraph):
 	def settings_changed(self):
 		first = [self.chantups[i] for i in self.selected_primary_channels]
 		second = [self.chantups[i] for i in self.selected_secondary_channels]
-		self.plot = subplots.MultiTrend(
+		self.plot.retarget(
 			self.data.selectchannels(lambda d: (d.controller, d.parameter) in first),
 			self.data.selectchannels(lambda d: (d.controller, d.parameter) in second),
-			formatter=subplots.GasCabinetFormatter())
+		)
 		self.update()
 
 	traits_view = View(
@@ -188,7 +183,6 @@ class SubgraphGasCabinet(TimeTrendSubgraph):
 		Item('ymin2'),
 		Item('ymax2'),
 		Item('legend'),
-
 	)
 
 class GeneralSettings(HasTraits):
@@ -221,10 +215,10 @@ class MainWindow(HasTraits):
 
 	def _mainfig_default(self):
 		figure = plot.Plot.newmatplotlibfigure()
-		figure.add_subplot(self.camera)
-		figure.add_subplot(self.qms)
-		figure.add_subplot(self.gascab)
-		figure.build()
+		figure.add_subplot(self.camera.plot)
+		figure.add_subplot(self.qms.plot)
+		figure.add_subplot(self.gascab.plot)
+		figure.setup()
 		return figure
 
 	def _figure_default(self):

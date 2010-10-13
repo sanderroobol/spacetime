@@ -24,14 +24,13 @@ if __name__ == '__main__':
 				)
 		),
 
-		subplots.MultiTrend(
+		subplots.GasCabinet(
 				gcdata.selectchannels(
 					lambda d: d.controller in ('MFC CO', 'MFC O2') and d.parameter in ('measure', 'set point')
 				),
 				gcdata.selectchannels(
 					lambda d: d.controller == 'BPC1' and d.parameter in ('measure', 'set point')
 				),
-				formatter=subplots.GasCabinetFormatter()
 		)
 
 	)
