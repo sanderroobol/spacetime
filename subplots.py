@@ -2,9 +2,9 @@ from __future__ import division
 
 import numpy
 
-from datasources import *
+import datasources
 
-class Plot(object):
+class Subplot(object):
 	axes = None
 
 	def build(self, axes):
@@ -43,14 +43,14 @@ class GasCabinetFormatter(MultiTrendFormatter):
 		return self.colors[self.counter] + linestyle
 
 
-class MultiTrendPlot(Plot):
+class MultiTrend(Subplot):
 	secondaryaxes = None
 
 	def __init__(self, data, secondarydata=None, formatter=None):
-		if not isinstance(data, MultiTrendData):
-			raise TypeError("data must be a MultiTrendData object (got '%s')" % data.__class__.__name__)
-		if secondarydata is not None and not isinstance(data, MultiTrendData):
-			raise TypeError("secondarydata must be a MultiTrendData object (got '%s')" % secondarydata.__class__.__name__)
+		if not isinstance(data, datasources.MultiTrend):
+			raise TypeError("data must be a datasources.MultiTrend object (got '%s')" % data.__class__.__name__)
+		if secondarydata is not None and not isinstance(data, datasources.MultiTrend):
+			raise TypeError("secondarydata must be a datasources.MultiTrend object (got '%s')" % secondarydata.__class__.__name__)
 		self.data = data
 		self.secondarydata = secondarydata
 		if formatter is None:
@@ -83,20 +83,20 @@ class MultiTrendPlot(Plot):
 	def clean(self):
 		while self.secondaryaxes and len(self.secondaryaxes.lines):
 			del self.secondaryaxes.lines[-1]
-		super(MultiTrendPlot, self).clean()
+		super(MultiTrend, self).clean()
 
 
-class QMSPlot(MultiTrendPlot):
+class QMS(MultiTrend):
 	def build(self, axes):
-		super(QMSPlot, self).build(axes)
+		super(QMS, self).build(axes)
 		self.axes.set_ylabel('Ion current (A)')
 		self.axes.set_yscale('log')
 
 
-class ImagePlot(Plot):
+class Image(Subplot):
 	def __init__(self, data):
-		if not isinstance(data, ImageData):
-			raise TypeError("data must be a ImageData object (got '%s')" % data.__class__.__name__)
+		if not isinstance(data, datasources.Image):
+			raise TypeError("data must be a datasources.Image object (got '%s')" % data.__class__.__name__)
 		self.data = data
 	
 	def build(self, axes):

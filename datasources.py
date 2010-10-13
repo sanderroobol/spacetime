@@ -6,18 +6,18 @@ from camera.formats import raw
 import datetime
 from util import *
 
-class Data(object):
+class DataSource(object):
 	def __init__(self, filename, label=None):
 		self.filename = filename
 		self.label = label
 
 
-class MultiTrendData(Data):
+class MultiTrend(DataSource):
 	def selectchannels(self, condition):
-		return SelectedMultiTrendData(self, condition)
+		return SelectedMultiTrend(self, condition)
 
 
-class SelectedMultiTrendData(MultiTrendData):
+class SelectedMultiTrend(MultiTrend):
 	def __init__(self, parent, condition):
 		self.parent = parent
 		self.condition = condition
@@ -26,7 +26,7 @@ class SelectedMultiTrendData(MultiTrendData):
 		return itertools.ifilter(self.condition, self.parent.iterchannels())
 
 
-class QMSData(MultiTrendData):
+class QMS(MultiTrend):
 	channels = None
 	masses = None
 	fp = None
@@ -46,7 +46,7 @@ class QMSData(MultiTrendData):
 		return [float(d) for (i,d) in enumerate(data) if (i % 3) in (1, 2)]
 
 	def __init__(self, filename, label=None):
-		super(QMSData, self).__init__(filename, label)
+		super(QMS, self).__init__(filename, label)
 		self.fp = open(self.filename)
 
 		headerlines = [self.fp.readline() for i in range(6)]
@@ -81,7 +81,7 @@ class QMSData(MultiTrendData):
 		return iter(self.channels)
 
 
-class GasCabinetData(MultiTrendData):
+class GasCabinet(MultiTrend):
 	controllers = ['MFC CO', 'MFC NO', 'MFC H2', 'MFC O2', 'MFC Shunt', 'BPC1', 'BPC2', 'MFM Ar']
 	parameters = ['valve output', 'measure', 'set point']
 	data = None
@@ -106,12 +106,12 @@ class GasCabinetData(MultiTrendData):
 		# NOTE: the last two columns (Leak dectector) are ignored
 
 
-class ImageData(Data):
+class Image(DataSource):
 	def apply_filter(self, *filters):
-		return ImageDataFilter(self, *filters)
+		return ImageFilter(self, *filters)
 
 
-class ChainedImageData(ImageData):
+class ChainedImage(Image):
 	def __init__(self, *args):
 		self.args = args
 
@@ -121,9 +121,9 @@ class ChainedImageData(ImageData):
 				yield frame
 
 
-class CameraData(Data):
+class Camera(DataSource):
 	def __init__(self, filename, label=None):
-		super(CameraData, self).__init__(filename, label)
+		super(Camera, self).__init__(filename, label)
 		self.rawfile = raw.RawFileReader(self.filename)
 
 	def getdata(self, channel, frame):
@@ -140,10 +140,10 @@ class CameraData(Data):
 		return self.rawfile.header.frameCount
 
 	def selectchannel(self, channel):
-		return CameraChannelData(self, channel)
+		return CameraChannel(self, channel)
 
 
-class CameraChannelData(ImageData):
+class CameraChannel(Image):
 	def __init__(self, cameradata, channel):
 		self.cameradata = cameradata
 		self.channel = channel
@@ -153,7 +153,7 @@ class CameraChannelData(ImageData):
 			yield self.cameradata.getdata(self.channel, i)
 
 
-class ImageDataFilter(ImageData):
+class ImageFilter(Image):
 	def __init__(self, original, *filters):
 		self.original = original
 		self.filters = list(filters)

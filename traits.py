@@ -20,7 +20,10 @@ import os
 import numpy
 
 
-from redesign import * # MainFigure, CameraData, ChainedImageData, ImagePlot, BGSubtractLineByLine, ClipStdDev, QMSPlot, QMSData, GasCabinetData, MultiTrendPlot, GasCabinetFormatter
+from redesign import MainFigure
+import subplots
+import datasources
+import filters
 
 
 class _MPLFigureEditor(Editor):
@@ -54,7 +57,7 @@ class MPLFigureEditor(BasicEditorFactory):
 class Subgraph(HasTraits):
 	filename = File
 	axes = Instance(Axes)
-	plot = Instance(Plot)
+	plot = Instance(subplots.Subplot)
 	redraw = Callable
 
 	def build(self, axes):
@@ -71,20 +74,20 @@ class SubgraphCamera(Subgraph):
 	channel = Int(0)
 	bgsubtract = Bool(True)
 	clip = Float(4.)
-	data = Instance(CameraData)
+	data = Instance(datasources.Camera)
 
 	def _filename_changed(self):
-		self.data = CameraData(self.filename)
+		self.data = datasources.Camera(self.filename)
 		self.settings_changed()
 
 	@on_trait_change('channel, bgsubtract, clip')
 	def settings_changed(self):
 		data = self.data.selectchannel(self.channel)
 		if self.bgsubtract:
-			data = data.apply_filter(BGSubtractLineByLine)
+			data = data.apply_filter(filters.BGSubtractLineByLine)
 		if self.clip > 0:
-			data = data.apply_filter(ClipStdDev(self.clip))
-		self.plot = ImagePlot(data)
+			data = data.apply_filter(filters.ClipStdDev(self.clip))
+		self.plot = subplots.Image(data)
 		self.update()
 
 	traits_view = View(
@@ -112,17 +115,17 @@ class TimeTrendSubgraph(Subgraph):
 class SubgraphQMS(TimeTrendSubgraph):
 	channels = List(Str)
 	selected_channels = List(Str)
-	data = Instance(QMSData)
+	data = Instance(datasources.QMS)
 
 	def _filename_changed(self):
-		self.data = QMSData(self.filename)
+		self.data = datasources.QMS(self.filename)
 		self.channels = [str(i) for i in self.data.masses]
 		self.settings_changed()
 
 	@on_trait_change('selected_channels')
 	def settings_changed(self):
 		masses = [int(i) for i in self.selected_channels]
-		self.plot = QMSPlot(self.data.selectchannels(lambda d: d.mass in masses)) # FIXME
+		self.plot = subplots.QMS(self.data.selectchannels(lambda d: d.mass in masses)) # FIXME
 		self.update()
 
 	traits_view = View(
@@ -160,7 +163,7 @@ class SubgraphGasCabinet(TimeTrendSubgraph):
 		super(SubgraphGasCabinet, self).update()
 
 	def _filename_changed(self):
-		self.data = GasCabinetData(self.filename)
+		self.data = datasources.GasCabinet(self.filename)
 		self.channels = []
 		self.chantups = []
 		for c in self.data.controllers:
@@ -173,10 +176,10 @@ class SubgraphGasCabinet(TimeTrendSubgraph):
 	def settings_changed(self):
 		first = [self.chantups[i] for i in self.selected_primary_channels]
 		second = [self.chantups[i] for i in self.selected_secondary_channels]
-		self.plot = MultiTrendPlot(
+		self.plot = subplots.MultiTrend(
 			self.data.selectchannels(lambda d: (d.controller, d.parameter) in first),
 			self.data.selectchannels(lambda d: (d.controller, d.parameter) in second),
-			formatter=GasCabinetFormatter())
+			formatter=subplots.GasCabinetFormatter())
 		self.update()
 
 	traits_view = View(
