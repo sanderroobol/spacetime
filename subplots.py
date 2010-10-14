@@ -27,8 +27,7 @@ class Subplot(object):
 		raise NotImplementedError
 
 	def clear(self):
-		while self.axes and len(self.axes.lines):
-			del self.axes.lines[-1]
+		pass
 
 
 class MultiTrendFormatter(object):
@@ -81,6 +80,10 @@ class MultiTrend(Subplot):
 			self.axes.plot(d.time, d.value, self.formatter(d), label=d.label)
 		if len(self.axes.get_legend_handles_labels()[0]):
 			self.axes.legend()
+
+	def clear(self):
+		while self.axes and len(self.axes.lines):
+			del self.axes.lines[-1]
 
 
 class DoubleMultiTrend(MultiTrend):
@@ -138,6 +141,7 @@ class Image(Subplot):
 	def draw(self):
 		if not self.data:
 			return
+
 		for d in self.data.iterframes():
 			# map the linenunumber to the time axis and the individual points to some arbitrary unit axis
 			# transpose the image data to plot scanlines vertical
@@ -147,3 +151,17 @@ class Image(Subplot):
 			# indicate beginning and end of frames
 			self.axes.axvline(d.tstart, color='g', zorder=0)
 			self.axes.axvline(d.tend, color='r', zorder=0)
+
+		# imshow() changes the axes xlim/ylim, so go back to something sensible
+		self.axes.autoscale_view()
+		# NOTE: IMHO the better solution is to change
+		# matplotlib.image.ImageAxes.set_extent(); this should call
+		# axes.autoscale_view(tight=True) instead of messing with the axes
+
+	def clear(self):
+		while self.axes and len(self.axes.lines):
+			del self.axes.lines[-1]
+		while self.axes and len(self.axes.images):
+			del self.axes.images[-1]
+
+

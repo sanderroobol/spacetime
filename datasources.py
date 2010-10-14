@@ -139,8 +139,36 @@ class Camera(DataSource):
 	def getframecount(self):
 		return self.rawfile.header.frameCount
 
+	def getchannelcount(self):
+		return self.rawfile.header.channelCount
+
 	def selectchannel(self, channel):
 		return CameraChannel(self, channel)
+	
+	def selectframes(self, firstframe, lastframe):
+		return CameraSelectedFrames(self, firstframe, lastframe)
+
+	def framenumberiter(self):
+		return xrange(self.getframecount())
+
+
+class CameraSelectedFrames(DataSource):
+	def __init__(self, cameradata, firstframe, lastframe):
+		self.cameradata = cameradata
+		self.firstframe = firstframe
+		self.lastframe = lastframe
+
+	def framenumberiter(self):
+		return xrange(max(0, self.firstframe), min(self.lastframe+1, self.cameradata.getframecount()))
+
+	def selectframes(self, firstframe, lastframe):
+		return self.cameradata.selectframes(firstframe, lastframe)
+
+	def selectchannel(self, channel):
+		return CameraChannel(self, channel)
+
+	def getdata(self, channel, frame):
+		return self.cameradata.getdata(channel, frame)
 
 
 class CameraChannel(Image):
@@ -148,8 +176,11 @@ class CameraChannel(Image):
 		self.cameradata = cameradata
 		self.channel = channel
 
+	def selectframes(self, firstframe, lastframe):
+		return self.cameradata.selectframes(firstframe, lastframe).selectchannel(self.channel)
+
 	def iterframes(self):
-		for i in range(self.cameradata.getframecount()):
+		for i in self.cameradata.framenumberiter():
 			yield self.cameradata.getdata(self.channel, i)
 
 

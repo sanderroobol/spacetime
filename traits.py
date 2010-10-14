@@ -4,7 +4,7 @@ import wx
 import matplotlib
 # We want matplotlib to use a wxPython backend
 matplotlib.use('WXAgg')
-import matplotlib.figure, matplotlib.backends.backend_wx, matplotlib.backends.backend_wxagg
+import matplotlib.figure, matplotlib.transforms, matplotlib.backends.backend_wx, matplotlib.backends.backend_wxagg
 
 from enthought.traits.api import *
 from enthought.traits.ui.api import *
@@ -55,15 +55,21 @@ class Subgraph(HasTraits):
 	filename = File
 	plot = Instance(subplots.Subplot)
 	redraw = Callable
+	autoscale = Callable
 
 	def update(self):
 		self.plot.clear()
 		self.plot.draw()
+		self.autoscale()
 		self.redraw()
 
 
 class SubgraphCamera(Subgraph):
 	channel = Int(0)
+	channelcount = Int(0)
+	firstframe = Int(0)
+	lastframe = Int(0)
+	framecount = Int(0)
 	bgsubtract = Bool(True)
 	clip = Float(4.)
 	data = Instance(datasources.Camera)
@@ -73,11 +79,17 @@ class SubgraphCamera(Subgraph):
 
 	def _filename_changed(self):
 		self.data = datasources.Camera(self.filename)
+		self.channelcount = self.data.getchannelcount() - 1
+		self.framecount = self.data.getframecount() - 1
+		self.lastframe = min(self.framecount, 25)
 		self.settings_changed()
 
-	@on_trait_change('channel, bgsubtract, clip')
+	@on_trait_change('channel, bgsubtract, clip, firstframe, lastframe')
 	def settings_changed(self):
-		data = self.data.selectchannel(self.channel)
+		if not self.data:
+			return
+		# FIXME: implement a smarter first/last frame selection, don't redraw everything
+		data = self.data.selectchannel(self.channel).selectframes(self.firstframe, self.lastframe)
 		if self.bgsubtract:
 			data = data.apply_filter(filters.BGSubtractLineByLine)
 		if self.clip > 0:
@@ -86,10 +98,12 @@ class SubgraphCamera(Subgraph):
 		self.update()
 
 	traits_view = View(
-		Item('filename'),
-		Item('channel'),
-		Item('bgsubtract', label='Backgr. subtr.'),
-		Item('clip', label='Color clipping'),
+		Item('filename', editor=FileEditor(filter=['Camera RAW files (*.raw)', '*.raw', 'All files', '*'], entries=0)),
+		Item('channel', editor=RangeEditor(low=0, high_name='channelcount')),
+		Item('firstframe', label='First frame', editor=RangeEditor(low=0, high_name='framecount')),
+		Item('lastframe', label='Last frame', editor=RangeEditor(low=0, high_name='framecount')),
+		Item('bgsubtract', label='Backgr. subtr.', tooltip='Line-by-line linear background subtraction'),
+		Item('clip', label='Color clipping', tooltip='Clip colorscale at <number> standard deviations away from the average (0 to disable)'),
 	)
 
 
@@ -127,7 +141,7 @@ class SubgraphQMS(TimeTrendSubgraph):
 		self.update()
 
 	traits_view = View(
-		Item('filename'),
+		Item('filename', editor=FileEditor(filter=['Quadera ASCII files (*.asc)', '*.asc', 'All files', '*'], entries=0)),
 		Item('channels', editor=ListStrEditor(editable=False, multi_select=True, selected='selected_channels')),
 		Item('ymin'),
 		Item('ymax'),
@@ -175,7 +189,7 @@ class SubgraphGasCabinet(TimeTrendSubgraph):
 		self.update()
 
 	traits_view = View(
-		Item('filename'),
+		Item('filename', editor=FileEditor(filter=['ASCII text files (*.txt)', '*.txt', 'All files', '*'], entries=0)),
 		Item('channels', label='Left y-axis', editor=ListStrEditor(editable=False, multi_select=True, selected_index='selected_primary_channels')),
 		Item('ymin'),
 		Item('ymax'),
@@ -185,10 +199,18 @@ class SubgraphGasCabinet(TimeTrendSubgraph):
 		Item('legend'),
 	)
 
+
 class GeneralSettings(HasTraits):
 	xmin = Float
 	xmax = Float
 	dateformat = Enum('HH:MM:SS', 'HH:MM', 'MM:SS', 'MonthDD HH:MM:SS', 'YY-MM-DD HH:MM:SS')
+
+
+class PythonShellTab(HasTraits):
+	shell = PythonValue({})
+	traits_view = View(
+		Item('shell', show_label=False, editor=ShellEditor(share=False))
+	)
 
 
 class MainWindow(HasTraits):
@@ -199,19 +221,37 @@ class MainWindow(HasTraits):
 	qms = Instance(SubgraphQMS)
 	gascab = Instance(SubgraphGasCabinet)
 	general = Instance(GeneralSettings, args=())
+	python = Instance(PythonShellTab, args=())
 
 	def redraw_graph(self):
 		#self.mainfig.reformat_xaxis()
 		wx.CallAfter(self.figure.canvas.draw)
 
+	def autoscale(self):
+		# NOTE: this is a workaround for matplotlib's internal autoscaling routines. 
+		# it imitates axes.autoscale_view(), but only takes the dataLim into account when
+		# there are actually some lines or images in the graph
+		axes = [self.camera.plot.axes, self.qms.plot.axes, self.gascab.plot.axes]
+		for ax in axes:
+			ax.autoscale_view(scalex=False)
+
+		dl = [ax.dataLim for ax in axes if ax.lines or ax.images]
+		if not dl:
+			x0, x1 = 1000., 1001.
+		else:
+			bb = matplotlib.transforms.BboxBase.union(dl)
+			x0, x1 = bb.intervalx
+		XL = axes[0].xaxis.get_major_locator().view_limits(x0, x1)
+		axes[0].set_xbound(XL)
+
 	def _camera_default(self):
-		return SubgraphCamera(redraw=self.redraw_graph)
+		return SubgraphCamera(redraw=self.redraw_graph, autoscale=self.autoscale)
 
 	def _qms_default(self):
-		return SubgraphQMS(redraw=self.redraw_graph)
+		return SubgraphQMS(redraw=self.redraw_graph, autoscale=self.autoscale)
 
 	def _gascab_default(self):
-		return SubgraphGasCabinet(redraw=self.redraw_graph)
+		return SubgraphGasCabinet(redraw=self.redraw_graph, autoscale=self.autoscale)
 
 	def _mainfig_default(self):
 		figure = plot.Plot.newmatplotlibfigure()
@@ -232,6 +272,7 @@ class MainWindow(HasTraits):
 					Item('camera', label='Camera', style='custom', dock='tab'),
 					Item('qms', label='QMS', style='custom', dock='tab'),
 					Item('gascab', label='Gas cabinet', style='custom', dock='tab'),
+					Item('python', label='Python', style='custom', dock='tab'),
 					layout='tabbed', show_labels=False,
 				),
 				show_labels=False
@@ -243,4 +284,5 @@ class MainWindow(HasTraits):
 
 
 if __name__ == '__main__':
-	MainWindow().configure_traits()
+	mainwindow = MainWindow()
+	mainwindow.configure_traits()
