@@ -1,6 +1,7 @@
 from __future__ import division
 
 import numpy
+import matplotlib.patches
 
 import datasources
 from util import *
@@ -82,8 +83,9 @@ class MultiTrend(Subplot):
 			self.axes.legend()
 
 	def clear(self):
-		while self.axes and len(self.axes.lines):
-			del self.axes.lines[-1]
+		if self.axes:
+			del self.axes.lines[:]
+		self.axes.relim()
 
 
 class DoubleMultiTrend(MultiTrend):
@@ -116,8 +118,9 @@ class DoubleMultiTrend(MultiTrend):
 		self.axes, self.secondaryaxes = axes[0]
 
 	def clear(self):
-		while self.secondaryaxes and len(self.secondaryaxes.lines):
-			del self.secondaryaxes.lines[-1]
+		if self.secondaryaxes:
+			del self.secondaryaxes.lines[:]
+		self.secondaryaxes.relim()
 		super(DoubleMultiTrend, self).clear()
 
 
@@ -146,11 +149,12 @@ class Image(Subplot):
 			# map the linenunumber to the time axis and the individual points to some arbitrary unit axis
 			# transpose the image data to plot scanlines vertical
 			ysize, xsize = d.image.shape
-			self.axes.imshow(d.image.T, extent=(d.tstart, d.tend, 0, ysize+1), aspect='auto', zorder=1)
+			self.axes.imshow(d.image.T, extent=(d.tstart, d.tend, 0, ysize+1), aspect='auto')
+			self.axes.add_patch(matplotlib.patches.Rectangle((d.tstart, 0), d.tend-d.tstart, ysize+1, linewidth=1, edgecolor='black', fill=False))
 
 			# indicate beginning and end of frames
-			self.axes.axvline(d.tstart, color='g', zorder=0)
-			self.axes.axvline(d.tend, color='r', zorder=0)
+			#self.axes.axvline(d.tstart, color='g', zorder=0)
+			#self.axes.axvline(d.tend, color='r', zorder=0)
 
 		# imshow() changes the axes xlim/ylim, so go back to something sensible
 		self.axes.autoscale_view()
@@ -159,9 +163,6 @@ class Image(Subplot):
 		# axes.autoscale_view(tight=True) instead of messing with the axes
 
 	def clear(self):
-		while self.axes and len(self.axes.lines):
-			del self.axes.lines[-1]
-		while self.axes and len(self.axes.images):
-			del self.axes.images[-1]
-
-
+		if self.axes:
+			del self.axes.lines[:], self.axes.images[:], self.axes.patches[:]
+		self.axes.relim()

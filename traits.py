@@ -231,7 +231,7 @@ class MainWindow(HasTraits):
 		# NOTE: this is a workaround for matplotlib's internal autoscaling routines. 
 		# it imitates axes.autoscale_view(), but only takes the dataLim into account when
 		# there are actually some lines or images in the graph
-		axes = [self.camera.plot.axes, self.qms.plot.axes, self.gascab.plot.axes]
+		axes = [self.camera.plot.axes, self.qms.plot.axes, self.gascab.plot.axes, self.gascab.plot.secondaryaxes]
 		for ax in axes:
 			ax.autoscale_view(scalex=False)
 
