@@ -136,6 +136,24 @@ class GasCabinet(DoubleMultiTrend):
 			formatter = GasCabinetFormatter()
 		super(GasCabinet, self).__init__(data, secondarydata, formatter)
 
+	def draw(self):
+		super(GasCabinet, self).draw()
+		self.axes.set_ylabel('')
+		self.secondaryaxes.set_ylabel('')
+
+		if self.data and list(self.data.iterchannelnames()):
+			if all(chan.startswith('MF') for chan in self.data.iterchannelnames()):
+				self.axes.set_ylabel('Mass flow (ml/min)')
+			elif all(chan.startswith('BPC') for chan in self.data.iterchannelnames()):
+				self.axes.set_ylabel('Pressure (bar)')
+
+		if self.secondarydata and list(self.secondarydata.iterchannelnames()):
+			if all(chan.startswith('MF') for chan in self.secondarydata.iterchannelnames()):
+				self.secondaryaxes.set_ylabel('Mass flow (ml/min)')
+			elif all(chan.startswith('BPC') for chan in self.secondarydata.iterchannelnames()):
+				self.secondaryaxes.set_ylabel('Pressure (bar)')
+
+
 
 class Image(Subplot):
 	def setup(self):
