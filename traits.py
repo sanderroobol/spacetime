@@ -51,11 +51,23 @@ class _MPLFigureEditor(Editor):
 class MPLFigureEditor(BasicEditorFactory):
 	klass = _MPLFigureEditor
 
-class Subgraph(HasTraits):
+
+class Tab(HasTraits):
+	pass
+
+
+class Subgraph(Tab):
 	filename = File
 	plot = Instance(subplots.Subplot)
 	redraw = Callable
 	autoscale = Callable
+	number = 0
+
+	def __init__(self, *args, **kwargs):
+		super(Subgraph, self).__init__(*args, **kwargs)
+		self.__class__.number += 1
+		if self.__class__.number != 1:
+			self.tablabel = '%s %d' % (self.tablabel, self.__class__.number)
 
 	def update(self):
 		self.plot.clear()
@@ -64,7 +76,7 @@ class Subgraph(HasTraits):
 		self.redraw()
 
 
-class SubgraphCamera(Subgraph):
+class CameraSubgraph(Subgraph):
 	channel = Int(0)
 	channelcount = Int(0)
 	firstframe = Int(0)
@@ -73,6 +85,8 @@ class SubgraphCamera(Subgraph):
 	bgsubtract = Bool(True)
 	clip = Float(4.)
 	data = Instance(datasources.Camera)
+
+	tablabel = 'Camera'
 
 	def _plot_default(self):
 		return subplots.Image()
@@ -121,10 +135,12 @@ class TimeTrendSubgraph(Subgraph):
 		self.redraw()
 
 
-class SubgraphQMS(TimeTrendSubgraph):
+class QMSSubgraph(TimeTrendSubgraph):
 	channels = List(Str)
 	selected_channels = List(Str)
 	data = Instance(datasources.QMS)
+
+	tablabel = 'QMS'
 
 	def _plot_default(self):
 		return subplots.QMS()
@@ -149,13 +165,15 @@ class SubgraphQMS(TimeTrendSubgraph):
 	)
 
 
-class SubgraphGasCabinet(TimeTrendSubgraph):
+class GasCabinetSubgraph(TimeTrendSubgraph):
 	channels = List(Str)
 	chantups = List(Tuple(Str, Str))
 	selected_primary_channels = List(Int)
 	selected_secondary_channels = List(Int)
 	ymin2 = Float
 	ymax2 = Float
+
+	tablabel = 'Gas cabinet'
 
 	def _plot_default(self):
 		return subplots.GasCabinet()
@@ -200,28 +218,59 @@ class SubgraphGasCabinet(TimeTrendSubgraph):
 	)
 
 
-class GeneralSettings(HasTraits):
+
+class GeneralSettings(Tab):
 	xmin = Float
 	xmax = Float
 	dateformat = Enum('HH:MM:SS', 'HH:MM', 'MM:SS', 'MonthDD HH:MM:SS', 'YY-MM-DD HH:MM:SS')
 
+	taboptions = (
+		CameraSubgraph,
+		QMSSubgraph,
+		GasCabinetSubgraph,
+	)
+	tabdict = dict((klass.tablabel, klass) for klass in taboptions)
+	tablabels = [klass.tablabel for klass in taboptions]
 
-class PythonShellTab(HasTraits):
+	add = Button()
+	subgraph_type =  Enum(*tablabels)
+
+	mainwindow = Any
+
+	def _add_fired(self):
+		self.mainwindow.add_tab(self.tabdict[self.subgraph_type](redraw=self.mainwindow.redraw_graph, autoscale=self.mainwindow.autoscale))
+
+	traits_view = View(VFlow(
+		Group(
+			Item('dateformat'),
+			Item('xmin'),
+			Item('xmax'),
+			label='Graph settings',
+			show_border=True,
+		),
+		Group(
+			Item('subgraph_type', show_label=False, style='custom', editor=EnumEditor(values=tablabels, format_func=lambda x: x, cols=1)),
+			Item('add', show_label=False),
+			label='Add subgraph',
+			show_border=True,
+		),
+	))
+
+
+class PythonShell(Tab):
 	shell = PythonValue({})
 	traits_view = View(
 		Item('shell', show_label=False, editor=ShellEditor(share=False))
 	)
+
+	tablabel = 'Python'
 
 
 class MainWindow(HasTraits):
 	mainfig = Instance(plot.Plot)
 	figure = Instance(matplotlib.figure.Figure)
 
-	camera = Instance(SubgraphCamera)
-	qms = Instance(SubgraphQMS)
-	gascab = Instance(SubgraphGasCabinet)
-	general = Instance(GeneralSettings, args=())
-	python = Instance(PythonShellTab, args=())
+	tabs = List(Instance(Tab))
 
 	def redraw_graph(self):
 		#self.mainfig.reformat_xaxis()
@@ -231,7 +280,7 @@ class MainWindow(HasTraits):
 		# NOTE: this is a workaround for matplotlib's internal autoscaling routines. 
 		# it imitates axes.autoscale_view(), but only takes the dataLim into account when
 		# there are actually some lines or images in the graph
-		axes = [self.camera.plot.axes, self.qms.plot.axes, self.gascab.plot.axes, self.gascab.plot.secondaryaxes]
+		axes = [tab.plot.axes for tab in self.tabs if isinstance(tab, Subgraph)]
 		for ax in axes:
 			ax.autoscale_view(scalex=False)
 
@@ -244,20 +293,30 @@ class MainWindow(HasTraits):
 		XL = axes[0].xaxis.get_major_locator().view_limits(x0, x1)
 		axes[0].set_xbound(XL)
 
-	def _camera_default(self):
-		return SubgraphCamera(redraw=self.redraw_graph, autoscale=self.autoscale)
+	def add_tab(self, tab):
+		self.tabs.append(tab)
 
-	def _qms_default(self):
-		return SubgraphQMS(redraw=self.redraw_graph, autoscale=self.autoscale)
+	def _tabs_changed(self):
+		self.rebuild_figure()
 
-	def _gascab_default(self):
-		return SubgraphGasCabinet(redraw=self.redraw_graph, autoscale=self.autoscale)
+	def _tabs_items_changed(self, event):
+		#for removed in event.removed:
+		#	if not isinstance(removed, Subgraph):
+		#		FIXME: veto!
+		self.rebuild_figure()
+
+	def _tabs_default(self):
+		return [GeneralSettings(mainwindow=self), PythonShell()]
+
+	def rebuild_figure(self):
+		self.mainfig.clear()
+		[self.mainfig.add_subplot(tab.plot) for tab in self.tabs if isinstance(tab, Subgraph)]
+		self.mainfig.setup()
+		[tab.update() for tab in self.tabs if isinstance(tab, Subgraph)]
+		self.redraw_graph()
 
 	def _mainfig_default(self):
 		figure = plot.Plot.newmatplotlibfigure()
-		figure.add_subplot(self.camera.plot)
-		figure.add_subplot(self.qms.plot)
-		figure.add_subplot(self.gascab.plot)
 		figure.setup()
 		return figure
 
@@ -267,19 +326,12 @@ class MainWindow(HasTraits):
 	traits_view = View(
 			HSplit(
 				Item('figure', editor=MPLFigureEditor(), dock='vertical'),
-				Group(
-					Item('general', style='custom', dock='tab', width=200),
-					Item('camera', label='Camera', style='custom', dock='tab'),
-					Item('qms', label='QMS', style='custom', dock='tab'),
-					Item('gascab', label='Gas cabinet', style='custom', dock='tab'),
-					Item('python', label='Python', style='custom', dock='tab'),
-					layout='tabbed', show_labels=False,
-				),
-				show_labels=False
+				Item('tabs', style='custom', width=200, editor=ListEditor(use_notebook=True, deletable=True, page_name='.tablabel')),
+				show_labels=False,
 			),
 			resizable=True,
 			height=700, width=1100,
-			buttons=NoButtons
+			buttons=NoButtons,
 		)
 
 

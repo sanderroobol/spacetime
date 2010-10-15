@@ -32,6 +32,10 @@ class Plot(object):
 		matplotlib.pylab.show()
 		return plot
 
+	def clear(self):
+		self.figure.clear()
+		self.subplots = []
+
 	def add_subplot(self, subplot):
 		self.subplots.append(subplot)
 
@@ -61,6 +65,9 @@ class Plot(object):
 
 		for p, groups in itertools.groupby(ret, key=lambda x: x[0]):
 			p.register_axes(list(axes for (subplot, axes) in groups))
+
+		for p in self.subplots:
+			p.setup()
 
 	@staticmethod
 	def general_axes_setup(axes, hide_xticklabels=False):
