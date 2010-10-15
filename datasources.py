@@ -7,14 +7,23 @@ import datetime
 from util import *
 
 class DataSource(object):
-	def __init__(self, filename, label=None):
+	def __init__(self, filename):
 		self.filename = filename
-		self.label = label
 
 
 class MultiTrend(DataSource):
+	channels = None
+
 	def selectchannels(self, condition):
 		return SelectedMultiTrend(self, condition)
+
+	def iterchannels(self):
+		if self.channels is None:
+			self.read()
+		return iter(self.channels)
+
+	def iterchannelnames(self):
+		return (chan.id for chan in self.channels)
 
 
 class SelectedMultiTrend(MultiTrend):
@@ -24,6 +33,9 @@ class SelectedMultiTrend(MultiTrend):
 
 	def iterchannels(self):
 		return itertools.ifilter(self.condition, self.parent.iterchannels())
+
+	def iterchannelnames(self):
+		return (chan.id for chan in self.parent.iterchannels() if self.condition(chan))
 
 
 class QMS(MultiTrend):
@@ -45,8 +57,8 @@ class QMS(MultiTrend):
 		assert len(data) % 3 == 0
 		return [float(d) for (i,d) in enumerate(data) if (i % 3) in (1, 2)]
 
-	def __init__(self, filename, label=None):
-		super(QMS, self).__init__(filename, label)
+	def __init__(self, *args, **kwargs):
+		super(QMS, self).__init__(*args, **kwargs)
 		self.fp = open(self.filename)
 
 		headerlines = [self.fp.readline() for i in range(6)]
@@ -59,8 +71,6 @@ class QMS(MultiTrend):
 		self.masses = [int(i) for i in self.fp.readline().split()]
 		columntitles = self.fp.readline() # not used
 		
-
-	def read(self):
 		data = [self.parseLine(line) for line in self.fp if line.strip()]
 		if len(data[-2]) > len(data[-1]):
 			data[-1].extend([0.] * (len(data[-2]) - len(data[-1])))
@@ -70,15 +80,11 @@ class QMS(MultiTrend):
 		for i, mass in enumerate(self.masses):
 			d = Struct()
 			d.mass = mass
-			d.label = str(mass)
+			d.id = str(mass)
 			d.time = rawdata[:,2*i]/86400 + self.header.starttime
 			d.value = rawdata[:,2*i+1]
 			self.channels.append(d)
 
-	def iterchannels(self):
-		if self.channels is None:
-			self.read()
-		return iter(self.channels)
 
 
 class GasCabinet(MultiTrend):
@@ -86,7 +92,8 @@ class GasCabinet(MultiTrend):
 	parameters = ['valve output', 'measure', 'set point']
 	data = None
 
-	def read(self):
+	def __init__(self, *args, **kwargs):
+		super(GasCabinet, self).__init__(*args, **kwargs)
 		self.data = numpy.loadtxt(self.filename)
 		# FIXME: this is an ugly hack to determine the date. the fileformat should be
         # modified such that date information is stored INSIDE the file
@@ -94,16 +101,39 @@ class GasCabinet(MultiTrend):
 		y, m, d = re.search('(20[0-9]{2})([0-9]{2})([0-9]{2})', self.filename).groups()
  		self.offset = mpdtfromdatetime(datetime.datetime(int(y), int(m), int(d)))
 
-	def iterchannels(self):
-		if self.data is None:
-			self.read()
 		columns = self.data.shape[1]
 		assert (columns - 2)  % 4 == 0
+		self.channels = []
 		for i in range((columns - 2) // 4):
 			time = self.data[:,i*4]/86400 + self.offset
 			for j, p in enumerate(self.parameters):
-				yield Struct(time=time, value=self.data[:,i*4+j+1], label='%s %s' % (self.controllers[i], p), parameter=p, controller=self.controllers[i])
+				self.channels.append(Struct(time=time, value=self.data[:,i*4+j+1], id='%s %s' % (self.controllers[i], p), parameter=p, controller=self.controllers[i]))
 		# NOTE: the last two columns (Leak dectector) are ignored
+
+
+class TPDirk(MultiTrend):
+	def readiter(self):
+		fp = open(self.filename)
+		fp.readline() # ignore two header lines
+		fp.readline()
+		for line in fp:
+			data = line.strip().split(';')
+			if len(data) == 2: # last line ends with "date;time"
+				continue
+			no, dt, pressure, temperature = data
+			yield numpy.array((
+				mpdtfromdatetime(datetime.datetime.strptime(dt, '%m/%d/%y %H:%M:%S')),
+				float(pressure),
+				float(temperature)
+			))
+
+	def __init__(self, *args, **kwargs):
+		super(TPDirk, self).__init__(*args, **kwargs)
+		data = numpy.array(list(self.readiter()))
+		self.channels = [
+			Struct(id='temperature', time=data[:,0], value=data[:,1]),
+			Struct(id='pressure', time=data[:,0], value=data[:,2]),
+		]
 
 
 class Image(DataSource):
@@ -122,8 +152,8 @@ class ChainedImage(Image):
 
 
 class Camera(DataSource):
-	def __init__(self, filename, label=None):
-		super(Camera, self).__init__(filename, label)
+	def __init__(self, *args, **kwargs):
+		super(Camera, self).__init__(*args, **kwargs)
 		self.rawfile = raw.RawFileReader(self.filename)
 
 	def getdata(self, channel, frame):

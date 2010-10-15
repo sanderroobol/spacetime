@@ -78,7 +78,7 @@ class MultiTrend(Subplot):
 			return
 		self.formatter.reset()
 		for d in self.data.iterchannels():
-			self.axes.plot(d.time, d.value, self.formatter(d), label=d.label)
+			self.axes.plot(d.time, d.value, self.formatter(d), label=d.id)
 		if len(self.axes.get_legend_handles_labels()[0]):
 			self.axes.legend()
 
@@ -101,7 +101,7 @@ class DoubleMultiTrend(MultiTrend):
 		super(DoubleMultiTrend, self).draw()
 		if self.secondarydata:
 			for d in self.secondarydata.iterchannels():
-				self.secondaryaxes.plot(d.time, d.value, self.formatter(d), label=d.label)
+				self.secondaryaxes.plot(d.time, d.value, self.formatter(d), label=d.id)
 			
 			# manually join the legends for both y-axes
 			handles, labels = self.axes.get_legend_handles_labels()

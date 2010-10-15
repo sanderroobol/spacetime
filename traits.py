@@ -125,6 +125,22 @@ class TimeTrendSubgraph(Subgraph):
 	legend = Bool
 	ymin = Float
 	ymax = Float
+	channels = List(Str)
+	selected_channels = List(Str)
+	data = Instance(datasources.DataSource)
+
+	def _plot_default(self):
+		return self.plotfactory()
+
+	def _filename_changed(self):
+		self.data = self.datafactory(self.filename)
+		self.channels = list(self.data.iterchannelnames())
+		self.settings_changed()
+
+	@on_trait_change('selected_channels')
+	def settings_changed(self):
+		self.plot.retarget(self.data.selectchannels(lambda chan: chan.id in self.selected_channels))
+		self.update()
 
 	def _ymin_changed(self):
 		self.plot.axes.set_ylim(ymin=self.ymin)
@@ -134,49 +150,21 @@ class TimeTrendSubgraph(Subgraph):
 		self.plot.axes.set_ylim(ymax=self.ymax)
 		self.redraw()
 
-
-class QMSSubgraph(TimeTrendSubgraph):
-	channels = List(Str)
-	selected_channels = List(Str)
-	data = Instance(datasources.QMS)
-
-	tablabel = 'QMS'
-
-	def _plot_default(self):
-		return subplots.QMS()
-
-	def _filename_changed(self):
-		self.data = datasources.QMS(self.filename)
-		self.channels = [str(i) for i in self.data.masses]
-		self.settings_changed()
-
-	@on_trait_change('selected_channels')
-	def settings_changed(self):
-		masses = [int(i) for i in self.selected_channels]
-		self.plot.retarget(self.data.selectchannels(lambda d: d.mass in masses))
-		self.update()
-
-	traits_view = View(
-		Item('filename', editor=FileEditor(filter=['Quadera ASCII files (*.asc)', '*.asc', 'All files', '*'], entries=0)),
-		Item('channels', editor=ListStrEditor(editable=False, multi_select=True, selected='selected_channels')),
-		Item('ymin'),
-		Item('ymax'),
-		Item('legend'),
-	)
+	def traits_view(self):
+		return View(
+			Item('filename', editor=FileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),
+			Item('channels', editor=ListStrEditor(editable=False, multi_select=True, selected='selected_channels')),
+			Item('ymin'),
+			Item('ymax'),
+			Item('legend'),
+		)
 
 
-class GasCabinetSubgraph(TimeTrendSubgraph):
-	channels = List(Str)
-	chantups = List(Tuple(Str, Str))
-	selected_primary_channels = List(Int)
-	selected_secondary_channels = List(Int)
+class DoubleTimeTrendSubgraph(TimeTrendSubgraph):
+	selected_primary_channels = List(Str)
+	selected_secondary_channels = List(Str)
 	ymin2 = Float
 	ymax2 = Float
-
-	tablabel = 'Gas cabinet'
-
-	def _plot_default(self):
-		return subplots.GasCabinet()
 
 	def _ymin2_changed(self):
 		self.plot.secondaryaxes.set_ylim(ymin=self.ymin)
@@ -186,37 +174,46 @@ class GasCabinetSubgraph(TimeTrendSubgraph):
 		self.plot.secondaryaxes.set_ylim(ymax=self.ymax)
 		self.redraw()
 
-	def _filename_changed(self):
-		self.data = datasources.GasCabinet(self.filename)
-		self.channels = []
-		self.chantups = []
-		for c in self.data.controllers:
-			for p in self.data.parameters:
-				self.channels.append("%s %s" % (c, p))
-				self.chantups.append((c, p))
-		self.settings_changed()
-
 	@on_trait_change('selected_primary_channels, selected_secondary_channels')
 	def settings_changed(self):
-		first = [self.chantups[i] for i in self.selected_primary_channels]
-		second = [self.chantups[i] for i in self.selected_secondary_channels]
 		self.plot.retarget(
-			self.data.selectchannels(lambda d: (d.controller, d.parameter) in first),
-			self.data.selectchannels(lambda d: (d.controller, d.parameter) in second),
+			self.data.selectchannels(lambda chan: chan.id in self.selected_primary_channels),
+			self.data.selectchannels(lambda chan: chan.id in self.selected_secondary_channels),
 		)
 		self.update()
 
-	traits_view = View(
-		Item('filename', editor=FileEditor(filter=['ASCII text files (*.txt)', '*.txt', 'All files', '*'], entries=0)),
-		Item('channels', label='Left y-axis', editor=ListStrEditor(editable=False, multi_select=True, selected_index='selected_primary_channels')),
-		Item('ymin'),
-		Item('ymax'),
-		Item('channels', label='Right y-axis', editor=ListStrEditor(editable=False, multi_select=True, selected_index='selected_secondary_channels')),
-		Item('ymin2'),
-		Item('ymax2'),
-		Item('legend'),
-	)
+	def traits_view(self):
+		return View(
+			Item('filename', editor=FileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),
+			Item('channels', label='Left y-axis', editor=ListStrEditor(editable=False, multi_select=True, selected='selected_primary_channels')),
+			Item('ymin'),
+			Item('ymax'),
+			Item('channels', label='Right y-axis', editor=ListStrEditor(editable=False, multi_select=True, selected='selected_secondary_channels')),
+			Item('ymin2'),
+			Item('ymax2'),
+			Item('legend'),
+		)
 
+
+class QMSSubgraph(TimeTrendSubgraph):
+	tablabel = 'QMS'
+	datafactory = datasources.QMS
+	plotfactory = subplots.QMS
+	filter = 'Quadera ASCII files (*.asc)', '*.asc'
+
+
+class TPDirkSubgraph(DoubleTimeTrendSubgraph):
+	tablabel = 'TPDirk'
+	plotfactory = subplots.DoubleMultiTrend
+	datafactory = datasources.TPDirk
+	filter = 'Dirk\'s ASCII files (*.txt)', '*.txt'
+
+
+class GasCabinetSubgraph(DoubleTimeTrendSubgraph):
+	tablabel = 'Gas cabinet'
+	plotfactory = subplots.GasCabinet
+	datafactory = datasources.GasCabinet
+	filter = 'ASCII text files (*.txt)', '*.txt',
 
 
 class GeneralSettings(Tab):
@@ -228,6 +225,7 @@ class GeneralSettings(Tab):
 		CameraSubgraph,
 		QMSSubgraph,
 		GasCabinetSubgraph,
+		TPDirkSubgraph,
 	)
 	tabdict = dict((klass.tablabel, klass) for klass in taboptions)
 	tablabels = [klass.tablabel for klass in taboptions]
