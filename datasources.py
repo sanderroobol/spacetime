@@ -10,6 +10,9 @@ class DataSource(object):
 	def __init__(self, filename):
 		self.filename = filename
 
+	def apply_filter(self, *filters):
+		return DataSourceFilter(self, *filters)
+
 
 class MultiTrend(DataSource):
 	channels = None
@@ -122,7 +125,7 @@ class TPDirk(MultiTrend):
 				continue
 			no, dt, pressure, temperature = data
 			yield numpy.array((
-				mpdtfromdatetime(datetime.datetime.strptime(dt, '%m/%d/%y %H:%M:%S')),
+				mpdtfromdatetime(datetime.datetime.strptime(dt, '%y/%m/%d %H:%M:%S')),
 				float(pressure),
 				float(temperature)
 			))
@@ -131,17 +134,13 @@ class TPDirk(MultiTrend):
 		super(TPDirk, self).__init__(*args, **kwargs)
 		data = numpy.array(list(self.readiter()))
 		self.channels = [
-			Struct(id='temperature', time=data[:,0], value=data[:,1]),
-			Struct(id='pressure', time=data[:,0], value=data[:,2]),
+			Struct(id='pressure', time=data[:,0], value=data[:,1]),
+			Struct(id='temperature', time=data[:,0], value=data[:,2]),
 		]
 
 
-class Image(DataSource):
-	def apply_filter(self, *filters):
-		return ImageFilter(self, *filters)
 
-
-class ChainedImage(Image):
+class ChainedImage(DataSource):
 	def __init__(self, *args):
 		self.args = args
 
@@ -151,7 +150,8 @@ class ChainedImage(Image):
 				yield frame
 
 
-class Camera(DataSource):
+# Camera class for image mode and trend mode
+class Camera(MultiTrend):
 	def __init__(self, *args, **kwargs):
 		super(Camera, self).__init__(*args, **kwargs)
 		self.rawfile = raw.RawFileReader(self.filename)
@@ -165,6 +165,22 @@ class Camera(DataSource):
 		ret.tstart = mpdtfromtimestamp(frameinfo.acquisitionTime)
 		ret.tend = ret.tstart + (xsize*ysize / frameinfo.pixelclock_kHz / 1000 * 2) / 86400
 		return ret
+
+	def getchanneldata(self, channel, frameiter=None):
+		data = []
+		time = []
+		if frameiter is None:
+			frameiter = self.framenumberiter()
+		for frame in frameiter:
+			image = self.rawfile.channelImage(frame, channel).asArray()
+
+			frameinfo = self.rawfile.frameInfo(frame)
+			tstart = mpdtfromtimestamp(frameinfo.acquisitionTime)
+			tend = tstart + (image.size / frameinfo.pixelclock_kHz / 1000 * 2) / 86400
+
+			data.append(image.flatten())
+			time.append(numpy.linspace(tstart, tend, image.size))
+		return Struct(id=str(channel), value=numpy.hstack(data), time=numpy.hstack(time))
 
 	def getframecount(self):
 		return self.rawfile.header.frameCount
@@ -181,8 +197,15 @@ class Camera(DataSource):
 	def framenumberiter(self):
 		return xrange(self.getframecount())
 
+	def iterchannelnames(self):
+		return (str(i) for i in range(self.getchannelcount()))
 
-class CameraSelectedFrames(DataSource):
+	def iterchannels(self):
+		return (self.getchanneldata(channel) for channel in range(self.getchannelcount()))
+
+
+# image mode and trend mode
+class CameraSelectedFrames(MultiTrend):
 	def __init__(self, cameradata, firstframe, lastframe):
 		self.cameradata = cameradata
 		self.firstframe = firstframe
@@ -200,8 +223,15 @@ class CameraSelectedFrames(DataSource):
 	def getdata(self, channel, frame):
 		return self.cameradata.getdata(channel, frame)
 
+	def iterchannelnames(self):
+		return self.cameradata.iterchannelnames()
 
-class CameraChannel(Image):
+	def iterchannels(self):
+		return (self.cameradata.getchanneldata(channel, self.framenumberiter()) for channel in range(self.cameradata.getchannelcount()))
+
+
+# image mode only
+class CameraChannel(DataSource):
 	def __init__(self, cameradata, channel):
 		self.cameradata = cameradata
 		self.channel = channel
@@ -214,18 +244,24 @@ class CameraChannel(Image):
 			yield self.cameradata.getdata(self.channel, i)
 
 
-class ImageFilter(Image):
+class DataSourceFilter(MultiTrend):
 	def __init__(self, original, *filters):
 		self.original = original
 		self.filters = list(filters)
-
+		
 	def iterframes(self):
 		return itertools.imap(self.apply, self.original.iterframes())
+
+	def iterchannels(self):
+		return itertools.imap(self.apply, self.original.iterchannels())
+
+	def iterchannelnames(self):
+		return self.original.iterchannelnames()
 	
-	def apply(self, frame):
+	def apply(self, data):
 		for filter in self.filters:
-			frame = filter(frame)
-		return frame
+			data = filter(data)
+		return data
 
 	def apply_filter(self, *filters):
 		self.filters.extend(filters)

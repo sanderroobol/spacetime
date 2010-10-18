@@ -1,3 +1,5 @@
+from __future__ import division
+
 import numpy
 import scipy.stats
 
@@ -19,4 +21,10 @@ def ClipStdDev(number):
 		return frame
 	return clip
 
-
+def average(npoints):
+	# FIXME: this modifies the frame in-place, I'm not sure if this is desired behaviour
+	def avgn(data):
+		data.value = numpy.array(map(numpy.mean, numpy.array_split(data.value, numpy.ceil(data.value.size/npoints))))
+		data.time = numpy.array(map(numpy.mean, numpy.array_split(data.time, numpy.ceil(data.time.size/npoints))))
+		return data
+	return avgn

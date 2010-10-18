@@ -151,6 +151,13 @@ class QMS(MultiTrend):
 		self.axes.set_yscale('log')
 
 
+class TPDirk(DoubleMultiTrend):
+	def setup(self):
+		self.axes.set_ylabel('Pressure (mbar)')
+		self.axes.set_yscale('log')
+		self.secondaryaxes.set_ylabel('Temperature (K)')
+
+
 class GasCabinet(DoubleMultiTrend):
 	def __init__(self, data=None, secondarydata=None, formatter=None):
 		if formatter is None:
@@ -177,6 +184,7 @@ class GasCabinet(DoubleMultiTrend):
 
 class Image(Subplot):
 	colormap = 'gist_heat'
+	interpolation = 'nearest'
 
 	def setup(self):
 		self.axes.set_yticks([])
@@ -189,7 +197,7 @@ class Image(Subplot):
 			# map the linenunumber to the time axis and the individual points to some arbitrary unit axis
 			# transpose the image data to plot scanlines vertical
 			ysize, xsize = d.image.shape
-			self.axes.imshow(d.image.T, extent=(d.tstart, d.tend, 0, ysize+1), aspect='auto', cmap=self.colormap)
+			self.axes.imshow(d.image.T, extent=(d.tstart, d.tend, 0, ysize+1), aspect='auto', cmap=self.colormap, interpolation=self.interpolation)
 			self.axes.add_patch(matplotlib.patches.Rectangle((d.tstart, 0), d.tend-d.tstart, ysize+1, linewidth=1, edgecolor='black', fill=False))
 
 			# indicate beginning and end of frames
@@ -213,3 +221,8 @@ class Image(Subplot):
  			for image in self.axes.images:
 				image.set_cmap(colormap)
 
+	def set_interpolation(self, interpolation):
+		self.interpolation = interpolation
+		if self.axes:
+ 			for image in self.axes.images:
+				image.set_interpolation(interpolation)

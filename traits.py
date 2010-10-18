@@ -37,7 +37,7 @@ class Subgraph(Tab):
 		self.redraw()
 
 
-class CameraSubgraph(Subgraph):
+class CameraFrameSubgraph(Subgraph):
 	channel = Int(0)
 	channelcount = Int(0)
 	firstframe = Int(0)
@@ -47,11 +47,12 @@ class CameraSubgraph(Subgraph):
 	clip = Float(4.)
 	data = Instance(datasources.Camera)
 	colormap = Enum(sorted((m for m in matplotlib.cm.datad if not m.endswith("_r")), key=string.lower))
+	interpolation = Enum('nearest', 'bilinear', 'bicubic')
 
 	tablabel = 'Camera'
 	
 	def __init__(self, *args, **kwargs):
-		super(CameraSubgraph, self).__init__(*args, **kwargs)
+		super(CameraFrameSubgraph, self).__init__(*args, **kwargs)
 		self.colormap = 'gist_heat'
 
 	def _plot_default(self):
@@ -61,6 +62,10 @@ class CameraSubgraph(Subgraph):
 
 	def _colormap_changed(self):
 		self.plot.set_colormap(self.colormap)
+		self.redraw()
+
+	def _interpolation_changed(self):
+		self.plot.set_interpolation(self.interpolation)
 		self.redraw()
 
 	def _filename_changed(self):
@@ -87,6 +92,7 @@ class CameraSubgraph(Subgraph):
 		Item('filename', editor=FileEditor(filter=['Camera RAW files (*.raw)', '*.raw', 'All files', '*'], entries=0)),
 		Item('channel', editor=RangeEditor(low=0, high_name='channelcount')),
 		Item('colormap'),
+		Item('interpolation', editor=EnumEditor(values={'nearest':'1:none', 'bilinear':'2:bilinear', 'bicubic':'3:bicubic'})),
 		Item('firstframe', label='First frame', editor=RangeEditor(low=0, high_name='framecount')),
 		Item('lastframe', label='Last frame', editor=RangeEditor(low=0, high_name='framecount')),
 		Item('bgsubtract', label='Backgr. subtr.', tooltip='Line-by-line linear background subtraction'),
@@ -172,6 +178,54 @@ class DoubleTimeTrendSubgraph(TimeTrendSubgraph):
 		)
 
 
+class CameraTrendSubgraph(DoubleTimeTrendSubgraph):
+	tablabel = 'Camera Trend'
+	datafactory = datasources.Camera
+	plotfactory = subplots.DoubleMultiTrend
+	filter = 'Camera RAW files (*.raw)', '*.raw'
+
+	firstframe = Int(0)
+	lastframe = Int(0)
+	framecount = Int(0)
+	average = Int(100)
+
+	def _filename_changed(self):
+		self.data = datasources.Camera(self.filename)
+		self.channels = list(self.data.iterchannelnames())
+		self.framecount = self.data.getframecount() - 1
+		self.lastframe = min(self.framecount, 25)
+		self.settings_changed()
+
+	@on_trait_change('average, firstframe, lastframe, selected_primary_channels, selected_secondary_channels')
+	def settings_changed(self):
+		if not self.data:
+			return
+		# FIXME: implement a smarter first/last frame selection, don't redraw everything
+		data = self.data.selectframes(self.firstframe, self.lastframe)
+		if self.average > 0:
+			data = data.apply_filter(filters.average(self.average))
+		self.plot.retarget(
+			data.selectchannels(lambda chan: chan.id in self.selected_primary_channels),
+			data.selectchannels(lambda chan: chan.id in self.selected_secondary_channels),
+		)
+		self.update()
+		
+
+	traits_view = View(
+		Item('filename', editor=FileEditor(filter=['Camera RAW files (*.raw)', '*.raw', 'All files', '*'], entries=0)),
+		Item('firstframe', label='First frame', editor=RangeEditor(low=0, high_name='framecount')),
+		Item('lastframe', label='Last frame', editor=RangeEditor(low=0, high_name='framecount')),
+		Item('average', tooltip='N-point averaging'),
+		Item('channels', label='Left y-axis', editor=ListStrEditor(editable=False, multi_select=True, selected='selected_primary_channels')),
+		Item('ymin'),
+		Item('ymax'),
+		Item('channels', label='Right y-axis', editor=ListStrEditor(editable=False, multi_select=True, selected='selected_secondary_channels')),
+		Item('ymin2'),
+		Item('ymax2'),
+		Item('legend'),
+	)
+
+
 class QMSSubgraph(TimeTrendSubgraph):
 	tablabel = 'QMS'
 	datafactory = datasources.QMS
@@ -181,9 +235,22 @@ class QMSSubgraph(TimeTrendSubgraph):
 
 class TPDirkSubgraph(DoubleTimeTrendSubgraph):
 	tablabel = 'TPDirk'
-	plotfactory = subplots.DoubleMultiTrend
+	plotfactory = subplots.TPDirk
 	datafactory = datasources.TPDirk
 	filter = 'Dirk\'s ASCII files (*.txt)', '*.txt'
+
+	selected_primary_channels = ['pressure']
+	selected_secondary_channels = ['temperature']
+
+	def traits_view(self):
+		return View(
+			Item('filename', editor=FileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),
+			Item('ymin'),
+			Item('ymax'),
+			Item('ymin2'),
+			Item('ymax2'),
+			Item('legend'),
+		)
 
 
 class GasCabinetSubgraph(DoubleTimeTrendSubgraph):
@@ -199,7 +266,8 @@ class GeneralSettings(Tab):
 	dateformat = Enum('HH:MM:SS', 'HH:MM', 'MM:SS', 'MonthDD HH:MM:SS', 'YY-MM-DD HH:MM:SS')
 
 	taboptions = (
-		CameraSubgraph,
+		CameraFrameSubgraph,
+		CameraTrendSubgraph,
 		QMSSubgraph,
 		GasCabinetSubgraph,
 		TPDirkSubgraph,
