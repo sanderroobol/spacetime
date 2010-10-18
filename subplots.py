@@ -1,7 +1,7 @@
 from __future__ import division
 
 import numpy
-import matplotlib.patches
+import matplotlib.patches, matplotlib.cm, matplotlib.colors
 
 import datasources
 from util import *
@@ -64,6 +64,8 @@ class GasCabinetFormatter(MultiTrendFormatter):
 
 
 class MultiTrend(Subplot):
+	legend = True
+
 	def __init__(self, data=None, formatter=None):
 		self.data = data
 		if formatter is None:
@@ -79,13 +81,23 @@ class MultiTrend(Subplot):
 		self.formatter.reset()
 		for d in self.data.iterchannels():
 			self.axes.plot(d.time, d.value, self.formatter(d), label=d.id)
-		if len(self.axes.get_legend_handles_labels()[0]):
-			self.axes.legend()
+		self.draw_legend()
 
 	def clear(self):
 		if self.axes:
 			del self.axes.lines[:]
 		self.axes.relim()
+
+	def set_legend(self, legend):
+		self.legend = legend
+		if legend:
+			self.draw_legend()
+		elif self.axes:
+			self.axes.legend_ = None
+
+	def draw_legend(self):
+		if self.legend and self.axes and self.axes.get_legend_handles_labels()[0]:
+			self.axes.legend()
 
 
 class DoubleMultiTrend(MultiTrend):
@@ -102,14 +114,23 @@ class DoubleMultiTrend(MultiTrend):
 		if self.secondarydata:
 			for d in self.secondarydata.iterchannels():
 				self.secondaryaxes.plot(d.time, d.value, self.formatter(d), label=d.id)
-			
+			self.draw_legend()
+
+	def draw_legend(self):
+		if self.legend:
 			# manually join the legends for both y-axes
 			handles, labels = self.axes.get_legend_handles_labels()
 			handles2, labels2 = self.secondaryaxes.get_legend_handles_labels()
 			handles.extend(handles2)
 			labels.extend(labels2)
+			self.axes.legend_ = None
 			if len(handles):
-				self.axes.legend(handles, labels)
+				self.secondaryaxes.legend(handles, labels)
+
+	def set_legend(self, legend):
+		if not legend:
+			self.secondaryaxes.legend_ = None
+		super(DoubleMultiTrend, self).set_legend(legend)
 
 	def axes_requirements(self):
 		return [Struct(twinx=True)]
@@ -154,8 +175,9 @@ class GasCabinet(DoubleMultiTrend):
 				self.secondaryaxes.set_ylabel('Pressure (bar)')
 
 
-
 class Image(Subplot):
+	colormap = 'gist_heat'
+
 	def setup(self):
 		self.axes.set_yticks([])
 	
@@ -167,7 +189,7 @@ class Image(Subplot):
 			# map the linenunumber to the time axis and the individual points to some arbitrary unit axis
 			# transpose the image data to plot scanlines vertical
 			ysize, xsize = d.image.shape
-			self.axes.imshow(d.image.T, extent=(d.tstart, d.tend, 0, ysize+1), aspect='auto')
+			self.axes.imshow(d.image.T, extent=(d.tstart, d.tend, 0, ysize+1), aspect='auto', cmap=self.colormap)
 			self.axes.add_patch(matplotlib.patches.Rectangle((d.tstart, 0), d.tend-d.tstart, ysize+1, linewidth=1, edgecolor='black', fill=False))
 
 			# indicate beginning and end of frames
@@ -184,3 +206,10 @@ class Image(Subplot):
 		if self.axes:
 			del self.axes.lines[:], self.axes.images[:], self.axes.patches[:]
 		self.axes.relim()
+
+	def set_colormap(self, colormap):
+		self.colormap = colormap
+		if self.axes:
+ 			for image in self.axes.images:
+				image.set_cmap(colormap)
+

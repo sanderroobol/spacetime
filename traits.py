@@ -8,7 +8,8 @@ import plot
 
 from enthought.traits.api import *
 from enthought.traits.ui.api import *
-import matplotlib.figure, matplotlib.transforms
+import matplotlib.figure, matplotlib.transforms, matplotlib.cm
+import string
 import wx
 
 
@@ -45,11 +46,22 @@ class CameraSubgraph(Subgraph):
 	bgsubtract = Bool(True)
 	clip = Float(4.)
 	data = Instance(datasources.Camera)
+	colormap = Enum(sorted((m for m in matplotlib.cm.datad if not m.endswith("_r")), key=string.lower))
 
 	tablabel = 'Camera'
+	
+	def __init__(self, *args, **kwargs):
+		super(CameraSubgraph, self).__init__(*args, **kwargs)
+		self.colormap = 'gist_heat'
 
 	def _plot_default(self):
-		return subplots.Image()
+		p = subplots.Image()
+		p.set_colormap(self.colormap)
+		return p
+
+	def _colormap_changed(self):
+		self.plot.set_colormap(self.colormap)
+		self.redraw()
 
 	def _filename_changed(self):
 		self.data = datasources.Camera(self.filename)
@@ -74,6 +86,7 @@ class CameraSubgraph(Subgraph):
 	traits_view = View(
 		Item('filename', editor=FileEditor(filter=['Camera RAW files (*.raw)', '*.raw', 'All files', '*'], entries=0)),
 		Item('channel', editor=RangeEditor(low=0, high_name='channelcount')),
+		Item('colormap'),
 		Item('firstframe', label='First frame', editor=RangeEditor(low=0, high_name='framecount')),
 		Item('lastframe', label='Last frame', editor=RangeEditor(low=0, high_name='framecount')),
 		Item('bgsubtract', label='Backgr. subtr.', tooltip='Line-by-line linear background subtraction'),
@@ -82,7 +95,7 @@ class CameraSubgraph(Subgraph):
 
 
 class TimeTrendSubgraph(Subgraph):
-	legend = Bool
+	legend = Bool(True)
 	ymin = Float
 	ymax = Float
 	channels = List(Str)
@@ -108,6 +121,10 @@ class TimeTrendSubgraph(Subgraph):
 
 	def _ymax_changed(self):
 		self.plot.axes.set_ylim(ymax=self.ymax)
+		self.redraw()
+
+	def _legend_changed(self):
+		self.plot.set_legend(self.legend)
 		self.redraw()
 
 	def traits_view(self):
