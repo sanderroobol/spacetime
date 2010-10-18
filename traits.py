@@ -88,16 +88,29 @@ class CameraFrameSubgraph(Subgraph):
 		self.plot.retarget(data)
 		self.update()
 
-	traits_view = View(
-		Item('filename', editor=FileEditor(filter=['Camera RAW files (*.raw)', '*.raw', 'All files', '*'], entries=0)),
-		Item('channel', editor=RangeEditor(low=0, high_name='channelcount')),
-		Item('colormap'),
-		Item('interpolation', editor=EnumEditor(values={'nearest':'1:none', 'bilinear':'2:bilinear', 'bicubic':'3:bicubic'})),
-		Item('firstframe', label='First frame', editor=RangeEditor(low=0, high_name='framecount')),
-		Item('lastframe', label='Last frame', editor=RangeEditor(low=0, high_name='framecount')),
-		Item('bgsubtract', label='Backgr. subtr.', tooltip='Line-by-line linear background subtraction'),
-		Item('clip', label='Color clipping', tooltip='Clip colorscale at <number> standard deviations away from the average (0 to disable)'),
-	)
+	traits_view = View(Group(
+		Group(
+			Item('filename', editor=FileEditor(filter=['Camera RAW files (*.raw)', '*.raw', 'All files', '*'], entries=0)),
+			Item('channel', editor=RangeEditor(low=0, high_name='channelcount')),
+			Item('firstframe', label='First frame', editor=RangeEditor(low=0, high_name='framecount')),
+			Item('lastframe', label='Last frame', editor=RangeEditor(low=0, high_name='framecount')),
+			show_border=True,
+			label='General',
+		),
+		Group(
+			Item('colormap'),
+			Item('interpolation', editor=EnumEditor(values={'nearest':'1:none', 'bilinear':'2:bilinear', 'bicubic':'3:bicubic'})),
+			show_border=True,
+			label='Display',
+		),
+		Group(
+			Item('bgsubtract', label='Backgr. subtr.', tooltip='Line-by-line linear background subtraction'),
+			Item('clip', label='Color clipping', tooltip='Clip colorscale at <number> standard deviations away from the average (0 to disable)'),
+			show_border=True,
+			label='Filters',
+		),
+		layout='normal',
+	))
 
 
 class TimeTrendSubgraph(Subgraph):
@@ -105,7 +118,7 @@ class TimeTrendSubgraph(Subgraph):
 	ymin = Float
 	ymax = Float
 	channels = List(Str)
-	selected_channels = List(Str)
+	selected_primary_channels = List(Str)
 	data = Instance(datasources.DataSource)
 
 	def _plot_default(self):
@@ -118,7 +131,7 @@ class TimeTrendSubgraph(Subgraph):
 
 	@on_trait_change('selected_channels')
 	def settings_changed(self):
-		self.plot.retarget(self.data.selectchannels(lambda chan: chan.id in self.selected_channels))
+		self.plot.retarget(self.data.selectchannels(lambda chan: chan.id in self.selected_primary_channels))
 		self.update()
 
 	def _ymin_changed(self):
@@ -133,18 +146,28 @@ class TimeTrendSubgraph(Subgraph):
 		self.plot.set_legend(self.legend)
 		self.redraw()
 
+	left_yaxis_group = Group(
+		Item('channels', editor=ListStrEditor(editable=False, multi_select=True, selected='selected_primary_channels')),
+		Item('ymin'),
+		Item('ymax'),
+		show_border=True,
+		label='Left y-axis'
+	)
+
 	def traits_view(self):
-		return View(
-			Item('filename', editor=FileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),
-			Item('channels', editor=ListStrEditor(editable=False, multi_select=True, selected='selected_channels')),
-			Item('ymin'),
-			Item('ymax'),
-			Item('legend'),
-		)
+		return View(Group(
+			Group(
+				Item('filename', editor=FileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),
+				Item('legend'),
+				show_border=True,
+				label='General',
+			),
+			Include('left_yaxis_group'),
+			layout='normal',
+		))
 
 
 class DoubleTimeTrendSubgraph(TimeTrendSubgraph):
-	selected_primary_channels = List(Str)
 	selected_secondary_channels = List(Str)
 	ymin2 = Float
 	ymax2 = Float
@@ -165,17 +188,26 @@ class DoubleTimeTrendSubgraph(TimeTrendSubgraph):
 		)
 		self.update()
 
+	right_yaxis_group = Group(
+		Item('channels', editor=ListStrEditor(editable=False, multi_select=True, selected='selected_secondary_channels')),
+		Item('ymin2', label='Ymin'),
+		Item('ymax2', label='Ymax'),
+		show_border=True,
+		label='Right y-axis'
+	)
+
 	def traits_view(self):
-		return View(
-			Item('filename', editor=FileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),
-			Item('channels', label='Left y-axis', editor=ListStrEditor(editable=False, multi_select=True, selected='selected_primary_channels')),
-			Item('ymin'),
-			Item('ymax'),
-			Item('channels', label='Right y-axis', editor=ListStrEditor(editable=False, multi_select=True, selected='selected_secondary_channels')),
-			Item('ymin2'),
-			Item('ymax2'),
-			Item('legend'),
-		)
+		return View(Group(
+			Group(
+				Item('filename', editor=FileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),
+				Item('legend'),
+				show_border=True,
+				label='General',
+			),
+			Include('left_yaxis_group'),
+			Include('right_yaxis_group'),
+			layout='normal',
+		))
 
 
 class CameraTrendSubgraph(DoubleTimeTrendSubgraph):
@@ -209,21 +241,21 @@ class CameraTrendSubgraph(DoubleTimeTrendSubgraph):
 			data.selectchannels(lambda chan: chan.id in self.selected_secondary_channels),
 		)
 		self.update()
-		
 
-	traits_view = View(
-		Item('filename', editor=FileEditor(filter=['Camera RAW files (*.raw)', '*.raw', 'All files', '*'], entries=0)),
-		Item('firstframe', label='First frame', editor=RangeEditor(low=0, high_name='framecount')),
-		Item('lastframe', label='Last frame', editor=RangeEditor(low=0, high_name='framecount')),
-		Item('average', tooltip='N-point averaging'),
-		Item('channels', label='Left y-axis', editor=ListStrEditor(editable=False, multi_select=True, selected='selected_primary_channels')),
-		Item('ymin'),
-		Item('ymax'),
-		Item('channels', label='Right y-axis', editor=ListStrEditor(editable=False, multi_select=True, selected='selected_secondary_channels')),
-		Item('ymin2'),
-		Item('ymax2'),
-		Item('legend'),
-	)
+	traits_view = View(Group(
+		Group(
+			Item('filename', editor=FileEditor(filter=['Camera RAW files (*.raw)', '*.raw', 'All files', '*'], entries=0)),
+			Item('firstframe', label='First frame', editor=RangeEditor(low=0, high_name='framecount')),
+			Item('lastframe', label='Last frame', editor=RangeEditor(low=0, high_name='framecount')),
+			Item('average', tooltip='N-point averaging'),
+			Item('legend'),
+			show_border=True,
+			label='General',
+		),
+		Include('left_yaxis_group'),
+		Include('right_yaxis_group'),
+		layout='normal',
+	))
 
 
 class QMSSubgraph(TimeTrendSubgraph):
@@ -243,14 +275,27 @@ class TPDirkSubgraph(DoubleTimeTrendSubgraph):
 	selected_secondary_channels = ['temperature']
 
 	def traits_view(self):
-		return View(
-			Item('filename', editor=FileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),
-			Item('ymin'),
-			Item('ymax'),
-			Item('ymin2'),
-			Item('ymax2'),
-			Item('legend'),
-		)
+		return View(Group(
+			Group(
+				Item('filename', editor=FileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),
+				Item('legend'),
+				show_border=True,
+				label='General',
+			),
+			Group(
+				Item('ymin'),
+				Item('ymax'),
+				show_border=True,
+				label='Right y-axis'
+			),
+			Group(
+				Item('ymin2', label='Ymin'),
+				Item('ymax2', label='Ymax'),
+				show_border=True,
+				label='Left y-axis'
+			),
+			layout='normal',
+		))
 
 
 class GasCabinetSubgraph(DoubleTimeTrendSubgraph):
@@ -264,6 +309,7 @@ class GeneralSettings(Tab):
 	xmin = Float
 	xmax = Float
 	dateformat = Enum('HH:MM:SS', 'HH:MM', 'MM:SS', 'MonthDD HH:MM:SS', 'YY-MM-DD HH:MM:SS')
+	tablabel = 'Main'
 
 	taboptions = (
 		CameraFrameSubgraph,
@@ -283,7 +329,7 @@ class GeneralSettings(Tab):
 	def _add_fired(self):
 		self.mainwindow.add_tab(self.tabdict[self.subgraph_type](redraw=self.mainwindow.redraw_graph, autoscale=self.mainwindow.autoscale))
 
-	traits_view = View(VFlow(
+	traits_view = View(Group(
 		Group(
 			Item('dateformat'),
 			Item('xmin'),
@@ -297,6 +343,7 @@ class GeneralSettings(Tab):
 			label='Add subgraph',
 			show_border=True,
 		),
+		layout='normal',
 	))
 
 
