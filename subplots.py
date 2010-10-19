@@ -12,13 +12,13 @@ class Subplot(object):
 	def __init__(self, data=None):
 		self.data = data
 
-	def retarget(self, data):
+	def set_data(self, data):
 		self.data = data
 
-	def axes_requirements(self):
+	def get_axes_requirements(self):
 		return [Struct()] # request a single subplot
 
-	def register_axes(self, axes):
+	def set_axes(self, axes):
 		self.axes = axes[0]
 
 	def setup(self):
@@ -105,9 +105,9 @@ class DoubleMultiTrend(MultiTrend):
 		self.secondarydata = secondarydata
 		super(DoubleMultiTrend, self).__init__(data, formatter)
 
-	def retarget(self, data, secondarydata=None):
+	def set_data(self, data, secondarydata=None):
 		self.secondarydata = secondarydata
-		super(DoubleMultiTrend, self).retarget(data)
+		super(DoubleMultiTrend, self).set_data(data)
 
 	def draw(self):
 		super(DoubleMultiTrend, self).draw()
@@ -132,10 +132,10 @@ class DoubleMultiTrend(MultiTrend):
 			self.secondaryaxes.legend_ = None
 		super(DoubleMultiTrend, self).set_legend(legend)
 
-	def axes_requirements(self):
+	def get_axes_requirements(self):
 		return [Struct(twinx=True)]
 
-	def register_axes(self, axes):
+	def set_axes(self, axes):
 		self.axes, self.secondaryaxes = axes[0]
 
 	def clear(self):

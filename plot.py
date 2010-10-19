@@ -42,7 +42,7 @@ class Plot(object):
 	def setup(self):
 		req = []
 		for p in self.subplots:
-			req.extend((p, r) for r in p.axes_requirements())
+			req.extend((p, r) for r in p.get_axes_requirements())
 		total = len(req)
 
 		ret = []
@@ -64,7 +64,7 @@ class Plot(object):
 			ret.append((p, axes))
 
 		for p, groups in itertools.groupby(ret, key=lambda x: x[0]):
-			p.register_axes(list(axes for (subplot, axes) in groups))
+			p.set_axes(list(axes for (subplot, axes) in groups))
 
 		for p in self.subplots:
 			p.setup()

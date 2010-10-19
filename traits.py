@@ -17,27 +17,27 @@ class Tab(HasTraits):
 	pass
 
 
-class Subgraph(Tab):
+class SubplotPanel(Tab):
 	filename = File
 	plot = Instance(subplots.Subplot)
-	redraw = Callable
+	update_canvas = Callable
 	autoscale = Callable
 	number = 0
 
 	def __init__(self, *args, **kwargs):
-		super(Subgraph, self).__init__(*args, **kwargs)
+		super(SubplotPanel, self).__init__(*args, **kwargs)
 		self.__class__.number += 1
 		if self.__class__.number != 1:
 			self.tablabel = '%s %d' % (self.tablabel, self.__class__.number)
 
-	def update(self):
+	def redraw(self):
 		self.plot.clear()
 		self.plot.draw()
 		self.autoscale()
-		self.redraw()
+		self.update_canvas()
 
 
-class CameraFrameSubgraph(Subgraph):
+class CameraFramePanel(SubplotPanel):
 	channel = Int(0)
 	channelcount = Int(0)
 	firstframe = Int(0)
@@ -52,7 +52,7 @@ class CameraFrameSubgraph(Subgraph):
 	tablabel = 'Camera'
 	
 	def __init__(self, *args, **kwargs):
-		super(CameraFrameSubgraph, self).__init__(*args, **kwargs)
+		super(CameraFramePanel, self).__init__(*args, **kwargs)
 		self.colormap = 'gist_heat'
 
 	def _plot_default(self):
@@ -62,11 +62,11 @@ class CameraFrameSubgraph(Subgraph):
 
 	def _colormap_changed(self):
 		self.plot.set_colormap(self.colormap)
-		self.redraw()
+		self.update_canvas()
 
 	def _interpolation_changed(self):
 		self.plot.set_interpolation(self.interpolation)
-		self.redraw()
+		self.update_canvas()
 
 	def _filename_changed(self):
 		self.data = datasources.Camera(self.filename)
@@ -85,8 +85,8 @@ class CameraFrameSubgraph(Subgraph):
 			data = data.apply_filter(filters.BGSubtractLineByLine)
 		if self.clip > 0:
 			data = data.apply_filter(filters.ClipStdDev(self.clip))
-		self.plot.retarget(data)
-		self.update()
+		self.plot.set_data(data)
+		self.redraw()
 
 	traits_view = View(Group(
 		Group(
@@ -113,7 +113,7 @@ class CameraFrameSubgraph(Subgraph):
 	))
 
 
-class TimeTrendSubgraph(Subgraph):
+class TimeTrendPanel(SubplotPanel):
 	legend = Bool(True)
 	ymin = Float
 	ymax = Float
@@ -127,24 +127,24 @@ class TimeTrendSubgraph(Subgraph):
 	def _filename_changed(self):
 		self.data = self.datafactory(self.filename)
 		self.channels = list(self.data.iterchannelnames())
-		self.settings_changed()
+		self.redraw()
 
-	@on_trait_change('selected_channels')
+	@on_trait_change('selected_primary_channels')
 	def settings_changed(self):
-		self.plot.retarget(self.data.selectchannels(lambda chan: chan.id in self.selected_primary_channels))
-		self.update()
+		self.plot.set_data(self.data.selectchannels(lambda chan: chan.id in self.selected_primary_channels))
+		self.redraw()
 
 	def _ymin_changed(self):
 		self.plot.axes.set_ylim(ymin=self.ymin)
-		self.redraw()
+		self.update_canvas()
 
 	def _ymax_changed(self):
 		self.plot.axes.set_ylim(ymax=self.ymax)
-		self.redraw()
+		self.update_canvas()
 
 	def _legend_changed(self):
 		self.plot.set_legend(self.legend)
-		self.redraw()
+		self.update_canvas()
 
 	left_yaxis_group = Group(
 		Item('channels', editor=ListStrEditor(editable=False, multi_select=True, selected='selected_primary_channels')),
@@ -167,26 +167,26 @@ class TimeTrendSubgraph(Subgraph):
 		))
 
 
-class DoubleTimeTrendSubgraph(TimeTrendSubgraph):
+class DoubleTimeTrendPanel(TimeTrendPanel):
 	selected_secondary_channels = List(Str)
 	ymin2 = Float
 	ymax2 = Float
 
 	def _ymin2_changed(self):
 		self.plot.secondaryaxes.set_ylim(ymin=self.ymin)
-		self.redraw()
+		self.update_canvas()
 
 	def _ymax2_changed(self):
 		self.plot.secondaryaxes.set_ylim(ymax=self.ymax)
-		self.redraw()
+		self.update_canvas()
 
 	@on_trait_change('selected_primary_channels, selected_secondary_channels')
 	def settings_changed(self):
-		self.plot.retarget(
+		self.plot.set_data(
 			self.data.selectchannels(lambda chan: chan.id in self.selected_primary_channels),
 			self.data.selectchannels(lambda chan: chan.id in self.selected_secondary_channels),
 		)
-		self.update()
+		self.redraw()
 
 	right_yaxis_group = Group(
 		Item('channels', editor=ListStrEditor(editable=False, multi_select=True, selected='selected_secondary_channels')),
@@ -210,7 +210,7 @@ class DoubleTimeTrendSubgraph(TimeTrendSubgraph):
 		))
 
 
-class CameraTrendSubgraph(DoubleTimeTrendSubgraph):
+class CameraTrendPanel(DoubleTimeTrendPanel):
 	tablabel = 'Camera Trend'
 	datafactory = datasources.Camera
 	plotfactory = subplots.DoubleMultiTrend
@@ -236,11 +236,11 @@ class CameraTrendSubgraph(DoubleTimeTrendSubgraph):
 		data = self.data.selectframes(self.firstframe, self.lastframe)
 		if self.average > 0:
 			data = data.apply_filter(filters.average(self.average))
-		self.plot.retarget(
+		self.plot.set_data(
 			data.selectchannels(lambda chan: chan.id in self.selected_primary_channels),
 			data.selectchannels(lambda chan: chan.id in self.selected_secondary_channels),
 		)
-		self.update()
+		self.redraw()
 
 	traits_view = View(Group(
 		Group(
@@ -258,14 +258,14 @@ class CameraTrendSubgraph(DoubleTimeTrendSubgraph):
 	))
 
 
-class QMSSubgraph(TimeTrendSubgraph):
+class QMSPanel(TimeTrendPanel):
 	tablabel = 'QMS'
 	datafactory = datasources.QMS
 	plotfactory = subplots.QMS
 	filter = 'Quadera ASCII files (*.asc)', '*.asc'
 
 
-class TPDirkSubgraph(DoubleTimeTrendSubgraph):
+class TPDirkPanel(DoubleTimeTrendPanel):
 	tablabel = 'TPDirk'
 	plotfactory = subplots.TPDirk
 	datafactory = datasources.TPDirk
@@ -298,7 +298,7 @@ class TPDirkSubgraph(DoubleTimeTrendSubgraph):
 		))
 
 
-class GasCabinetSubgraph(DoubleTimeTrendSubgraph):
+class GasCabinetPanel(DoubleTimeTrendPanel):
 	tablabel = 'Gas cabinet'
 	plotfactory = subplots.GasCabinet
 	datafactory = datasources.GasCabinet
@@ -312,11 +312,11 @@ class GeneralSettings(Tab):
 	tablabel = 'Main'
 
 	taboptions = (
-		CameraFrameSubgraph,
-		CameraTrendSubgraph,
-		QMSSubgraph,
-		GasCabinetSubgraph,
-		TPDirkSubgraph,
+		CameraFramePanel,
+		CameraTrendPanel,
+		QMSPanel,
+		GasCabinetPanel,
+		TPDirkPanel,
 	)
 	tabdict = dict((klass.tablabel, klass) for klass in taboptions)
 	tablabels = [klass.tablabel for klass in taboptions]
@@ -327,7 +327,7 @@ class GeneralSettings(Tab):
 	mainwindow = Any
 
 	def _add_fired(self):
-		self.mainwindow.add_tab(self.tabdict[self.subgraph_type](redraw=self.mainwindow.redraw_graph, autoscale=self.mainwindow.autoscale))
+		self.mainwindow.add_tab(self.tabdict[self.subgraph_type](update_canvas=self.mainwindow.update_canvas, autoscale=self.mainwindow.autoscale))
 
 	traits_view = View(Group(
 		Group(
@@ -362,15 +362,16 @@ class MainWindow(HasTraits):
 
 	tabs = List(Instance(Tab))
 
-	def redraw_graph(self):
-		#self.mainfig.reformat_xaxis()
+	def update_canvas(self):
 		wx.CallAfter(self.figure.canvas.draw)
 
 	def autoscale(self):
 		# NOTE: this is a workaround for matplotlib's internal autoscaling routines. 
 		# it imitates axes.autoscale_view(), but only takes the dataLim into account when
 		# there are actually some lines or images in the graph
-		axes = [tab.plot.axes for tab in self.tabs if isinstance(tab, Subgraph)]
+		axes = [tab.plot.axes for tab in self.tabs if isinstance(tab, SubplotPanel)]
+		if not axes:
+			return
 		for ax in axes:
 			ax.autoscale_view(scalex=False)
 
@@ -387,23 +388,26 @@ class MainWindow(HasTraits):
 		self.tabs.append(tab)
 
 	def _tabs_changed(self):
-		self.rebuild_figure()
+		self.redraw_figure()
 
 	def _tabs_items_changed(self, event):
-		#for removed in event.removed:
-		#	if not isinstance(removed, Subgraph):
-		#		FIXME: veto!
-		self.rebuild_figure()
+		#for removed in event.removed: FIXME doesn't work...
+		#	if isinstance(removed, GeneralSettings):
+		#		self.tabs = [removed] + self.tabs
+		#	elif isinstance(removed, PythonShell):
+		#		self.tabs = [self.tabs[0], removed] + self.tabs[1:]
+		self.redraw_figure()
 
 	def _tabs_default(self):
 		return [GeneralSettings(mainwindow=self), PythonShell()]
 
-	def rebuild_figure(self):
+	def redraw_figure(self):
 		self.mainfig.clear()
-		[self.mainfig.add_subplot(tab.plot) for tab in self.tabs if isinstance(tab, Subgraph)]
+		[self.mainfig.add_subplot(tab.plot) for tab in self.tabs if isinstance(tab, SubplotPanel)]
 		self.mainfig.setup()
-		[tab.update() for tab in self.tabs if isinstance(tab, Subgraph)]
-		self.redraw_graph()
+		self.mainfig.draw()
+		self.autoscale()
+		self.update_canvas()
 
 	def _mainfig_default(self):
 		figure = plot.Plot.newmatplotlibfigure()
