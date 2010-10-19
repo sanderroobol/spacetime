@@ -271,8 +271,10 @@ class TPDirkPanel(DoubleTimeTrendPanel):
 	datafactory = datasources.TPDirk
 	filter = 'Dirk\'s ASCII files (*.txt)', '*.txt'
 
-	selected_primary_channels = ['pressure']
-	selected_secondary_channels = ['temperature']
+	def _filename_changed(self):
+		self.data = self.datafactory(self.filename)
+		self.plot.set_data(self.data)
+		self.redraw()
 
 	def traits_view(self):
 		return View(Group(
