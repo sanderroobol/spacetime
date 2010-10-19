@@ -152,13 +152,15 @@ class ChainedImage(DataSource):
 
 # Camera class for image mode and trend mode
 class Camera(MultiTrend):
+	direction = raw.RawFileChannelInfo.LR
+
 	def __init__(self, *args, **kwargs):
 		super(Camera, self).__init__(*args, **kwargs)
 		self.rawfile = raw.RawFileReader(self.filename)
 
 	def getdata(self, channel, frame):
 		ret = Struct()
-		ret.image = self.rawfile.channelImage(frame, channel).asArray()
+		ret.image = self.rawfile.channelImage(frame, channel).asArray(direction=self.direction)
 		ysize, xsize = ret.image.shape
 
 		frameinfo = self.rawfile.frameInfo(frame)
@@ -172,7 +174,7 @@ class Camera(MultiTrend):
 		if frameiter is None:
 			frameiter = self.framenumberiter()
 		for frame in frameiter:
-			image = self.rawfile.channelImage(frame, channel).asArray()
+			image = self.rawfile.channelImage(frame, channel).asArray(direction=self.direction)
 
 			frameinfo = self.rawfile.frameInfo(frame)
 			tstart = mpdtfromtimestamp(frameinfo.acquisitionTime)

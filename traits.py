@@ -43,6 +43,7 @@ class CameraFramePanel(SubplotPanel):
 	firstframe = Int(0)
 	lastframe = Int(0)
 	framecount = Int(0)
+	direction = Enum(1, 2)
 	bgsubtract = Bool(True)
 	clip = Float(4.)
 	data = Instance(datasources.Camera)
@@ -75,6 +76,10 @@ class CameraFramePanel(SubplotPanel):
 		self.lastframe = min(self.framecount, 25)
 		self.settings_changed()
 
+	def _direction_changed(self):
+		self.data.direction = self.direction
+		self.redraw()
+
 	@on_trait_change('channel, bgsubtract, clip, firstframe, lastframe')
 	def settings_changed(self):
 		if not self.data:
@@ -94,6 +99,7 @@ class CameraFramePanel(SubplotPanel):
 			Item('channel', editor=RangeEditor(low=0, high_name='channelcount')),
 			Item('firstframe', label='First frame', editor=RangeEditor(low=0, high_name='framecount')),
 			Item('lastframe', label='Last frame', editor=RangeEditor(low=0, high_name='framecount')),
+			Item('direction', editor=EnumEditor(values={1:'1:L2R', 2:'2:R2L'})),
 			show_border=True,
 			label='General',
 		),
