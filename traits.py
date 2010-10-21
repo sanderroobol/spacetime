@@ -37,18 +37,28 @@ class SubplotPanel(Tab):
 		self.update_canvas()
 
 
-class CameraFramePanel(SubplotPanel):
-	channel = Int(0)
-	channelcount = Int(0)
+class CameraPanel(SubplotPanel):
+	data = Instance(datasources.Camera)
+
 	firstframe = Int(0)
 	lastframe = Int(0)
+	stepframe = Range(1, 1000000000)
 	framecount = Int(0)
 	direction = Enum(1, 2)
+
+	def _direction_changed(self):
+		self.data.direction = self.direction
+		self.redraw()
+
+
+class CameraFramePanel(CameraPanel):
+	channel = Int(0)
+	channelcount = Int(0)
 	bgsubtract = Bool(True)
 	clip = Float(4.)
-	data = Instance(datasources.Camera)
 	colormap = Enum(sorted((m for m in matplotlib.cm.datad if not m.endswith("_r")), key=string.lower))
 	interpolation = Enum('nearest', 'bilinear', 'bicubic')
+	zoom = Button
 
 	tablabel = 'Camera'
 	
@@ -76,20 +86,21 @@ class CameraFramePanel(SubplotPanel):
 		self.lastframe = min(self.framecount, 25)
 		self.settings_changed()
 
-	def _direction_changed(self):
-		self.data.direction = self.direction
-		self.redraw()
+	def _zoom_fired(self):
+		self.plot.axes.set_xlim(*self.plot.axes.dataLim.intervalx)
+		self.update_canvas()
 
-	@on_trait_change('channel, bgsubtract, clip, firstframe, lastframe')
+	@on_trait_change('channel, bgsubtract, clip, firstframe, lastframe, stepframe')
 	def settings_changed(self):
 		if not self.data:
 			return
 		# FIXME: implement a smarter first/last frame selection, don't redraw everything
-		data = self.data.selectchannel(self.channel).selectframes(self.firstframe, self.lastframe)
+		data = self.data.selectchannel(self.channel).selectframes(self.firstframe, self.lastframe, self.stepframe)
 		if self.bgsubtract:
 			data = data.apply_filter(filters.BGSubtractLineByLine)
 		if self.clip > 0:
 			data = data.apply_filter(filters.ClipStdDev(self.clip))
+		self.plot.tzoom = self.stepframe
 		self.plot.set_data(data)
 		self.redraw()
 
@@ -99,6 +110,7 @@ class CameraFramePanel(SubplotPanel):
 			Item('channel', editor=RangeEditor(low=0, high_name='channelcount')),
 			Item('firstframe', label='First frame', editor=RangeEditor(low=0, high_name='framecount')),
 			Item('lastframe', label='Last frame', editor=RangeEditor(low=0, high_name='framecount')),
+			Item('stepframe', label='Key frame mode'),
 			Item('direction', editor=EnumEditor(values={1:'1:L2R', 2:'2:R2L'})),
 			show_border=True,
 			label='General',
@@ -106,6 +118,7 @@ class CameraFramePanel(SubplotPanel):
 		Group(
 			Item('colormap'),
 			Item('interpolation', editor=EnumEditor(values={'nearest':'1:none', 'bilinear':'2:bilinear', 'bicubic':'3:bicubic'})),
+			Item('zoom', show_label=False, label='Zoom to fit'),
 			show_border=True,
 			label='Display',
 		),
@@ -121,14 +134,19 @@ class CameraFramePanel(SubplotPanel):
 
 class TimeTrendPanel(SubplotPanel):
 	legend = Bool(True)
-	ymin = Float
-	ymax = Float
+	ymin = Float(0.)
+	ymax = Float(1.)
 	channels = List(Str)
 	selected_primary_channels = List(Str)
 	data = Instance(datasources.DataSource)
 
 	def _plot_default(self):
-		return self.plotfactory()
+		plot = self.plotfactory()
+		plot.set_ylim_callback(self.ylim_callback)
+		return plot
+
+	def ylim_callback(self, ax):
+		self.ymin, self.ymax = ax.get_ylim()
 
 	def _filename_changed(self):
 		self.data = self.datafactory(self.filename)
@@ -141,12 +159,14 @@ class TimeTrendPanel(SubplotPanel):
 		self.redraw()
 
 	def _ymin_changed(self):
-		self.plot.axes.set_ylim(ymin=self.ymin)
-		self.update_canvas()
+		if self.plot.axes.get_ylim()[0] != self.ymin:
+			self.plot.axes.set_ylim(ymin=self.ymin)
+			self.update_canvas()
 
 	def _ymax_changed(self):
-		self.plot.axes.set_ylim(ymax=self.ymax)
-		self.update_canvas()
+		if self.plot.axes.get_ylim()[1] != self.ymax:
+			self.plot.axes.set_ylim(ymax=self.ymax)
+			self.update_canvas()
 
 	def _legend_changed(self):
 		self.plot.set_legend(self.legend)
@@ -175,16 +195,29 @@ class TimeTrendPanel(SubplotPanel):
 
 class DoubleTimeTrendPanel(TimeTrendPanel):
 	selected_secondary_channels = List(Str)
-	ymin2 = Float
-	ymax2 = Float
+	ymin2 = Float(0.)
+	ymax2 = Float(1.)
+
+	def _plot_default(self):
+		plot = self.plotfactory()
+		plot.set_ylim_callback(self.ylim_callback)
+		return plot
+
+	def ylim_callback(self, ax):
+		if ax is self.plot.axes:
+			self.ymin, self.ymax = ax.get_ylim()
+		elif ax is self.plot.secondaryaxes:
+			self.ymin2, self.ymax2 = ax.get_ylim()
 
 	def _ymin2_changed(self):
-		self.plot.secondaryaxes.set_ylim(ymin=self.ymin)
-		self.update_canvas()
+		if self.plot.secondaryaxes.get_ylim()[0] != self.ymin2:
+			self.plot.secondaryaxes.set_ylim(ymin=self.ymin2)
+			self.update_canvas()
 
 	def _ymax2_changed(self):
-		self.plot.secondaryaxes.set_ylim(ymax=self.ymax)
-		self.update_canvas()
+		if self.plot.secondaryaxes.get_ylim()[1] != self.ymax2:
+			self.plot.secondaryaxes.set_ylim(ymax=self.ymax2)
+			self.update_canvas()
 
 	@on_trait_change('selected_primary_channels, selected_secondary_channels')
 	def settings_changed(self):
@@ -216,14 +249,11 @@ class DoubleTimeTrendPanel(TimeTrendPanel):
 		))
 
 
-class CameraTrendPanel(DoubleTimeTrendPanel):
+class CameraTrendPanel(DoubleTimeTrendPanel, CameraPanel):
 	tablabel = 'Camera Trend'
-	datafactory = datasources.Camera
 	plotfactory = subplots.DoubleMultiTrend
 	filter = 'Camera RAW files (*.raw)', '*.raw'
 
-	firstframe = Int(0)
-	lastframe = Int(0)
 	framecount = Int(0)
 	average = Int(100)
 
@@ -234,12 +264,12 @@ class CameraTrendPanel(DoubleTimeTrendPanel):
 		self.lastframe = min(self.framecount, 25)
 		self.settings_changed()
 
-	@on_trait_change('average, firstframe, lastframe, selected_primary_channels, selected_secondary_channels')
+	@on_trait_change('average, firstframe, lastframe, stepframe, selected_primary_channels, selected_secondary_channels')
 	def settings_changed(self):
 		if not self.data:
 			return
 		# FIXME: implement a smarter first/last frame selection, don't redraw everything
-		data = self.data.selectframes(self.firstframe, self.lastframe)
+		data = self.data.selectframes(self.firstframe, self.lastframe, self.stepframe)
 		if self.average > 0:
 			data = data.apply_filter(filters.average(self.average))
 		self.plot.set_data(
@@ -253,6 +283,8 @@ class CameraTrendPanel(DoubleTimeTrendPanel):
 			Item('filename', editor=FileEditor(filter=['Camera RAW files (*.raw)', '*.raw', 'All files', '*'], entries=0)),
 			Item('firstframe', label='First frame', editor=RangeEditor(low=0, high_name='framecount')),
 			Item('lastframe', label='Last frame', editor=RangeEditor(low=0, high_name='framecount')),
+			Item('stepframe', label='Key frame mode'),
+			Item('direction', editor=EnumEditor(values={1:'1:L2R', 2:'2:R2L'})), # FIXME: for trends, it should be possible to show both!
 			Item('average', tooltip='N-point averaging'),
 			Item('legend'),
 			show_border=True,
@@ -294,13 +326,13 @@ class TPDirkPanel(DoubleTimeTrendPanel):
 				Item('ymin'),
 				Item('ymax'),
 				show_border=True,
-				label='Right y-axis'
+				label='Left y-axis'
 			),
 			Group(
 				Item('ymin2', label='Ymin'),
 				Item('ymax2', label='Ymax'),
 				show_border=True,
-				label='Left y-axis'
+				label='Right y-axis'
 			),
 			layout='normal',
 		))
@@ -313,10 +345,16 @@ class GasCabinetPanel(DoubleTimeTrendPanel):
 	filter = 'ASCII text files (*.txt)', '*.txt',
 
 
-class GeneralSettings(Tab):
+class MainTab(Tab):
 	xmin = Float
 	xmax = Float
-	dateformat = Enum('HH:MM:SS', 'HH:MM', 'MM:SS', 'MonthDD HH:MM:SS', 'YY-MM-DD HH:MM:SS')
+	dateformats = (
+		('YY-MM-DD HH:MM:SS', '%y-%m-%d %H:%M:%S'),
+		('HH:MM:SS', '%H:%M:%S'),
+		('HH:MM', '%H:%M'),
+		('MM:SS', '%M:%S'),
+	)
+	dateformat = Enum(*[i[1] for i in dateformats])
 	tablabel = 'Main'
 
 	taboptions = (
@@ -334,12 +372,21 @@ class GeneralSettings(Tab):
 
 	mainwindow = Any
 
+	def __init__(self, *args, **kwargs):
+		super(MainTab, self).__init__(*args, **kwargs)
+		self.dateformat = '%H:%M:%S'
+
 	def _add_fired(self):
 		self.mainwindow.add_tab(self.tabdict[self.subgraph_type](update_canvas=self.mainwindow.update_canvas, autoscale=self.mainwindow.autoscale))
 
+	def _dateformat_changed(self):
+		self.mainwindow.plot.dateformat = self.dateformat
+		self.mainwindow.plot.setup_xaxis_labels()
+		self.mainwindow.update_canvas()
+
 	traits_view = View(Group(
 		Group(
-			Item('dateformat'),
+			Item('dateformat', editor=EnumEditor(values=dict((b, '%d:%s' % (i, a)) for (i, (a, b)) in enumerate(dateformats)))),
 			Item('xmin'),
 			Item('xmax'),
 			label='Graph settings',
@@ -355,7 +402,7 @@ class GeneralSettings(Tab):
 	))
 
 
-class PythonShell(Tab):
+class PythonTab(Tab):
 	shell = PythonValue({})
 	traits_view = View(
 		Item('shell', show_label=False, editor=ShellEditor(share=False))
@@ -365,10 +412,14 @@ class PythonShell(Tab):
 
 
 class MainWindow(HasTraits):
-	mainfig = Instance(plot.Plot)
+	plot = Instance(plot.Plot)
 	figure = Instance(matplotlib.figure.Figure)
 
 	tabs = List(Instance(Tab))
+
+	def on_figure_resize(self, event):
+		self.plot.setup_margins()
+		self.update_canvas()
 
 	def update_canvas(self):
 		wx.CallAfter(self.figure.canvas.draw)
@@ -400,30 +451,32 @@ class MainWindow(HasTraits):
 
 	def _tabs_items_changed(self, event):
 		#for removed in event.removed: FIXME doesn't work...
-		#	if isinstance(removed, GeneralSettings):
+		#	if isinstance(removed, MainTab):
 		#		self.tabs = [removed] + self.tabs
 		#	elif isinstance(removed, PythonShell):
 		#		self.tabs = [self.tabs[0], removed] + self.tabs[1:]
 		self.redraw_figure()
 
 	def _tabs_default(self):
-		return [GeneralSettings(mainwindow=self), PythonShell()]
+		return [MainTab(mainwindow=self), PythonTab()]
 
 	def redraw_figure(self):
-		self.mainfig.clear()
-		[self.mainfig.add_subplot(tab.plot) for tab in self.tabs if isinstance(tab, SubplotPanel)]
-		self.mainfig.setup()
-		self.mainfig.draw()
+		self.plot.clear()
+		[self.plot.add_subplot(tab.plot) for tab in self.tabs if isinstance(tab, SubplotPanel)]
+		self.plot.setup()
+		self.plot.draw()
 		self.autoscale()
 		self.update_canvas()
 
-	def _mainfig_default(self):
-		figure = plot.Plot.newmatplotlibfigure()
-		figure.setup()
-		return figure
+	def _plot_default(self):
+		p = plot.Plot.newmatplotlibfigure()
+		p.setup()
+		# At this moment, p.figure.canvas has not yet been initialized, so delay this call
+		wx.CallAfter(lambda: p.figure.canvas.mpl_connect('resize_event', self.on_figure_resize))
+		return p
 
 	def _figure_default(self):
-		return self.mainfig.figure
+		return self.plot.figure
 
 	traits_view = View(
 			HSplit(

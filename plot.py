@@ -2,24 +2,29 @@ import itertools
 import matplotlib, matplotlib.figure
 
 class Plot(object):
-	def __init__(self):
-		self.subplots = []
+	dateformat = '%H:%M:%S'
 
-	@classmethod
-	def fromfigure(klass, figure):
-		plot = klass()
-		plot.figure = figure
-		plot.figsetup()
-		return plot
+	left = .75
+	right = .75
+	top = .2
+	bottom = None # see setup_xaxis_labels()
+	hspace = .2
+	wspace = .2
+
+	def __init__(self, figure):
+		self.figure = figure
+		self.subplots = []
 
 	@classmethod
 	def newpyplotfigure(klass, size=(14,8)):
 		import matplotlib.pyplot
-		return klass.fromfigure(matplotlib.pyplot.figure(figsize=size))
+		plot = klass(matplotlib.pyplot.figure(figsize=size))
+		plot.figure.canvas.mpl_connect('resize_event', plot.setup_margins)
+		return plot
 
 	@classmethod
 	def newmatplotlibfigure(klass):
-		return klass.fromfigure(matplotlib.figure.Figure())
+		return klass(matplotlib.figure.Figure())
 
 	@classmethod
 	def autopylab(klass, *subplots, **kwargs):
@@ -40,6 +45,7 @@ class Plot(object):
 		self.subplots.append(subplot)
 
 	def setup(self):
+
 		req = []
 		for p in self.subplots:
 			req.extend((p, r) for r in p.get_axes_requirements())
@@ -55,11 +61,11 @@ class Plot(object):
 			if i == 0: # first
 				top = axes
 
-			self.general_axes_setup(axes, i+1 != total)
+			self.setup_xaxis_labels(axes)
 
 			if r.twinx:
 				axes = (axes, axes.twinx())
-				self.general_axes_setup(axes[1], i+1 != total)
+				self.setup_xaxis_labels(axes[1])
 			
 			ret.append((p, axes))
 
@@ -69,34 +75,47 @@ class Plot(object):
 		for p in self.subplots:
 			p.setup()
 
-	@staticmethod
-	def general_axes_setup(axes, hide_xticklabels=False):
-		axes.xaxis_date()
-		axes.xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%H:%M:%S'))
-		if hide_xticklabels:
-			for label in axes.get_xticklabels():
-				label.set_visible(False)
-		
 	def draw(self):
 		for p in self.subplots:
 			p.draw()
 
-	def figsetup(self, size=(14,8), legend=0):
+	def setup_margins(self, event=None):
 		width, height = self.figure.get_size_inches()
 
 		def wabs2rel(x): return x / width
 		def habs2rel(x): return x / height
-
-		lrborder = .75
-		tbborder = .45
-		hspace = .2
-		wspace = .2
-		
+	
 		self.figure.subplots_adjust(
-				left=wabs2rel(lrborder),
-				right=1-wabs2rel(lrborder + legend),
-				top=1-habs2rel(tbborder),
-				bottom=habs2rel(tbborder),
-				hspace=habs2rel(hspace),
-				wspace=wabs2rel(wspace),
+				left   = wabs2rel(self.left),
+				right  = 1-wabs2rel(self.right),
+				top    = 1-habs2rel(self.top),
+				bottom = habs2rel(self.bottom),
+				hspace = habs2rel(self.hspace) * len(self.subplots),
+				wspace = wabs2rel(self.wspace),
 		)
+
+	def setup_xaxis_labels(self, axes=None):
+		if axes is None:
+			if not self.subplots:
+				return
+			axes = self.subplots[-1].axes
+
+		axes.xaxis_date()
+	
+		if hasattr(axes, 'is_last_row') and axes.is_last_row():
+			for label in axes.get_xticklabels():
+				label.set_ha('right')
+				label.set_rotation(30)
+
+			if len(self.dateformat) > 10:
+				self.bottom = 1.
+			else:
+				self.bottom = .75
+			axes.xaxis.set_major_formatter(matplotlib.dates.DateFormatter(self.dateformat))
+
+			self.setup_margins()
+		else:
+			for label in axes.get_xticklabels():
+				label.set_visible(False)
+
+

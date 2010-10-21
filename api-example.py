@@ -9,7 +9,7 @@ import plot
 if __name__ == '__main__':
 	gcdata = datasources.GasCabinet('../../20101001 CO oxidation/copy of 20101001 gas cabinet data.txt')
 
-	plot.Plot.autopylab(
+	p = plot.Plot.autopylab(
 
 		subplots.Image(datasources.ChainedImage(
 				#datasources.Camera('../20101001 CO oxidation/101001_PdNPAl2O3_35nm_Vacuum_tip100930.raw').selectchannel(0),

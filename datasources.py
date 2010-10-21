@@ -193,8 +193,8 @@ class Camera(MultiTrend):
 	def selectchannel(self, channel):
 		return CameraChannel(self, channel)
 	
-	def selectframes(self, firstframe, lastframe):
-		return CameraSelectedFrames(self, firstframe, lastframe)
+	def selectframes(self, *args, **kwargs):
+		return CameraSelectedFrames(self, *args, **kwargs)
 
 	def framenumberiter(self):
 		return xrange(self.getframecount())
@@ -208,16 +208,17 @@ class Camera(MultiTrend):
 
 # image mode and trend mode
 class CameraSelectedFrames(MultiTrend):
-	def __init__(self, cameradata, firstframe, lastframe):
+	def __init__(self, cameradata, firstframe, lastframe, step=1):
 		self.cameradata = cameradata
 		self.firstframe = firstframe
 		self.lastframe = lastframe
+		self.step = step
 
 	def framenumberiter(self):
-		return xrange(max(0, self.firstframe), min(self.lastframe+1, self.cameradata.getframecount()))
+		return xrange(max(0, self.firstframe), min(self.lastframe+1, self.cameradata.getframecount()), self.step)
 
-	def selectframes(self, firstframe, lastframe):
-		return self.cameradata.selectframes(firstframe, lastframe)
+	def selectframes(self, *args, **kwargs):
+		return self.cameradata.selectframes(*args, **kwargs)
 
 	def selectchannel(self, channel):
 		return CameraChannel(self, channel)
@@ -238,8 +239,8 @@ class CameraChannel(DataSource):
 		self.cameradata = cameradata
 		self.channel = channel
 
-	def selectframes(self, firstframe, lastframe):
-		return self.cameradata.selectframes(firstframe, lastframe).selectchannel(self.channel)
+	def selectframes(self, *args, **kwargs):
+		return self.cameradata.selectframes(*args, **kwargs).selectchannel(self.channel)
 
 	def iterframes(self):
 		for i in self.cameradata.framenumberiter():

@@ -8,6 +8,7 @@ from util import *
 
 class Subplot(object):
 	axes = None
+	ylim_callback = None
 
 	def __init__(self, data=None):
 		self.data = data
@@ -22,13 +23,17 @@ class Subplot(object):
 		self.axes = axes[0]
 
 	def setup(self):
-		pass
+		if self.ylim_callback:
+			self.axes.callbacks.connect('ylim_changed', self.ylim_callback)
 
 	def draw(self):
 		raise NotImplementedError
 
 	def clear(self):
 		pass
+
+	def set_ylim_callback(self, func):
+		self.ylim_callback = func
 
 
 class MultiTrendFormatter(object):
@@ -109,6 +114,11 @@ class DoubleMultiTrend(MultiTrend):
 		self.secondarydata = secondarydata
 		super(DoubleMultiTrend, self).set_data(data)
 
+	def setup(self):
+		super(DoubleMultiTrend, self).setup()
+		if self.ylim_callback:
+			self.secondaryaxes.callbacks.connect('ylim_changed', self.ylim_callback)
+
 	def draw(self):
 		super(DoubleMultiTrend, self).draw()
 		if self.secondarydata:
@@ -147,6 +157,7 @@ class DoubleMultiTrend(MultiTrend):
 
 class QMS(MultiTrend):
 	def setup(self):
+		super(QMS, self).setup()
 		self.axes.set_ylabel('Ion current (A)')
 		self.axes.set_yscale('log')
 
@@ -166,6 +177,7 @@ class TPDirk(DoubleMultiTrend):
 			self.secondarydata = None
 
 	def setup(self):
+		super(TPDirk, self).setup()
 		self.axes.set_ylabel('Pressure (mbar)')
 		self.axes.set_yscale('log')
 		self.secondaryaxes.set_ylabel('Temperature (K)')
@@ -198,8 +210,10 @@ class GasCabinet(DoubleMultiTrend):
 class Image(Subplot):
 	colormap = 'gist_heat'
 	interpolation = 'nearest'
+	tzoom = 1
 
 	def setup(self):
+		super(Image, self).setup()
 		self.axes.set_yticks([])
 	
 	def draw(self):
@@ -210,8 +224,9 @@ class Image(Subplot):
 			# map the linenunumber to the time axis and the individual points to some arbitrary unit axis
 			# transpose the image data to plot scanlines vertical
 			ysize, xsize = d.image.shape
-			self.axes.imshow(d.image.T, extent=(d.tstart, d.tend, 0, ysize+1), aspect='auto', cmap=self.colormap, interpolation=self.interpolation)
-			self.axes.add_patch(matplotlib.patches.Rectangle((d.tstart, 0), d.tend-d.tstart, ysize+1, linewidth=1, edgecolor='black', fill=False))
+			tendzoom = d.tstart + (d.tend - d.tstart) * self.tzoom
+			self.axes.imshow(d.image.T, extent=(d.tstart, tendzoom, 0, ysize+1), aspect='auto', cmap=self.colormap, interpolation=self.interpolation)
+			self.axes.add_patch(matplotlib.patches.Rectangle((d.tstart, 0), tendzoom-d.tstart, ysize+1, linewidth=1, edgecolor='black', fill=False))
 
 			# indicate beginning and end of frames
 			#self.axes.axvline(d.tstart, color='g', zorder=0)
