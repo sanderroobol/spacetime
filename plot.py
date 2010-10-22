@@ -77,7 +77,8 @@ class Plot(object):
 			p.setup()
 
 		if self.subplots:
-			self.xaxes = self.subplots[-1].axes
+			axes = self.subplots[-1].axes
+			self.xaxes = axes
 			if self.xlim_callback:
 				axes.callbacks.connect('xlim_changed', self.xlim_callback)
 
