@@ -48,11 +48,11 @@ class QMS(MultiTrend):
 
 	@staticmethod
 	def parseDT(s):
-		return mpdtfromdatetime(datetime.datetime.strptime(s, '%m/%d/%Y %I:%M:%S %p'))
+		return mpldtfromdatetime(datetime.datetime.strptime(s, '%m/%d/%Y %I:%M:%S %p'))
 
 	@staticmethod
 	def parseExtDT(s):
-		return mpdtfromdatetime(datetime.datetime.strptime(s, '%m/%d/%Y %I:%M:%S.%f %p'))
+		return mpldtfromdatetime(datetime.datetime.strptime(s, '%m/%d/%Y %I:%M:%S.%f %p'))
 
 	@staticmethod
 	def parseLine(line):
@@ -102,7 +102,7 @@ class GasCabinet(MultiTrend):
         # modified such that date information is stored INSIDE the file
 		import re
 		y, m, d = re.search('(20[0-9]{2})([0-9]{2})([0-9]{2})', self.filename).groups()
- 		self.offset = mpdtfromdatetime(datetime.datetime(int(y), int(m), int(d)))
+ 		self.offset = mpldtfromdatetime(datetime.datetime(int(y), int(m), int(d)))
 
 		columns = self.data.shape[1]
 		assert (columns - 2)  % 4 == 0
@@ -125,7 +125,7 @@ class TPDirk(MultiTrend):
 				continue
 			no, dt, pressure, temperature = data
 			yield numpy.array((
-				mpdtfromdatetime(datetime.datetime.strptime(dt, '%y/%m/%d %H:%M:%S')),
+				mpldtfromdatetime(datetime.datetime.strptime(dt, '%y/%m/%d %H:%M:%S')),
 				float(pressure),
 				float(temperature)
 			))
@@ -164,7 +164,7 @@ class Camera(MultiTrend):
 		ysize, xsize = ret.image.shape
 
 		frameinfo = self.rawfile.frameInfo(frame)
-		ret.tstart = mpdtfromtimestamp(frameinfo.acquisitionTime)
+		ret.tstart = mpldtfromtimestamp(frameinfo.acquisitionTime)
 		ret.tend = ret.tstart + (xsize*ysize / frameinfo.pixelclock_kHz / 1000 * 2) / 86400
 		return ret
 
@@ -177,7 +177,7 @@ class Camera(MultiTrend):
 			image = self.rawfile.channelImage(frame, channel).asArray(direction=self.direction)
 
 			frameinfo = self.rawfile.frameInfo(frame)
-			tstart = mpdtfromtimestamp(frameinfo.acquisitionTime)
+			tstart = mpldtfromtimestamp(frameinfo.acquisitionTime)
 			tend = tstart + (image.size / frameinfo.pixelclock_kHz / 1000 * 2) / 86400
 
 			data.append(image.flatten())

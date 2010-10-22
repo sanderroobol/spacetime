@@ -5,12 +5,14 @@ import subplots
 import datasources
 import filters
 import plot
+import util
 
 from enthought.traits.api import *
 from enthought.traits.ui.api import *
 import matplotlib.figure, matplotlib.transforms, matplotlib.cm
 import string
 import wx
+import datetime
 
 
 class Tab(HasTraits):
@@ -345,16 +347,36 @@ class GasCabinetPanel(DoubleTimeTrendPanel):
 	filter = 'ASCII text files (*.txt)', '*.txt',
 
 
+class DateTimeSelector(HasTraits):
+	date = Date(datetime.date.today())
+	time = Time(datetime.time())
+	datetime = Property(depends_on='date, time')
+	mpldt = Property(depends_on='datetime')
+
+	def _get_datetime(self):
+		return datetime.datetime.combine(self.date, self.time)
+
+	def _set_datetime(self, dt):
+		self.date = dt.date()
+		self.time = dt.time()
+
+	def _get_mpldt(self):
+		return util.mpldtfromdatetime(self.datetime)
+
+	def _set_mpldt(self, f):
+		self.datetime = util.datetimefrommpldt(f)
+
+	traits_view = View(
+		HGroup(
+			Item('time', editor=TimeEditor(strftime='%H:%M:%D')),
+			Item('date'),
+			show_labels=False,
+	))
+
+
 class MainTab(Tab):
-	xmin = Float
-	xmax = Float
-	dateformats = (
-		('YY-MM-DD HH:MM:SS', '%y-%m-%d %H:%M:%S'),
-		('HH:MM:SS', '%H:%M:%S'),
-		('HH:MM', '%H:%M'),
-		('MM:SS', '%M:%S'),
-	)
-	dateformat = Enum(*[i[1] for i in dateformats])
+	xmin = Instance(DateTimeSelector, args=())
+	xmax = Instance(DateTimeSelector, args=())
 	tablabel = 'Main'
 
 	taboptions = (
@@ -368,27 +390,32 @@ class MainTab(Tab):
 	tablabels = [klass.tablabel for klass in taboptions]
 
 	add = Button()
-	subgraph_type =  Enum(*tablabels)
+	subgraph_type = Enum(*tablabels)
 
 	mainwindow = Any
 
-	def __init__(self, *args, **kwargs):
-		super(MainTab, self).__init__(*args, **kwargs)
-		self.dateformat = '%H:%M:%S'
-
 	def _add_fired(self):
 		self.mainwindow.add_tab(self.tabdict[self.subgraph_type](update_canvas=self.mainwindow.update_canvas, autoscale=self.mainwindow.autoscale))
+	
+	def xlim_callback(self, ax):
+		self.xmin.mpldt, self.xmax.mpldt = ax.get_xlim()
 
-	def _dateformat_changed(self):
-		self.mainwindow.plot.dateformat = self.dateformat
-		self.mainwindow.plot.setup_xaxis_labels()
-		self.mainwindow.update_canvas()
+	@on_trait_change('xmin.mpldt')
+	def _xmin_mpldt_changed(self):
+		if self.mainwindow.plot.xaxes.get_xlim()[0] != self.xmin.mpldt:
+			self.mainwindow.plot.xaxes.set_xlim(xmin=self.xmin.mpldt)
+			self.mainwindow.update_canvas()
+
+	@on_trait_change('xmax.mpldt')
+	def _xmax_mpldt_changed(self):
+		if self.mainwindow.plot.xaxes.get_xlim()[1] != self.xmax.mpldt:
+			self.mainwindow.plot.xaxes.set_xlim(xmax=self.xmax.mpldt)
+			self.mainwindow.update_canvas()
 
 	traits_view = View(Group(
 		Group(
-			Item('dateformat', editor=EnumEditor(values=dict((b, '%d:%s' % (i, a)) for (i, (a, b)) in enumerate(dateformats)))),
-			Item('xmin'),
-			Item('xmax'),
+			Item('xmin', style='custom'),
+			Item('xmax', style='custom'),
 			label='Graph settings',
 			show_border=True,
 		),
@@ -414,6 +441,7 @@ class PythonTab(Tab):
 class MainWindow(HasTraits):
 	plot = Instance(plot.Plot)
 	figure = Instance(matplotlib.figure.Figure)
+	maintab = Instance(MainTab)
 
 	tabs = List(Instance(Tab))
 
@@ -446,6 +474,9 @@ class MainWindow(HasTraits):
 	def add_tab(self, tab):
 		self.tabs.append(tab)
 
+	def _maintab_default(self):
+		return MainTab(mainwindow=self)
+
 	def _tabs_changed(self):
 		self.redraw_figure()
 
@@ -458,7 +489,7 @@ class MainWindow(HasTraits):
 		self.redraw_figure()
 
 	def _tabs_default(self):
-		return [MainTab(mainwindow=self), PythonTab()]
+		return [self.maintab, PythonTab()]
 
 	def redraw_figure(self):
 		self.plot.clear()
@@ -473,6 +504,7 @@ class MainWindow(HasTraits):
 		p.setup()
 		# At this moment, p.figure.canvas has not yet been initialized, so delay this call
 		wx.CallAfter(lambda: p.figure.canvas.mpl_connect('resize_event', self.on_figure_resize))
+		wx.CallAfter(lambda: p.set_xlim_callback(self.maintab.xlim_callback))
 		return p
 
 	def _figure_default(self):

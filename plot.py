@@ -2,14 +2,15 @@ import itertools
 import matplotlib, matplotlib.figure
 
 class Plot(object):
-	dateformat = '%H:%M:%S'
-
 	left = .75
 	right = .75
 	top = .2
-	bottom = None # see setup_xaxis_labels()
+	bottom = .75
 	hspace = .2
 	wspace = .2
+
+	xlim_callback = None
+	xaxes = None
 
 	def __init__(self, figure):
 		self.figure = figure
@@ -75,6 +76,11 @@ class Plot(object):
 		for p in self.subplots:
 			p.setup()
 
+		if self.subplots:
+			self.xaxes = self.subplots[-1].axes
+			if self.xlim_callback:
+				axes.callbacks.connect('xlim_changed', self.xlim_callback)
+
 	def draw(self):
 		for p in self.subplots:
 			p.draw()
@@ -94,12 +100,7 @@ class Plot(object):
 				wspace = wabs2rel(self.wspace),
 		)
 
-	def setup_xaxis_labels(self, axes=None):
-		if axes is None:
-			if not self.subplots:
-				return
-			axes = self.subplots[-1].axes
-
+	def setup_xaxis_labels(self, axes):
 		axes.xaxis_date()
 	
 		if hasattr(axes, 'is_last_row') and axes.is_last_row():
@@ -107,15 +108,10 @@ class Plot(object):
 				label.set_ha('right')
 				label.set_rotation(30)
 
-			if len(self.dateformat) > 10:
-				self.bottom = 1.
-			else:
-				self.bottom = .75
-			axes.xaxis.set_major_formatter(matplotlib.dates.DateFormatter(self.dateformat))
-
 			self.setup_margins()
 		else:
 			for label in axes.get_xticklabels():
 				label.set_visible(False)
 
-
+	def set_xlim_callback(self, func):
+		self.xlim_callback = func
