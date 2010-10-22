@@ -59,21 +59,21 @@ class MainTab(panels.Tab):
 	mainwindow = Any
 
 	def _add_fired(self):
-		self.mainwindow.add_tab(self.tabdict[self.subgraph_type](update_canvas=self.mainwindow.update_canvas, autoscale=self.mainwindow.autoscale))
+		self.mainwindow.add_tab(self.tabdict[self.subgraph_type](update_canvas=self.mainwindow.update_canvas, autoscale=self.mainwindow.plot.autoscale, redraw_figure=self.mainwindow.redraw_figure))
 	
 	def xlim_callback(self, ax):
 		self.xmin.mpldt, self.xmax.mpldt = ax.get_xlim()
 
 	@on_trait_change('xmin.mpldt')
 	def _xmin_mpldt_changed(self):
-		if self.mainwindow.plot.xaxes.get_xlim()[0] != self.xmin.mpldt:
-			self.mainwindow.plot.xaxes.set_xlim(xmin=self.xmin.mpldt)
+		if self.mainwindow.plot.master_axes.get_xlim()[0] != self.xmin.mpldt:
+			self.mainwindow.plot.master_axes.set_xlim(xmin=self.xmin.mpldt)
 			self.mainwindow.update_canvas()
 
 	@on_trait_change('xmax.mpldt')
 	def _xmax_mpldt_changed(self):
-		if self.mainwindow.plot.xaxes.get_xlim()[1] != self.xmax.mpldt:
-			self.mainwindow.plot.xaxes.set_xlim(xmax=self.xmax.mpldt)
+		if self.mainwindow.plot.master_axes.get_xlim()[1] != self.xmax.mpldt:
+			self.mainwindow.plot.master_axes.set_xlim(xmax=self.xmax.mpldt)
 			self.mainwindow.update_canvas()
 
 	traits_view = View(Group(
@@ -116,23 +116,6 @@ class App(HasTraits):
 	def update_canvas(self):
 		wx.CallAfter(self.figure.canvas.draw)
 
-	def autoscale(self):
-		# NOTE: this is a workaround for matplotlib's internal autoscaling routines. 
-		# it imitates axes.autoscale_view(), but only takes the dataLim into account when
-		# there are actually some lines or images in the graph
-		axes = [tab.plot.axes for tab in self.tabs if isinstance(tab, panels.SubplotPanel)]
-		if not axes:
-			return
-		for ax in axes:
-			ax.autoscale_view(scalex=False)
-
-		dl = [ax.dataLim for ax in axes if ax.lines or ax.images]
-		if dl:
-			bb = matplotlib.transforms.BboxBase.union(dl)
-			x0, x1 = bb.intervalx
-			XL = axes[0].xaxis.get_major_locator().view_limits(x0, x1)
-			axes[0].set_xbound(XL)
-
 	def add_tab(self, tab):
 		self.tabs.append(tab)
 
@@ -158,7 +141,7 @@ class App(HasTraits):
 		[self.plot.add_subplot(tab.plot) for tab in self.tabs if isinstance(tab, panels.SubplotPanel)]
 		self.plot.setup()
 		self.plot.draw()
-		self.autoscale()
+		self.plot.autoscale()
 		self.update_canvas()
 
 	def _plot_default(self):

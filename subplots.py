@@ -29,7 +29,10 @@ class Subplot(object):
 	def draw(self):
 		raise NotImplementedError
 
-	def clear(self):
+	def clear(self, quick=False):
+		# The quick parameter is set when the entire figure is being cleared;
+		# in this case it is sufficient to only clear the internal state of the
+		# Subplot and leave the axes untouched
 		pass
 
 	def set_ylim_callback(self, func):
@@ -88,7 +91,9 @@ class MultiTrend(Subplot):
 			self.axes.plot(d.time, d.value, self.formatter(d), label=d.id)
 		self.draw_legend()
 
-	def clear(self):
+	def clear(self, quick=False):
+		if quick:
+			return
 		if self.axes:
 			del self.axes.lines[:]
 		self.axes.relim()
@@ -148,7 +153,9 @@ class DoubleMultiTrend(MultiTrend):
 	def set_axes(self, axes):
 		self.axes, self.secondaryaxes = axes[0]
 
-	def clear(self):
+	def clear(self, quick=False):
+		if quick:
+			return
 		if self.secondaryaxes:
 			del self.secondaryaxes.lines[:]
 		self.secondaryaxes.relim()
@@ -211,10 +218,23 @@ class Image(Subplot):
 	colormap = 'gist_heat'
 	interpolation = 'nearest'
 	tzoom = 1
+	mode = 'film strip'
+
+	def __init__(self, *args, **kwargs):
+		self.vspans = []
+		super(Image, self).__init__(*args, **kwargs)
+
+	def get_axes_requirements(self):
+		if self.mode == 'single frame':
+			return [Struct(independent_x = True)]
+		else:
+			return [Struct()]
 
 	def setup(self):
 		super(Image, self).setup()
 		self.axes.set_yticks([])
+		if self.mode == 'single frame':
+			self.axes.set_xticks([])
 	
 	def draw(self):
 		if not self.data:
@@ -224,24 +244,32 @@ class Image(Subplot):
 			# map the linenunumber to the time axis and the individual points to some arbitrary unit axis
 			# transpose the image data to plot scanlines vertical
 			ysize, xsize = d.image.shape
-			tendzoom = d.tstart + (d.tend - d.tstart) * self.tzoom
-			self.axes.imshow(d.image.T, extent=(d.tstart, tendzoom, 0, ysize+1), aspect='auto', cmap=self.colormap, interpolation=self.interpolation)
-			self.axes.add_patch(matplotlib.patches.Rectangle((d.tstart, 0), tendzoom-d.tstart, ysize+1, linewidth=1, edgecolor='black', fill=False))
 
-			# indicate beginning and end of frames
-			#self.axes.axvline(d.tstart, color='g', zorder=0)
-			#self.axes.axvline(d.tend, color='r', zorder=0)
+			# FIXME: images are TRANSPOSED, should they be rotated instead?
+			if self.mode == 'single frame':
+				self.axes.imshow(d.image.T, aspect='equal', cmap=self.colormap, interpolation=self.interpolation)
 
+				for axes in self.parent.shared_axes:
+					self.vspans.append((axes, axes.axvspan(d.tstart, d.tend, color='silver', zorder=-1e9)))
+			else:
+				tendzoom = d.tstart + (d.tend - d.tstart) * self.tzoom
+				self.axes.imshow(d.image.T, extent=(d.tstart, tendzoom, 0, ysize+1), aspect='auto', cmap=self.colormap, interpolation=self.interpolation)
+				self.axes.add_patch(matplotlib.patches.Rectangle((d.tstart, 0), tendzoom-d.tstart, ysize+1, linewidth=1, edgecolor='black', fill=False))
+	
 		# imshow() changes the axes xlim/ylim, so go back to something sensible
 		self.axes.autoscale_view()
 		# NOTE: IMHO the better solution is to change
 		# matplotlib.image.ImageAxes.set_extent(); this should call
 		# axes.autoscale_view(tight=True) instead of messing with the axes
 
-	def clear(self):
-		if self.axes:
-			del self.axes.lines[:], self.axes.images[:], self.axes.patches[:]
-		self.axes.relim()
+	def clear(self, quick=False):
+		if not quick:
+			if self.axes:
+				del self.axes.lines[:], self.axes.images[:], self.axes.patches[:]
+			for (axes, vspan) in self.vspans:
+				axes.patches.remove(vspan)
+			self.axes.relim()
+		del self.vspans[:]
 
 	def set_colormap(self, colormap):
 		self.colormap = colormap

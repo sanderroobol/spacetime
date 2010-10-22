@@ -10,11 +10,13 @@ class Plot(object):
 	wspace = .2
 
 	xlim_callback = None
-	xaxes = None
+	
+	subplots = []
+	master_axes = None
 
 	def __init__(self, figure):
 		self.figure = figure
-		self.subplots = []
+		self.clear()
 
 	@classmethod
 	def newpyplotfigure(klass, size=(14,8)):
@@ -39,34 +41,43 @@ class Plot(object):
 		return plot
 
 	def clear(self):
+		for p in self.subplots:
+			p.clear(quick=True)
 		self.figure.clear()
 		self.subplots = []
+		self.independent_axes = []
+		self.shared_axes = []
+		self.twinx_axes = []
 
 	def add_subplot(self, subplot):
+		subplot.parent = self
 		self.subplots.append(subplot)
 
 	def setup(self):
-
 		req = []
 		for p in self.subplots:
 			req.extend((p, r) for r in p.get_axes_requirements())
 		total = len(req)
 
 		ret = []
+		shared = None
 		for i, (p, r) in enumerate(req):
-			if i > 0 and not r.no_sharex:
-				axes = self.figure.add_subplot(total, 1, i+1, sharex=top)
-			else:
+			if r.independent_x:
 				axes = self.figure.add_subplot(total, 1, i+1)
-
-			if i == 0: # first
-				top = axes
-
-			self.setup_xaxis_labels(axes)
+				self.independent_axes.append(axes)
+			else:
+				if shared:
+					axes = self.figure.add_subplot(total, 1, i+1, sharex=shared)
+				else:
+					shared = axes = self.figure.add_subplot(total, 1, i+1)
+				self.shared_axes.append(axes)	
+				self.setup_xaxis_labels(axes)
 
 			if r.twinx:
-				axes = (axes, axes.twinx())
-				self.setup_xaxis_labels(axes[1])
+				twin = axes.twinx()
+				self.twinx_axes.append(twin)
+				self.setup_xaxis_labels(twin)
+				axes = (axes, twin)
 			
 			ret.append((p, axes))
 
@@ -76,11 +87,12 @@ class Plot(object):
 		for p in self.subplots:
 			p.setup()
 
-		if self.subplots:
-			axes = self.subplots[-1].axes
-			self.xaxes = axes
+		if self.shared_axes:
+			self.master_axes = self.shared_axes[-1]
 			if self.xlim_callback:
-				axes.callbacks.connect('xlim_changed', self.xlim_callback)
+				self.master_axes.callbacks.connect('xlim_changed', self.xlim_callback)
+		else:
+			self.master_axes = None
 
 	def draw(self):
 		for p in self.subplots:
@@ -116,3 +128,27 @@ class Plot(object):
 
 	def set_xlim_callback(self, func):
 		self.xlim_callback = func
+
+	def autoscale(self, master=None):
+		# NOTE: this is a workaround for matplotlib's internal autoscaling routines. 
+		# it imitates axes.autoscale_view(), but only takes the dataLim into account when
+		# there are actually some lines or images in the graph
+
+		# NOTE: master axes detection only works when all axes from a Subplot are either all shared
+		# or all independent
+		if master and master in self.independent_axes:
+			master.autoscale_view()
+			return
+			
+		if not self.shared_axes:
+			return
+		# NOTE: this assumes twinx axes always belong to a shared axes
+		for ax in self.shared_axes + self.twinx_axes:
+			ax.autoscale_view(scalex=False)
+
+		dl = [ax.dataLim for ax in self.shared_axes + self.twinx_axes if ax.lines or ax.images or ax.patches]
+		if dl:
+			bb = matplotlib.transforms.BboxBase.union(dl)
+			x0, x1 = bb.intervalx
+			XL = self.master_axes.xaxis.get_major_locator().view_limits(x0, x1)
+			self.master_axes.set_xbound(XL)
