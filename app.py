@@ -102,7 +102,7 @@ class PythonTab(panels.Tab):
 	tablabel = 'Python'
 
 
-class MainWindow(HasTraits):
+class App(HasTraits):
 	plot = Instance(plot.Plot)
 	figure = Instance(matplotlib.figure.Figure)
 	maintab = Instance(MainTab)
@@ -164,9 +164,13 @@ class MainWindow(HasTraits):
 	def _plot_default(self):
 		p = plot.Plot.newmatplotlibfigure()
 		p.setup()
-		# At this moment, p.figure.canvas has not yet been initialized, so delay this call
-		wx.CallAfter(lambda: p.figure.canvas.mpl_connect('resize_event', self.on_figure_resize))
-		wx.CallAfter(lambda: p.set_xlim_callback(self.maintab.xlim_callback))
+
+		# At this moment, the figure has not yet been initialized properly, so delay these calls.
+		# This has to be a lambda statement to make a closure on the variables 'p' and 'self'
+		wx.CallAfter(lambda: (
+						p.figure.canvas.mpl_connect('resize_event', self.on_figure_resize), 
+						p.set_xlim_callback(self.maintab.xlim_callback)
+		))
 		return p
 
 	def _figure_default(self):
@@ -185,5 +189,5 @@ class MainWindow(HasTraits):
 
 
 if __name__ == '__main__':
-	mainwindow = MainWindow()
-	mainwindow.configure_traits()
+	app = App()
+	app.configure_traits()
