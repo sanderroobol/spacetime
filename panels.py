@@ -169,7 +169,7 @@ class CameraFramePanel(CameraPanel):
 			Item('colormap'),
 			Item('interpolation', editor=EnumEditor(values={'nearest':'1:none', 'bilinear':'2:bilinear', 'bicubic':'3:bicubic'})),
 			Group(
-				Item('rotate', label='Rotate image (plot scanlines vertically)'),
+				Item('rotate', label='Rotate image', tooltip='Plot scanlines vertically'),
 				show_border=True,
 				label='Single frame',
 			),

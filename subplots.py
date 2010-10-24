@@ -215,7 +215,7 @@ class GasCabinet(DoubleMultiTrend):
 
 
 class Image(Subplot):
-	colormap = 'gist_heat'
+	colormap = 'afmhot'
 	interpolation = 'nearest'
 	tzoom = 1
 	mode = 'film strip'
