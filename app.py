@@ -42,6 +42,7 @@ class MainTab(panels.Tab):
 	xmin = Instance(DateTimeSelector, args=())
 	xmax = Instance(DateTimeSelector, args=())
 	tablabel = 'Main'
+	status = Str('')
 
 	taboptions = (
 		panels.CameraFramePanel,
@@ -89,6 +90,11 @@ class MainTab(panels.Tab):
 			label='Add subgraph',
 			show_border=True,
 		),
+		Group(
+			Item('status', show_label=False, style='readonly'),
+			label='Cursor',
+			show_border=True,
+		),
 		layout='normal',
 	))
 
@@ -106,6 +112,7 @@ class App(HasTraits):
 	plot = Instance(plot.Plot)
 	figure = Instance(matplotlib.figure.Figure)
 	maintab = Instance(MainTab)
+	status = DelegatesTo('maintab')
 
 	tabs = List(Instance(panels.Tab))
 
@@ -161,7 +168,7 @@ class App(HasTraits):
 
 	traits_view = View(
 			HSplit(
-				Item('figure', editor=MPLFigureEditor(), dock='vertical'),
+				Item('figure', editor=MPLFigureEditor(status='status'), dock='vertical'),
 				Item('tabs', style='custom', width=200, editor=ListEditor(use_notebook=True, deletable=True, page_name='.tablabel')),
 				show_labels=False,
 			),
