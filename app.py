@@ -138,7 +138,7 @@ class App(HasTraits):
 
 	def redraw_figure(self):
 		self.plot.clear()
-		[self.plot.add_subplot(tab.plot) for tab in self.tabs if isinstance(tab, panels.SubplotPanel)]
+		[self.plot.add_subplot(tab.plot) for tab in self.tabs if isinstance(tab, panels.SubplotPanel) and tab.visible]
 		self.plot.setup()
 		self.plot.draw()
 		self.plot.autoscale()

@@ -18,6 +18,7 @@ class SubplotPanel(Tab):
 	update_canvas = Callable
 	autoscale = Callable
 	redraw_figure = Callable
+	visible = Bool(True)
 	number = 0
 	hold = False
 
@@ -33,6 +34,9 @@ class SubplotPanel(Tab):
 			self.plot.draw()
 			self.autoscale(self.plot.axes)
 			self.update_canvas()
+
+	def _visible_changed(self):
+		self.redraw_figure()
 
 
 class CameraPanel(SubplotPanel):
@@ -51,16 +55,17 @@ class CameraPanel(SubplotPanel):
 
 class CameraFramePanelHandler(Handler):
 	def object_mode_changed(self, info):
-		#global hi; hi = info
 		if info.mode.value == 'single frame':
 			info.lastframe.enabled = False
 			info.stepframe.enabled = False
 			info.zoom.enabled = False
+			info.rotate.enabled = True
 			info.firstframe.label_control.SetLabel('Frame:')
 		else:
 			info.lastframe.enabled = True
 			info.stepframe.enabled = True
 			info.zoom.enabled = True
+			info.rotate.enabled = False
 			info.firstframe.label_control.SetLabel('First frame:')
 
 
@@ -72,8 +77,7 @@ class CameraFramePanel(CameraPanel):
 	colormap = Enum(sorted((m for m in matplotlib.cm.datad if not m.endswith("_r")), key=string.lower))
 	interpolation = Enum('nearest', 'bilinear', 'bicubic')
 	zoom = Bool(False)
-
-	maxframes = 25
+	rotate = Bool(True)
 
 	mode = Enum('single frame', 'film strip')
 
@@ -90,10 +94,6 @@ class CameraFramePanel(CameraPanel):
 		return p
 
 	def _mode_changed(self):
-		if self.mode == 'film strip':
-			self.hold = True
-			self.lastframe = min(self.lastframe, self.firstframe + self.maxframes)
-			self.hold = False
 		self.plot.mode = self.mode
 		self.select_data()
 		self.redraw_figure()
@@ -110,7 +110,7 @@ class CameraFramePanel(CameraPanel):
 		self.data = datasources.Camera(self.filename)
 		self.channelcount = self.data.getchannelcount() - 1
 		self.framecount = self.data.getframecount() - 1
-		self.lastframe = min(self.framecount, self.firstframe + self.maxframes)
+		self.firstframe = self.lastframe = 0
 		self.settings_changed()
 
 	def _zoom_changed(self):
@@ -121,9 +121,14 @@ class CameraFramePanel(CameraPanel):
 			self.autoscale()
 		self.update_canvas()
 
+	def _rotate_changed(self):
+		self.plot.set_rotate(self.rotate)
+		self.update_canvas()
+
 	def _firstframe_changed(self):
-		if self.firstframe > self.lastframe:
+		if self.mode == 'single frame' or self.firstframe > self.lastframe:
 			self.lastframe = self.firstframe
+			# settings_changed() will be triggered because lastframe changes
 		else:
 			self.settings_changed()
 
@@ -149,6 +154,7 @@ class CameraFramePanel(CameraPanel):
 
 	traits_view = View(Group(
 		Group(
+			Item('visible'),
 			Item('filename', editor=FileEditor(filter=['Camera RAW files (*.raw)', '*.raw', 'All files', '*'], entries=0)),
 			Item('channel', editor=RangeEditor(low=0, high_name='channelcount')),
 			Item('mode', style='custom'),
@@ -158,12 +164,20 @@ class CameraFramePanel(CameraPanel):
 			Item('direction', editor=EnumEditor(values={1:'1:L2R', 2:'2:R2L'})),
 			show_border=True,
 			label='General',
-
 		),
 		Group(
 			Item('colormap'),
 			Item('interpolation', editor=EnumEditor(values={'nearest':'1:none', 'bilinear':'2:bilinear', 'bicubic':'3:bicubic'})),
-			Item('zoom', label='Zoom to fit'),
+			Group(
+				Item('rotate', label='Rotate image (plot scanlines vertically)'),
+				show_border=True,
+				label='Single frame',
+			),
+			Group(
+				Item('zoom', label='Zoom to fit'),
+				show_border=True,
+				label='Film strip'
+			),
 			show_border=True,
 			label='Display',
 		),
@@ -230,6 +244,7 @@ class TimeTrendPanel(SubplotPanel):
 	def traits_view(self):
 		return View(Group(
 			Group(
+				Item('visible'),
 				Item('filename', editor=FileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),
 				Item('legend'),
 				show_border=True,
@@ -285,6 +300,7 @@ class DoubleTimeTrendPanel(TimeTrendPanel):
 	def traits_view(self):
 		return View(Group(
 			Group(
+				Item('visible'),
 				Item('filename', editor=FileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),
 				Item('legend'),
 				show_border=True,
@@ -327,6 +343,7 @@ class CameraTrendPanel(DoubleTimeTrendPanel, CameraPanel):
 
 	traits_view = View(Group(
 		Group(
+			Item('visible'),
 			Item('filename', editor=FileEditor(filter=['Camera RAW files (*.raw)', '*.raw', 'All files', '*'], entries=0)),
 			Item('firstframe', label='First frame', editor=RangeEditor(low=0, high_name='framecount')),
 			Item('lastframe', label='Last frame', editor=RangeEditor(low=0, high_name='framecount')),
@@ -364,6 +381,7 @@ class TPDirkPanel(DoubleTimeTrendPanel):
 	def traits_view(self):
 		return View(Group(
 			Group(
+				Item('visible'),
 				Item('filename', editor=FileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),
 				Item('legend'),
 				show_border=True,

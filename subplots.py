@@ -219,6 +219,7 @@ class Image(Subplot):
 	interpolation = 'nearest'
 	tzoom = 1
 	mode = 'film strip'
+	rotate = True
 
 	def __init__(self, *args, **kwargs):
 		self.vspans = []
@@ -245,15 +246,18 @@ class Image(Subplot):
 			# transpose the image data to plot scanlines vertical
 			ysize, xsize = d.image.shape
 
-			# FIXME: images are TRANSPOSED, should they be rotated instead?
 			if self.mode == 'single frame':
-				self.axes.imshow(d.image.T, aspect='equal', cmap=self.colormap, interpolation=self.interpolation)
+				if self.rotate:
+					image = numpy.rot90(d.image)
+				else:
+					image = d.image
+				self.axes.imshow(image, aspect='equal', cmap=self.colormap, interpolation=self.interpolation)
 
 				for axes in self.parent.shared_axes:
 					self.vspans.append((axes, axes.axvspan(d.tstart, d.tend, color='silver', zorder=-1e9)))
 			else:
 				tendzoom = d.tstart + (d.tend - d.tstart) * self.tzoom
-				self.axes.imshow(d.image.T, extent=(d.tstart, tendzoom, 0, ysize+1), aspect='auto', cmap=self.colormap, interpolation=self.interpolation)
+				self.axes.imshow(numpy.rot90(d.image), extent=(d.tstart, tendzoom, 0, ysize+1), aspect='auto', cmap=self.colormap, interpolation=self.interpolation)
 				self.axes.add_patch(matplotlib.patches.Rectangle((d.tstart, 0), tendzoom-d.tstart, ysize+1, linewidth=1, edgecolor='black', fill=False))
 	
 		# imshow() changes the axes xlim/ylim, so go back to something sensible
@@ -282,3 +286,15 @@ class Image(Subplot):
 		if self.axes:
  			for image in self.axes.images:
 				image.set_interpolation(interpolation)
+
+	def set_rotate(self, rotate):
+		if rotate == self.rotate:
+			return
+		self.rotate = rotate
+
+		im = self.axes.images[0]
+		# NOTE this uses a feature that is not officially in the matplotlib API
+		if rotate:
+			im.set_data(numpy.rot90(im._A))
+		else:
+			im.set_data(numpy.rot90(im._A, 3))
