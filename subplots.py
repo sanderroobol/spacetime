@@ -1,7 +1,7 @@
 from __future__ import division
 
 import numpy
-import matplotlib.patches, matplotlib.cm, matplotlib.colors
+import matplotlib.patches, matplotlib.cm, matplotlib.colors, matplotlib.dates
 
 import datasources
 from util import *
@@ -23,6 +23,7 @@ class Subplot(object):
 		self.axes = axes[0]
 
 	def setup(self):
+		self.axes.fmt_xdata = matplotlib.dates.DateFormatter('%Y-%m-%d %H:%M:%S.%f')
 		if self.ylim_callback:
 			self.axes.callbacks.connect('ylim_changed', self.ylim_callback)
 
@@ -121,6 +122,7 @@ class DoubleMultiTrend(MultiTrend):
 
 	def setup(self):
 		super(DoubleMultiTrend, self).setup()
+		self.secondaryaxes.fmt_xdata = self.axes.fmt_xdata
 		if self.ylim_callback:
 			self.secondaryaxes.callbacks.connect('ylim_changed', self.ylim_callback)
 
@@ -236,6 +238,7 @@ class Image(Subplot):
 		self.axes.set_yticks([])
 		if self.mode == 'single frame':
 			self.axes.set_xticks([])
+			self.axes.fmt_xdata = None
 	
 	def draw(self):
 		if not self.data:

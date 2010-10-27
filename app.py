@@ -10,6 +10,8 @@ import matplotlib.figure, matplotlib.transforms
 import wx
 import datetime
 
+__version__ = '0.1-dev'
+
 
 class DateTimeSelector(HasTraits):
 	date = Date(datetime.date.today())
@@ -175,6 +177,7 @@ class App(HasTraits):
 			resizable=True,
 			height=700, width=1100,
 			buttons=NoButtons,
+			title='Spacetime %s' % __version__
 		)
 
 
