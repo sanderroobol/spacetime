@@ -1,9 +1,6 @@
 from __future__ import division
 
-import datasources
-import subplots
-import filters
-import plot
+from spacetime import datasources, subplots, filters, plot
 
 
 if __name__ == '__main__':

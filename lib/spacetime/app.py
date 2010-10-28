@@ -1,16 +1,13 @@
 # keep this import at top to ensure proper matplotlib backend selection
 from mplfigure import MPLFigureEditor
-import plot
-import util
-import panels
+
+from . import plot, util, panels, version
 
 from enthought.traits.api import *
 from enthought.traits.ui.api import *
 import matplotlib.figure, matplotlib.transforms
 import wx
 import datetime
-
-__version__ = '0.1-dev'
 
 
 class DateTimeSelector(HasTraits):
@@ -177,10 +174,13 @@ class App(HasTraits):
 			resizable=True,
 			height=700, width=1100,
 			buttons=NoButtons,
-			title='Spacetime %s' % __version__
+			title='Spacetime %s' % version.version
 		)
+
+	def run(self):
+		self.configure_traits()
 
 
 if __name__ == '__main__':
 	app = App()
-	app.configure_traits()
+	app.run()

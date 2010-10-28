@@ -4,7 +4,8 @@ import numpy
 import itertools
 from camera.formats import raw
 import datetime
-from util import *
+
+from .util import *
 
 class DataSource(object):
 	def __init__(self, filename):

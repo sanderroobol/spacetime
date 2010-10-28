@@ -3,8 +3,8 @@ from __future__ import division
 import numpy
 import matplotlib.patches, matplotlib.cm, matplotlib.colors, matplotlib.dates
 
-import datasources
-from util import *
+from . import datasources
+from .util import *
 
 class Subplot(object):
 	axes = None

@@ -3,9 +3,7 @@ from enthought.traits.ui.api import *
 import matplotlib.cm
 import string
 
-import subplots
-import datasources
-import filters
+from . import subplots, datasources, filters
 
 
 class Tab(HasTraits):
