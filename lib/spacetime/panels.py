@@ -69,7 +69,7 @@ class CameraFramePanelHandler(Handler):
 
 class CameraFramePanel(CameraPanel):
 	channel = Int(0)
-	channelcount = Int(0)
+	channelcount = Int(1000000000)
 	bgsubtract = Bool(True)
 	clip = Float(4.)
 	colormap = Enum(sorted((m for m in matplotlib.cm.datad if not m.endswith("_r")), key=string.lower))
@@ -83,7 +83,7 @@ class CameraFramePanel(CameraPanel):
 	
 	def __init__(self, *args, **kwargs):
 		super(CameraFramePanel, self).__init__(*args, **kwargs)
-		self.colormap = 'gist_heat'
+		self.colormap = 'afmhot'
 
 	def _plot_default(self):
 		p = subplots.Image()
@@ -315,7 +315,6 @@ class CameraTrendPanel(DoubleTimeTrendPanel, CameraPanel):
 	plotfactory = subplots.DoubleMultiTrend
 	filter = 'Camera RAW files (*.raw)', '*.raw'
 
-	framecount = Int(0)
 	average = Int(100)
 
 	def _filename_changed(self):
