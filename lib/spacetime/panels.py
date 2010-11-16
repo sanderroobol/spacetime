@@ -315,7 +315,7 @@ class CameraTrendPanel(DoubleTimeTrendPanel, CameraPanel):
 	plotfactory = subplots.DoubleMultiTrend
 	filter = 'Camera RAW files (*.raw)', '*.raw'
 
-	average = Int(100)
+	averaging = Bool(True)
 
 	def _filename_changed(self):
 		self.data = datasources.Camera(self.filename)
@@ -324,14 +324,13 @@ class CameraTrendPanel(DoubleTimeTrendPanel, CameraPanel):
 		self.lastframe = min(self.framecount, 25)
 		self.settings_changed()
 
-	@on_trait_change('average, firstframe, lastframe, stepframe, selected_primary_channels, selected_secondary_channels')
+	@on_trait_change('averaging, firstframe, lastframe, stepframe, selected_primary_channels, selected_secondary_channels')
 	def settings_changed(self):
 		if not self.data:
 			return
 		# FIXME: implement a smarter first/last frame selection, don't redraw everything
 		data = self.data.selectframes(self.firstframe, self.lastframe, self.stepframe)
-		if self.average > 0:
-			data = data.apply_filter(filters.average(self.average))
+		self.data.averaging = self.averaging
 		self.plot.set_data(
 			data.selectchannels(lambda chan: chan.id in self.selected_primary_channels),
 			data.selectchannels(lambda chan: chan.id in self.selected_secondary_channels),
@@ -346,7 +345,7 @@ class CameraTrendPanel(DoubleTimeTrendPanel, CameraPanel):
 			Item('lastframe', label='Last frame', editor=RangeEditor(low=0, high_name='framecount')),
 			Item('stepframe', label='Key frame mode'),
 			Item('direction', editor=EnumEditor(values={1:'1:L2R', 2:'2:R2L'})), # FIXME: for trends, it should be possible to show both!
-			Item('average', tooltip='N-point averaging'),
+			Item('averaging', tooltip='Per-line averaging'),
 			Item('legend'),
 			show_border=True,
 			label='General',

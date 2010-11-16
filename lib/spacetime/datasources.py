@@ -154,6 +154,7 @@ class ChainedImage(DataSource):
 # Camera class for image mode and trend mode
 class Camera(MultiTrend):
 	direction = raw.RawFileChannelInfo.LR
+	averaging = False # only for trend mode
 
 	def __init__(self, *args, **kwargs):
 		super(Camera, self).__init__(*args, **kwargs)
@@ -181,8 +182,12 @@ class Camera(MultiTrend):
 			tstart = mpldtfromtimestamp(frameinfo.acquisitionTime)
 			tend = tstart + (image.size / frameinfo.pixelclock_kHz / 1000 * 2) / 86400
 
-			data.append(image.flatten())
-			time.append(numpy.linspace(tstart, tend, image.size))
+			if self.averaging:
+				im = image.mean(axis=1) # FIXME: check if this is really the right axis to average
+			else:
+				im = image.flatten()
+			data.append(im)
+			time.append(numpy.linspace(tstart, tend, im.size))
 		return Struct(id=str(channel), value=numpy.hstack(data), time=numpy.hstack(time))
 
 	def getframecount(self):
