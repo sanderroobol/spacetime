@@ -9,9 +9,11 @@ from .util import *
 class Subplot(object):
 	axes = None
 	ylim_callback = None
+	marker_callbacks = None
 
 	def __init__(self, data=None):
 		self.data = data
+		self.marker_callbacks = []
 
 	def set_data(self, data):
 		self.data = data
@@ -34,10 +36,35 @@ class Subplot(object):
 		# The quick parameter is set when the entire figure is being cleared;
 		# in this case it is sufficient to only clear the internal state of the
 		# Subplot and leave the axes untouched
-		pass
+		self.clear_other_markers(quick=quick)
 
 	def set_ylim_callback(self, func):
 		self.ylim_callback = func
+
+	def clear_other_markers(self, quick=False):
+		if not quick:
+			for m in self.marker_callbacks:
+				if m is not None:
+					m()
+		self.marker_callbacks = []
+
+	def set_other_markers(self, left, right=None):
+		for sp in self.parent.subplots:
+			if sp is self:
+				continue
+			self.marker_callbacks.append(sp.set_marker(left, right))
+
+	def set_marker(self, left, right=None):
+		return self.set_axes_marker(self.axes, left, right)
+	
+	@staticmethod
+	def set_axes_marker(ax, left, right):
+		if right is not None:
+			vspan = ax.axvspan(left, right, color='silver', zorder=-1e9)
+			return lambda: ax.patches.remove(vspan)
+		else:
+			line = ax.axvline(left, color='silver', zorder=-1e9)
+			return lambda: ax.lines.remove(line)
 
 
 class MultiTrendFormatter(object):
@@ -76,7 +103,7 @@ class MultiTrend(Subplot):
 	legend = True
 
 	def __init__(self, data=None, formatter=None):
-		self.data = data
+		super(MultiTrend, self).__init__(data)
 		if formatter is None:
 			self.formatter = MultiTrendFormatter()
 		else:
@@ -93,11 +120,11 @@ class MultiTrend(Subplot):
 		self.draw_legend()
 
 	def clear(self, quick=False):
-		if quick:
-			return
-		if self.axes:
-			del self.axes.lines[:]
-		self.axes.relim()
+		if not quick:
+			if self.axes:
+				del self.axes.lines[:]
+			self.axes.relim()
+		super(MultiTrend, self).clear(quick)
 
 	def set_legend(self, legend):
 		self.legend = legend
@@ -156,12 +183,15 @@ class DoubleMultiTrend(MultiTrend):
 		self.axes, self.secondaryaxes = axes[0]
 
 	def clear(self, quick=False):
-		if quick:
-			return
-		if self.secondaryaxes:
-			del self.secondaryaxes.lines[:]
-		self.secondaryaxes.relim()
-		super(DoubleMultiTrend, self).clear()
+		if not quick:
+			if self.secondaryaxes:
+				del self.secondaryaxes.lines[:]
+			self.secondaryaxes.relim()
+		super(DoubleMultiTrend, self).clear(quick)
+
+	def set_marker(self, left, right=None):
+		super(DoubleMultiTrend, self).set_marker(left, right)
+		self.set_axes_marker(self.secondary_axes, left, right)
 
 
 class QMS(MultiTrend):
@@ -256,8 +286,7 @@ class Image(Subplot):
 					image = d.image
 				self.axes.imshow(image, aspect='equal', cmap=self.colormap, interpolation=self.interpolation)
 
-				for axes in self.parent.shared_axes:
-					self.vspans.append((axes, axes.axvspan(d.tstart, d.tend, color='silver', zorder=-1e9)))
+				self.set_other_markers(d.tstart, d.tend)
 			else:
 				tendzoom = d.tstart + (d.tend - d.tstart) * self.tzoom
 				self.axes.imshow(numpy.rot90(d.image), extent=(d.tstart, tendzoom, 0, ysize+1), aspect='auto', cmap=self.colormap, interpolation=self.interpolation)
@@ -273,10 +302,8 @@ class Image(Subplot):
 		if not quick:
 			if self.axes:
 				del self.axes.lines[:], self.axes.images[:], self.axes.patches[:]
-			for (axes, vspan) in self.vspans:
-				axes.patches.remove(vspan)
 			self.axes.relim()
-		del self.vspans[:]
+		super(Image, self).clear(quick)
 
 	def set_colormap(self, colormap):
 		self.colormap = colormap
@@ -301,3 +328,7 @@ class Image(Subplot):
 			im.set_data(numpy.rot90(im._A))
 		else:
 			im.set_data(numpy.rot90(im._A, 3))
+
+	def set_marker(self, left, right=None):
+		# don't allow markers on this kind of plot, doesn't play nice with clear()
+		return None
