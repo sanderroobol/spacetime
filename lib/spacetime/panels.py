@@ -12,6 +12,8 @@ class Tab(HasTraits):
 
 class SubplotPanel(Tab):
 	filename = File
+	reload = Button
+
 	plot = Instance(subplots.Subplot)
 	update_canvas = Callable
 	autoscale = Callable
@@ -207,10 +209,12 @@ class TimeTrendPanel(SubplotPanel):
 	def ylim_callback(self, ax):
 		self.ymin, self.ymax = ax.get_ylim()
 
+	@on_trait_change('reload')
 	def _filename_changed(self):
-		self.data = self.datafactory(self.filename)
-		self.channels = list(self.data.iterchannelnames())
-		self.redraw()
+		if self.filename:
+			self.data = self.datafactory(self.filename)
+			self.channels = list(self.data.iterchannelnames())
+			self.redraw()
 
 	@on_trait_change('selected_primary_channels')
 	def settings_changed(self):
@@ -244,6 +248,7 @@ class TimeTrendPanel(SubplotPanel):
 			Group(
 				Item('visible'),
 				Item('filename', editor=FileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),
+				Item('reload', show_label=False),
 				Item('legend'),
 				show_border=True,
 				label='General',
@@ -300,6 +305,7 @@ class DoubleTimeTrendPanel(TimeTrendPanel):
 			Group(
 				Item('visible'),
 				Item('filename', editor=FileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),
+				Item('reload', show_label=False),
 				Item('legend'),
 				show_border=True,
 				label='General',
@@ -369,16 +375,19 @@ class TPDirkPanel(DoubleTimeTrendPanel):
 	datafactory = datasources.TPDirk
 	filter = 'Dirk\'s ASCII files (*.txt)', '*.txt'
 
+	@on_trait_change('reload')
 	def _filename_changed(self):
-		self.data = self.datafactory(self.filename)
-		self.plot.set_data(self.data)
-		self.redraw()
+		if self.filename:
+			self.data = self.datafactory(self.filename)
+			self.plot.set_data(self.data)
+			self.redraw()
 
 	def traits_view(self):
 		return View(Group(
 			Group(
 				Item('visible'),
 				Item('filename', editor=FileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),
+				Item('reload', show_label=False),
 				Item('legend'),
 				show_border=True,
 				label='General',
