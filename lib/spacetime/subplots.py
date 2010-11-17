@@ -189,10 +189,6 @@ class DoubleMultiTrend(MultiTrend):
 			self.secondaryaxes.relim()
 		super(DoubleMultiTrend, self).clear(quick)
 
-	def set_marker(self, left, right=None):
-		super(DoubleMultiTrend, self).set_marker(left, right)
-		self.set_axes_marker(self.secondary_axes, left, right)
-
 
 class QMS(MultiTrend):
 	def setup(self):

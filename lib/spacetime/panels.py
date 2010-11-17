@@ -209,8 +209,8 @@ class TimeTrendPanel(SubplotPanel):
 	def ylim_callback(self, ax):
 		self.ymin, self.ymax = ax.get_ylim()
 
-	@on_trait_change('reload')
-	def _filename_changed(self):
+	@on_trait_change('filename, reload')
+	def load_file(self):
 		if self.filename:
 			self.data = self.datafactory(self.filename)
 			self.channels = list(self.data.iterchannelnames())
@@ -375,8 +375,8 @@ class TPDirkPanel(DoubleTimeTrendPanel):
 	datafactory = datasources.TPDirk
 	filter = 'Dirk\'s ASCII files (*.txt)', '*.txt'
 
-	@on_trait_change('reload')
-	def _filename_changed(self):
+	@on_trait_change('filename, reload')
+	def load_file(self):
 		if self.filename:
 			self.data = self.datafactory(self.filename)
 			self.plot.set_data(self.data)
