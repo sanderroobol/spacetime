@@ -400,7 +400,14 @@ class TPDirkPanel(DoubleTimeTrendPanel):
 
 
 class GasCabinetPanel(DoubleTimeTrendPanel):
-	tablabel = 'Gas cabinet'
+	tablabel = 'LPM gas cabinet'
 	plotfactory = subplots.GasCabinet
 	datafactory = datasources.GasCabinet
+	filter = 'ASCII text files (*.txt)', '*.txt',
+
+
+class OldGasCabinetPanel(DoubleTimeTrendPanel):
+	tablabel = 'Prototype gas cabinet'
+	plotfactory = subplots.GasCabinet
+	datafactory = datasources.OldGasCabinet
 	filter = 'ASCII text files (*.txt)', '*.txt',

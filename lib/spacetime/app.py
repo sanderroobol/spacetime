@@ -48,6 +48,7 @@ class MainTab(panels.Tab):
 		panels.CameraTrendPanel,
 		panels.QMSPanel,
 		panels.GasCabinetPanel,
+		panels.OldGasCabinetPanel,
 		panels.TPDirkPanel,
 	)
 	tabdict = dict((klass.tablabel, klass) for klass in taboptions)
