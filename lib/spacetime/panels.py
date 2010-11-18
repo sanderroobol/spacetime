@@ -323,7 +323,8 @@ class CameraTrendPanel(DoubleTimeTrendPanel, CameraPanel):
 
 	averaging = Bool(True)
 
-	def _filename_changed(self):
+	@on_trait_change('filename')
+	def load_file(self):
 		self.data = datasources.Camera(self.filename)
 		self.channels = list(self.data.iterchannelnames())
 		self.framecount = self.data.getframecount() - 1
@@ -359,6 +360,62 @@ class CameraTrendPanel(DoubleTimeTrendPanel, CameraPanel):
 		Include('left_yaxis_group'),
 		Include('right_yaxis_group'),
 		layout='normal',
+	))
+
+
+class CVPanel(CameraTrendPanel):
+	tablabel = 'Cyclic voltammetry'
+	plotfactory = subplots.CV
+	voltage_channel = Int(0)
+	current_channel = Int(0)
+	channelcount = Int(1000000000)
+
+	@on_trait_change('filename')
+	def load_file(self):
+		self.data = datasources.Camera(self.filename)
+		self.channelcount = self.data.getchannelcount() - 1
+		self.framecount = self.data.getframecount() - 1
+		self.lastframe = min(self.framecount, 25)
+		self.settings_changed()
+
+	def _firstframe_changed(self):
+		if self.firstframe > self.lastframe:
+			self.lastframe = self.firstframe
+			# settings_changed() will be triggered because lastframe changes
+		else:
+			self.settings_changed()
+
+	@on_trait_change('averaging, lastframe, stepframe, voltage_channel, current_channel')
+	def settings_changed(self):
+		if not self.data:
+			return
+		# FIXME: implement a smarter first/last frame selection, don't redraw everything
+		data = self.data.selectframes(self.firstframe, self.lastframe, self.stepframe)
+		self.data.averaging = self.averaging
+		self.plot.set_data(
+			data.selectchannels(lambda chan: chan.id == str(self.voltage_channel)),
+			data.selectchannels(lambda chan: chan.id == str(self.current_channel)),
+		)
+		self.redraw()
+
+	traits_view = View(Group(
+		Group(
+			Item('visible'),
+			Item('filename', editor=FileEditor(filter=['Camera RAW files (*.raw)', '*.raw', 'All files', '*'], entries=0)),
+			Item('firstframe', label='First frame', editor=RangeEditor(low=0, high_name='framecount')),
+			Item('lastframe', label='Last frame', editor=RangeEditor(low=0, high_name='framecount')),
+			Item('stepframe', label='Key frame mode'),
+			Item('direction', editor=EnumEditor(values={1:'1:L2R', 2:'2:R2L'})), # FIXME: for trends, it should be possible to show both!
+			Item('averaging', tooltip='Per-line averaging'),
+			show_border=True,
+			label='General',
+		),
+		Group(
+			Item('voltage_channel', editor=RangeEditor(low=0, high_name='channelcount')),
+			Item('current_channel', editor=RangeEditor(low=0, high_name='channelcount')),
+			show_border=True,
+			label='Channels',
+		)
 	))
 
 

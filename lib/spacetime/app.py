@@ -50,6 +50,7 @@ class MainTab(panels.Tab):
 		panels.GasCabinetPanel,
 		panels.OldGasCabinetPanel,
 		panels.TPDirkPanel,
+		panels.CVPanel,
 	)
 	tabdict = dict((klass.tablabel, klass) for klass in taboptions)
 	tablabels = [klass.tablabel for klass in taboptions]
