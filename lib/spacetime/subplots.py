@@ -273,7 +273,7 @@ class CV(Subplot):
 			self.axes.lines.remove(left)
 		if right:
 			self.axes.lines.remove(right)
-		self.marker_points = None, None
+		self.markers = self.marker_points = None, None
 
 	def set_marker(self, left, right=None):
 		self.markers = left, right

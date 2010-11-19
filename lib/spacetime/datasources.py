@@ -129,10 +129,7 @@ class GasCabinet(MultiTrend):
 
 	def __init__(self, *args, **kwargs):
 		super(GasCabinet, self).__init__(*args, **kwargs)
-		fp = open(self.filename)
-		fp.readline() # skip header line
-		self.data = numpy.loadtxt(fp)
-		fp.close()
+		self.data = numpy.loadtxt(self.filename, skiprows=1) # skip header line
 
 		assert self.data.shape[1] == 38
 		self.channels = []
