@@ -1,7 +1,7 @@
 # keep this import at top to ensure proper matplotlib backend selection
 from mplfigure import MPLFigureEditor
 
-from . import plot, util, panels, version
+from . import plot, util, panels, version, uiutil
 
 from enthought.traits.api import *
 from enthought.traits.ui.api import *

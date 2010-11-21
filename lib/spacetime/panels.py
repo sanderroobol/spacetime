@@ -3,7 +3,7 @@ from enthought.traits.ui.api import *
 import matplotlib.cm
 import string
 
-from . import subplots, datasources, filters
+from . import subplots, datasources, filters, uiutil
 
 
 class Tab(HasTraits):
@@ -227,7 +227,12 @@ class TimeTrendPanel(SubplotPanel):
 	@on_trait_change('filename, reload')
 	def load_file(self):
 		if self.filename:
-			self.data = self.datafactory(self.filename)
+			try:
+				self.data = self.datafactory(self.filename)
+			except:
+				uiutil.Message.file_open_failed(self.filename)
+				self.filename = ''
+				return
 			self.channels = list(self.data.iterchannelnames())
 			self.redraw()
 
@@ -342,11 +347,17 @@ class CameraTrendPanel(DoubleTimeTrendPanel, CameraPanel):
 
 	@on_trait_change('filename')
 	def load_file(self):
-		self.data = datasources.Camera(self.filename)
-		self.channels = list(self.data.iterchannelnames())
-		self.framecount = self.data.getframecount() - 1
-		self.lastframe = min(self.framecount, 25)
-		self.settings_changed()
+		if self.filename:
+			try:
+				self.data = datasources.Camera(self.filename)
+			except:
+				uiutil.Message.file_open_failed(self.filename)
+				self.filename = ''
+				return
+			self.channels = list(self.data.iterchannelnames())
+			self.framecount = self.data.getframecount() - 1
+			self.lastframe = min(self.framecount, 25)
+			self.settings_changed()
 
 	@on_trait_change('averaging, firstframe, lastframe, stepframe, selected_primary_channels, selected_secondary_channels')
 	def settings_changed(self):
@@ -390,11 +401,17 @@ class CVPanel(CameraTrendPanel):
 
 	@on_trait_change('filename')
 	def load_file(self):
-		self.data = datasources.Camera(self.filename)
-		self.channelcount = self.data.getchannelcount() - 1
-		self.framecount = self.data.getframecount() - 1
-		self.lastframe = min(self.framecount, 25)
-		self.settings_changed()
+		if self.filename:
+			try:
+				self.data = datasources.Camera(self.filename)
+			except:
+				uiutil.Message.file_open_failed(self.filename)
+				self.filename = ''
+				return
+			self.channelcount = self.data.getchannelcount() - 1
+			self.framecount = self.data.getframecount() - 1
+			self.lastframe = min(self.framecount, 25)
+			self.settings_changed()
 
 	def _firstframe_changed(self):
 		if self.firstframe > self.lastframe:
@@ -454,7 +471,12 @@ class TPDirkPanel(DoubleTimeTrendPanel):
 	@on_trait_change('filename, reload')
 	def load_file(self):
 		if self.filename:
-			self.data = self.datafactory(self.filename)
+			try:
+				self.data = self.datafactory(self.filename)
+			except:
+				uiutil.Message.file_open_failed(self.filename)
+				self.filename = ''
+				return
 			self.plot.set_data(self.data)
 			self.redraw()
 
