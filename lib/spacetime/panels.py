@@ -70,16 +70,8 @@ class CameraPanel(SubplotPanel):
 class CameraFramePanelHandler(Handler):
 	def object_mode_changed(self, info):
 		if info.mode.value == 'single frame':
-			info.lastframe.enabled = False
-			info.stepframe.enabled = False
-			info.zoom.enabled = False
-			info.rotate.enabled = True
 			info.firstframe.label_control.SetLabel('Frame:')
 		else:
-			info.lastframe.enabled = True
-			info.stepframe.enabled = True
-			info.zoom.enabled = True
-			info.rotate.enabled = False
 			info.firstframe.label_control.SetLabel('First frame:')
 
 
@@ -95,11 +87,20 @@ class CameraFramePanel(CameraPanel):
 
 	mode = Enum('single frame', 'film strip')
 
+	is_singleframe = Property(depends_on='mode')
+	is_filmstrip = Property(depends_on='mode')
+
 	tablabel = 'Camera'
 	
 	def __init__(self, *args, **kwargs):
 		super(CameraFramePanel, self).__init__(*args, **kwargs)
 		self.colormap = 'afmhot'
+
+	def _get_is_singleframe(self):
+		return self.mode == 'single frame'
+
+	def _get_is_filmstrip(self):
+		return self.mode == 'film strip'
 
 	def _plot_default(self):
 		p = subplots.Image()
@@ -173,8 +174,8 @@ class CameraFramePanel(CameraPanel):
 			Item('channel', editor=RangeEditor(low=0, high_name='channelcount')),
 			Item('mode', style='custom'),
 			Item('firstframe', label='First frame', editor=RangeEditor(low=0, high_name='framecount')),
-			Item('lastframe', label='Last frame', editor=RangeEditor(low=0, high_name='framecount')),
-			Item('stepframe', label='Key frame mode'),
+			Item('lastframe', label='Last frame', enabled_when='is_filmstrip', editor=RangeEditor(low=0, high_name='framecount')),
+			Item('stepframe', label='Key frame mode', enabled_when='is_filmstrip'),
 			Item('direction', editor=EnumEditor(values={1:'1:L2R', 2:'2:R2L'})),
 			show_border=True,
 			label='General',
@@ -183,12 +184,12 @@ class CameraFramePanel(CameraPanel):
 			Item('colormap'),
 			Item('interpolation', editor=EnumEditor(values={'nearest':'1:none', 'bilinear':'2:bilinear', 'bicubic':'3:bicubic'})),
 			Group(
-				Item('rotate', label='Rotate image', tooltip='Plot scanlines vertically'),
+				Item('rotate', label='Rotate image', tooltip='Plot scanlines vertically', enabled_when='is_singleframe'),
 				show_border=True,
 				label='Single frame',
 			),
 			Group(
-				Item('zoom', label='Zoom to fit'),
+				Item('zoom', label='Zoom to fit', enabled_when='is_filmstrip'),
 				show_border=True,
 				label='Film strip'
 			),
