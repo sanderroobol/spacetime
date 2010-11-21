@@ -129,7 +129,7 @@ class MultiTrend(Subplot):
 		if not quick:
 			if self.axes:
 				del self.axes.lines[:]
-			self.axes.relim()
+				self.axes.relim()
 		super(MultiTrend, self).clear(quick)
 
 	def set_legend(self, legend):
