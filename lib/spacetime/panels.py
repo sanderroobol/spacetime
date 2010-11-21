@@ -13,6 +13,8 @@ class Tab(HasTraits):
 class SubplotPanel(Tab):
 	filename = File
 	reload = Button
+	simultaneity_offset = Float(0.)
+	time_dilation_factor = Float(1.)
 
 	plot = Instance(subplots.Subplot)
 	update_canvas = Callable
@@ -21,6 +23,13 @@ class SubplotPanel(Tab):
 	visible = Bool(True)
 	number = 0
 	hold = False
+
+	relativistic_group = Group(
+		Item('simultaneity_offset', label='Simultaneity offset (s)'),
+		Item('time_dilation_factor', editor=RangeEditor(low=.999, high=1.001)),
+		show_border=True,
+		label='Relativistic corrections',
+	)
 
 	def __init__(self, *args, **kwargs):
 		super(SubplotPanel, self).__init__(*args, **kwargs)
@@ -36,6 +45,11 @@ class SubplotPanel(Tab):
 			self.update_canvas()
 
 	def _visible_changed(self):
+		self.redraw_figure()
+
+	@on_trait_change('simultaneity_offset, time_dilation_factor')
+	def relativistics_changed(self):
+		self.plot.adjust_time(self.simultaneity_offset, self.time_dilation_factor)
 		self.redraw_figure()
 
 
@@ -187,6 +201,7 @@ class CameraFramePanel(CameraPanel):
 			show_border=True,
 			label='Filters',
 		),
+		Include('relativistic_group'),
 		layout='normal',
 	),
 		handler=CameraFramePanelHandler()
@@ -254,6 +269,7 @@ class TimeTrendPanel(SubplotPanel):
 				label='General',
 			),
 			Include('left_yaxis_group'),
+			Include('relativistic_group'),
 			layout='normal',
 		))
 
@@ -312,6 +328,7 @@ class DoubleTimeTrendPanel(TimeTrendPanel):
 			),
 			Include('left_yaxis_group'),
 			Include('right_yaxis_group'),
+			Include('relativistic_group'),
 			layout='normal',
 		))
 
@@ -359,6 +376,7 @@ class CameraTrendPanel(DoubleTimeTrendPanel, CameraPanel):
 		),
 		Include('left_yaxis_group'),
 		Include('right_yaxis_group'),
+		Include('relativistic_group'),
 		layout='normal',
 	))
 
@@ -415,7 +433,8 @@ class CVPanel(CameraTrendPanel):
 			Item('current_channel', editor=RangeEditor(low=0, high_name='channelcount')),
 			show_border=True,
 			label='Channels',
-		)
+		),
+		Include('relativistic_group'),
 	))
 
 
@@ -461,6 +480,7 @@ class TPDirkPanel(DoubleTimeTrendPanel):
 				show_border=True,
 				label='Right y-axis'
 			),
+			Include('relativistic_group'),
 			layout='normal',
 		))
 

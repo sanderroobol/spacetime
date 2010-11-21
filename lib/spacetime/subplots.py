@@ -10,6 +10,8 @@ class Subplot(object):
 	axes = None
 	ylim_callback = None
 	marker_callbacks = None
+	time_offset = 0.
+	time_factor = 1.
 
 	def __init__(self, data=None):
 		self.data = data
@@ -66,6 +68,10 @@ class Subplot(object):
 			line = ax.axvline(left, color='silver', zorder=-1e9)
 			return lambda: ax.lines.remove(line)
 
+	def adjust_time(self, offset, factor=1.):
+		self.time_offset = offset
+		self.time_factor = factor
+
 
 class MultiTrendFormatter(object):
 	counter = -1
@@ -116,7 +122,7 @@ class MultiTrend(Subplot):
 			return
 		self.formatter.reset()
 		for d in self.data.iterchannels():
-			self.axes.plot(d.time, d.value, self.formatter(d), label=d.id)
+			self.axes.plot(self.time_factor*d.time + self.time_offset/86400., d.value, self.formatter(d), label=d.id)
 		self.draw_legend()
 
 	def clear(self, quick=False):
@@ -157,7 +163,7 @@ class DoubleMultiTrend(MultiTrend):
 		super(DoubleMultiTrend, self).draw()
 		if self.secondarydata:
 			for d in self.secondarydata.iterchannels():
-				self.secondaryaxes.plot(d.time, d.value, self.formatter(d), label=d.id)
+				self.secondaryaxes.plot(self.time_factor*d.time + self.time_offset/86400., d.value, self.formatter(d), label=d.id)
 			self.draw_legend()
 
 	def draw_legend(self):
@@ -331,6 +337,8 @@ class Image(Subplot):
 			# map the linenunumber to the time axis and the individual points to some arbitrary unit axis
 			# transpose the image data to plot scanlines vertical
 			ysize, xsize = d.image.shape
+			tstart = self.time_factor * d.tstart + self.time_offset / 86400.
+			tend = self.time_factor * d.tend + self.time_offset / 86400.
 
 			if self.mode == 'single frame':
 				if self.rotate:
@@ -339,11 +347,11 @@ class Image(Subplot):
 					image = d.image
 				self.axes.imshow(image, aspect='equal', cmap=self.colormap, interpolation=self.interpolation)
 
-				self.set_other_markers(d.tstart, d.tend)
+				self.set_other_markers(tstart, tend)
 			else:
-				tendzoom = d.tstart + (d.tend - d.tstart) * self.tzoom
-				self.axes.imshow(numpy.rot90(d.image), extent=(d.tstart, tendzoom, 0, ysize+1), aspect='auto', cmap=self.colormap, interpolation=self.interpolation)
-				self.axes.add_patch(matplotlib.patches.Rectangle((d.tstart, 0), tendzoom-d.tstart, ysize+1, linewidth=1, edgecolor='black', fill=False))
+				tendzoom = tstart + (tend - tstart) * self.tzoom
+				self.axes.imshow(numpy.rot90(d.image), extent=(tstart, tendzoom, 0, ysize+1), aspect='auto', cmap=self.colormap, interpolation=self.interpolation)
+				self.axes.add_patch(matplotlib.patches.Rectangle((tstart, 0), tendzoom-tstart, ysize+1, linewidth=1, edgecolor='black', fill=False))
 	
 		# imshow() changes the axes xlim/ylim, so go back to something sensible
 		self.axes.autoscale_view()
