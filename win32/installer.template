@@ -55,11 +55,13 @@ Section
   File /r /x .* python-dist\DLLs
   File /r /x .* python-dist\Lib
 
-  File /oname=run.py ..\spacetime.py
   File debug.bat
 
+  CreateShortCut "$INSTDIR\Spacetime.lnk" "$INSTDIR\pythonw.exe" "-m spacetime.app"
+  CreateShortCut "$INSTDIR\Spacetime (debug mode).lnk" "$INSTDIR\debug.bat"
+
   CreateDirectory "$SMPROGRAMS\Spacetime"
-  CreateShortCut "$SMPROGRAMS\Spacetime\Spacetime.lnk" "$INSTDIR\pythonw.exe" "run.py"
+  CreateShortCut "$SMPROGRAMS\Spacetime\Spacetime.lnk" "$INSTDIR\pythonw.exe" "-m spacetime.app"
   CreateShortCut "$SMPROGRAMS\Spacetime\Spacetime (debug mode).lnk" "$INSTDIR\debug.bat"
   CreateShortCut "$SMPROGRAMS\Spacetime\Uninstall.lnk" "$INSTDIR\Uninstall.exe"
 

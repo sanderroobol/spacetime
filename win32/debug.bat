@@ -1,4 +1,4 @@
 @echo off
-python run.py
+python -m spacetime.app
 echo.
 set /p=(press enter to quit)
