@@ -145,6 +145,8 @@ class MultiTrend(Subplot):
 
 
 class DoubleMultiTrend(MultiTrend):
+	secondaryaxes = None
+
 	def __init__(self, data=None, secondarydata=None, formatter=None):
 		self.secondarydata = secondarydata
 		super(DoubleMultiTrend, self).__init__(data, formatter)

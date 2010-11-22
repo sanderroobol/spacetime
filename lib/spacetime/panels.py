@@ -10,7 +10,34 @@ class Tab(HasTraits):
 	pass
 
 
-class SubplotPanel(Tab):
+class TraitsSavedMeta(HasTraits.__metaclass__):
+	def __new__(mcs, name, bases, dict):
+		if 'traits_saved' not in dict:
+			dict['traits_saved'] = ()
+		for base in bases:
+			if 'traits_saved' in base.__dict__:
+				dict['traits_saved'] = tuple(i for i in base.__dict__['traits_saved'] if 'traits_not_saved' not in dict or i not in dict['traits_not_saved']) + dict['traits_saved']
+		return HasTraits.__metaclass__.__new__(mcs, name, bases, dict)
+
+
+class SerializableTab(Tab):
+	__metaclass__ = TraitsSavedMeta
+
+	def from_serialized(self, src):
+		if hasattr(self, 'traits_saved'):
+			# trait_set has to be called separately for each trait to respect the ordering of traits_saved
+			for id in self.traits_saved:
+				if id in src: # silently ignore unknown settings for backward and forward compatibility
+					self.trait_set(**dict(((id, src[id]),)))
+
+	def get_serialized(self):
+		if hasattr(self, 'traits_saved'):
+			return dict((id, getattr(self, id)) for id in self.traits_saved)
+		else:
+			return dict()
+
+
+class SubplotPanel(SerializableTab):
 	filename = File
 	reload = Button
 	simultaneity_offset = Float(0.)
@@ -23,6 +50,15 @@ class SubplotPanel(Tab):
 	visible = Bool(True)
 	number = 0
 	hold = False
+
+	# Magic attribute with "class level" "extension inheritance". Does this make any sense?
+	# It means that when you derive a class from this class, you only have to
+	# specify the attributes that are "new" in the derived class, any
+	# attributed listed in one of the parent classes will be added
+	# automatically.
+	# Anyway, this is possible thanks to the TraitsSavedMeta metaclass.
+	traits_saved = 'filename', 'simultaneity_offset', 'time_dilation_factor'
+	# traits_not_saved = ... can be used to specify parameters that should not be copied in a derived classes
 
 	relativistic_group = Group(
 		Item('simultaneity_offset', label='Simultaneity offset (s)'),
@@ -44,13 +80,18 @@ class SubplotPanel(Tab):
 			self.autoscale(self.plot.axes)
 			self.update_canvas()
 
+	def update(self):
+		if not self.hold:
+			self.update_canvas()
+
 	def _visible_changed(self):
-		self.redraw_figure()
+		if not self.hold:
+			self.redraw_figure()
 
 	@on_trait_change('simultaneity_offset, time_dilation_factor')
 	def relativistics_changed(self):
 		self.plot.adjust_time(self.simultaneity_offset, self.time_dilation_factor)
-		self.redraw_figure()
+		self.redraw()
 
 
 class CameraPanel(SubplotPanel):
@@ -59,8 +100,10 @@ class CameraPanel(SubplotPanel):
 	firstframe = Int(0)
 	lastframe = Int(0)
 	stepframe = Range(1, 1000000000)
-	framecount = Int(1000000000) # force different range selector
+	framecount = Int(0)
 	direction = Enum(1, 2)
+
+	traits_saved = 'firstframe', 'lastframe', 'stepframe', 'direction'
 
 	def _direction_changed(self):
 		self.data.direction = self.direction
@@ -77,7 +120,7 @@ class CameraFramePanelHandler(Handler):
 
 class CameraFramePanel(CameraPanel):
 	channel = Int(0)
-	channelcount = Int(1000000000)
+	channelcount = Int(0)
 	bgsubtract = Bool(True)
 	clip = Float(4.)
 	colormap = Enum(sorted((m for m in matplotlib.cm.datad if not m.endswith("_r")), key=string.lower))
@@ -91,6 +134,8 @@ class CameraFramePanel(CameraPanel):
 	is_filmstrip = Property(depends_on='mode')
 
 	tablabel = 'Camera'
+
+	traits_saved = 'channel', 'bgsubtract', 'clip', 'colormap', 'interpolation', 'zoom', 'rotate', 'mode'
 	
 	def __init__(self, *args, **kwargs):
 		super(CameraFramePanel, self).__init__(*args, **kwargs)
@@ -115,11 +160,11 @@ class CameraFramePanel(CameraPanel):
 
 	def _colormap_changed(self):
 		self.plot.set_colormap(self.colormap)
-		self.update_canvas()
+		self.update()
 
 	def _interpolation_changed(self):
 		self.plot.set_interpolation(self.interpolation)
-		self.update_canvas()
+		self.update()
 
 	def _filename_changed(self):
 		self.data = datasources.Camera(self.filename)
@@ -134,11 +179,11 @@ class CameraFramePanel(CameraPanel):
 			self.plot.axes.set_xlim(*self.plot.axes.dataLim.intervalx)
 		else:
 			self.autoscale()
-		self.update_canvas()
+		self.update()
 
 	def _rotate_changed(self):
 		self.plot.set_rotate(self.rotate)
-		self.update_canvas()
+		self.update()
 
 	def _firstframe_changed(self):
 		if self.mode == 'single frame' or self.firstframe > self.lastframe:
@@ -171,10 +216,10 @@ class CameraFramePanel(CameraPanel):
 		Group(
 			Item('visible'),
 			Item('filename', editor=FileEditor(filter=['Camera RAW files (*.raw)', '*.raw', 'All files', '*'], entries=0)),
-			Item('channel', editor=RangeEditor(low=0, high_name='channelcount')),
+			Item('channel', editor=RangeEditor(low=0, high_name='channelcount', mode='spinner')),
 			Item('mode', style='custom'),
-			Item('firstframe', label='First frame', editor=RangeEditor(low=0, high_name='framecount')),
-			Item('lastframe', label='Last frame', enabled_when='is_filmstrip', editor=RangeEditor(low=0, high_name='framecount')),
+			Item('firstframe', label='First frame', editor=RangeEditor(low=0, high_name='framecount', mode='spinner')),
+			Item('lastframe', label='Last frame', enabled_when='is_filmstrip', editor=RangeEditor(low=0, high_name='framecount', mode='spinner')),
 			Item('stepframe', label='Key frame mode', enabled_when='is_filmstrip'),
 			Item('direction', editor=EnumEditor(values={1:'1:L2R', 2:'2:R2L'})),
 			show_border=True,
@@ -217,6 +262,8 @@ class TimeTrendPanel(SubplotPanel):
 	selected_primary_channels = List(Str)
 	data = Instance(datasources.DataSource)
 
+	traits_saved = 'legend', 'ymin', 'ymax', 'selected_primary_channels'
+
 	def _plot_default(self):
 		plot = self.plotfactory()
 		plot.set_ylim_callback(self.ylim_callback)
@@ -243,18 +290,18 @@ class TimeTrendPanel(SubplotPanel):
 		self.redraw()
 
 	def _ymin_changed(self):
-		if self.plot.axes.get_ylim()[0] != self.ymin:
+		if self.plot.axes and self.plot.axes.get_ylim()[0] != self.ymin:
 			self.plot.axes.set_ylim(ymin=self.ymin)
-			self.update_canvas()
+			self.update()
 
 	def _ymax_changed(self):
-		if self.plot.axes.get_ylim()[1] != self.ymax:
+		if self.plot.axes and self.plot.axes.get_ylim()[1] != self.ymax:
 			self.plot.axes.set_ylim(ymax=self.ymax)
-			self.update_canvas()
+			self.update()
 
 	def _legend_changed(self):
 		self.plot.set_legend(self.legend)
-		self.update_canvas()
+		self.update()
 
 	left_yaxis_group = Group(
 		Item('channels', editor=ListStrEditor(editable=False, multi_select=True, selected='selected_primary_channels')),
@@ -285,6 +332,8 @@ class DoubleTimeTrendPanel(TimeTrendPanel):
 	ymin2 = Float(0.)
 	ymax2 = Float(1.)
 
+	traits_saved = 'selected_secondary_channels', 'ymin2', 'ymax2'
+
 	def _plot_default(self):
 		plot = self.plotfactory()
 		plot.set_ylim_callback(self.ylim_callback)
@@ -297,14 +346,14 @@ class DoubleTimeTrendPanel(TimeTrendPanel):
 			self.ymin2, self.ymax2 = ax.get_ylim()
 
 	def _ymin2_changed(self):
-		if self.plot.secondaryaxes.get_ylim()[0] != self.ymin2:
+		if self.plot.secondaryaxes and self.plot.secondaryaxes.get_ylim()[0] != self.ymin2:
 			self.plot.secondaryaxes.set_ylim(ymin=self.ymin2)
-			self.update_canvas()
+			self.update()
 
 	def _ymax2_changed(self):
-		if self.plot.secondaryaxes.get_ylim()[1] != self.ymax2:
+		if self.plot.secondaryaxes and self.plot.secondaryaxes.get_ylim()[1] != self.ymax2:
 			self.plot.secondaryaxes.set_ylim(ymax=self.ymax2)
-			self.update_canvas()
+			self.update()
 
 	@on_trait_change('selected_primary_channels, selected_secondary_channels')
 	def settings_changed(self):
@@ -346,6 +395,8 @@ class CameraTrendPanel(DoubleTimeTrendPanel, CameraPanel):
 
 	averaging = Bool(True)
 
+	traits_saved = 'averaging',
+
 	@on_trait_change('filename')
 	def load_file(self):
 		if self.filename:
@@ -377,8 +428,8 @@ class CameraTrendPanel(DoubleTimeTrendPanel, CameraPanel):
 		Group(
 			Item('visible'),
 			Item('filename', editor=FileEditor(filter=['Camera RAW files (*.raw)', '*.raw', 'All files', '*'], entries=0)),
-			Item('firstframe', label='First frame', editor=RangeEditor(low=0, high_name='framecount')),
-			Item('lastframe', label='Last frame', editor=RangeEditor(low=0, high_name='framecount')),
+			Item('firstframe', label='First frame', editor=RangeEditor(low=0, high_name='framecount', mode='spinner')),
+			Item('lastframe', label='Last frame', editor=RangeEditor(low=0, high_name='framecount', mode='spinner')),
 			Item('stepframe', label='Key frame mode'),
 			Item('direction', editor=EnumEditor(values={1:'1:L2R', 2:'2:R2L'})), # FIXME: for trends, it should be possible to show both!
 			Item('averaging', tooltip='Per-line averaging'),
@@ -398,7 +449,10 @@ class CVPanel(CameraTrendPanel):
 	plotfactory = subplots.CV
 	voltage_channel = Int(0)
 	current_channel = Int(0)
-	channelcount = Int(1000000000)
+	channelcount = Int(0)
+
+	traits_not_saved = 'selected_primary_channels', 'selected_secondary_channels'
+	traits_saved = 'voltage_channel', 'current_channel'
 
 	@on_trait_change('filename')
 	def load_file(self):
@@ -438,8 +492,8 @@ class CVPanel(CameraTrendPanel):
 		Group(
 			Item('visible'),
 			Item('filename', editor=FileEditor(filter=['Camera RAW files (*.raw)', '*.raw', 'All files', '*'], entries=0)),
-			Item('firstframe', label='First frame', editor=RangeEditor(low=0, high_name='framecount')),
-			Item('lastframe', label='Last frame', editor=RangeEditor(low=0, high_name='framecount')),
+			Item('firstframe', label='First frame', editor=RangeEditor(low=0, high_name='framecount', mode='spinner')),
+			Item('lastframe', label='Last frame', editor=RangeEditor(low=0, high_name='framecount', mode='spinner')),
 			Item('stepframe', label='Key frame mode'),
 			Item('direction', editor=EnumEditor(values={1:'1:L2R', 2:'2:R2L'})), # FIXME: for trends, it should be possible to show both!
 			Item('averaging', tooltip='Per-line averaging'),
@@ -447,8 +501,8 @@ class CVPanel(CameraTrendPanel):
 			label='General',
 		),
 		Group(
-			Item('voltage_channel', editor=RangeEditor(low=0, high_name='channelcount')),
-			Item('current_channel', editor=RangeEditor(low=0, high_name='channelcount')),
+			Item('voltage_channel', editor=RangeEditor(low=0, high_name='channelcount', mode='spinner')),
+			Item('current_channel', editor=RangeEditor(low=0, high_name='channelcount', mode='spinner')),
 			show_border=True,
 			label='Channels',
 		),

@@ -8,6 +8,7 @@ from enthought.traits.ui.api import *
 import matplotlib.figure, matplotlib.transforms
 import wx
 import datetime
+import json
 
 
 class DateTimeSelector(HasTraits):
@@ -37,46 +38,77 @@ class DateTimeSelector(HasTraits):
 	))
 
 
-class MainTab(panels.Tab):
+class PanelMapper(object):
+	MAPPING = (
+		('camera',              panels.CameraFramePanel),
+		('cameratrend',         panels.CameraTrendPanel),
+		('quaderaqms',          panels.QMSPanel),
+		('lpmgascabinet',       panels.GasCabinetPanel),
+		('prototypegascabinet', panels.OldGasCabinetPanel),
+		('tpdirk',              panels.TPDirkPanel),
+		('cameracv',            panels.CVPanel),
+	)
+
+	list_classes = tuple(klass for (id, klass) in MAPPING if id != 'general')
+	list_tablabels = tuple(klass.tablabel for klass in list_classes)
+	
+	mapping_id_class = dict((id, klass) for (id, klass) in MAPPING)
+	mapping_classname_id = dict((klass.__name__, id) for (id, klass) in MAPPING)
+	mapping_tablabel_class = dict((klass.tablabel, klass) for klass in list_classes)
+
+	@classmethod
+	def get_class_by_id(klass, id):
+		return klass.mapping_id_class[id]
+
+	@classmethod
+	def get_id_by_instance(klass, obj):
+		return klass.mapping_classname_id[obj.__class__.__name__]
+
+	@classmethod
+	def get_class_by_tablabel(klass, label):
+		return klass.mapping_tablabel_class[label]
+
+
+class MainTab(panels.SerializableTab):
 	xmin = Instance(DateTimeSelector, args=())
 	xmax = Instance(DateTimeSelector, args=())
+	xmin_mpldt = DelegatesTo('xmin', 'mpldt')
+	xmax_mpldt = DelegatesTo('xmax', 'mpldt')
 	tablabel = 'Main'
 	status = Str('')
 
-	taboptions = (
-		panels.CameraFramePanel,
-		panels.CameraTrendPanel,
-		panels.QMSPanel,
-		panels.GasCabinetPanel,
-		panels.OldGasCabinetPanel,
-		panels.TPDirkPanel,
-		panels.CVPanel,
-	)
-	tabdict = dict((klass.tablabel, klass) for klass in taboptions)
-	tablabels = [klass.tablabel for klass in taboptions]
+	traits_saved = 'xmin_mpldt', 'xmax_mpldt'
 
 	add = Button()
-	subgraph_type = Enum(*tablabels)
+	subgraph_type = Enum(*PanelMapper.list_tablabels)
 
 	mainwindow = Any
 
+	def _init_tab(self, klass):
+		return klass(update_canvas=self.mainwindow.update_canvas, autoscale=self.mainwindow.plot.autoscale, redraw_figure=self.mainwindow.redraw_figure)
+
 	def _add_fired(self):
-		self.mainwindow.add_tab(self.tabdict[self.subgraph_type](update_canvas=self.mainwindow.update_canvas, autoscale=self.mainwindow.plot.autoscale, redraw_figure=self.mainwindow.redraw_figure))
+		self.mainwindow.add_tab(self._init_tab(PanelMapper.get_class_by_tablabel(self.subgraph_type)))
 	
 	def xlim_callback(self, ax):
 		self.xmin.mpldt, self.xmax.mpldt = ax.get_xlim()
 
 	@on_trait_change('xmin.mpldt')
 	def _xmin_mpldt_changed(self):
-		if self.mainwindow.plot.master_axes.get_xlim()[0] != self.xmin.mpldt:
+		if self.mainwindow.plot.master_axes and self.mainwindow.plot.master_axes.get_xlim()[0] != self.xmin.mpldt:
 			self.mainwindow.plot.master_axes.set_xlim(xmin=self.xmin.mpldt)
 			self.mainwindow.update_canvas()
 
 	@on_trait_change('xmax.mpldt')
 	def _xmax_mpldt_changed(self):
-		if self.mainwindow.plot.master_axes.get_xlim()[1] != self.xmax.mpldt:
+		if self.mainwindow.plot.master_axes and self.mainwindow.plot.master_axes.get_xlim()[1] != self.xmax.mpldt:
 			self.mainwindow.plot.master_axes.set_xlim(xmax=self.xmax.mpldt)
 			self.mainwindow.update_canvas()
+
+	def get_serialized(self):
+		d = super(MainTab, self).get_serialized()
+		d['version'] = version.version
+		return d
 
 	traits_view = View(Group(
 		Group(
@@ -86,7 +118,7 @@ class MainTab(panels.Tab):
 			show_border=True,
 		),
 		Group(
-			Item('subgraph_type', show_label=False, style='custom', editor=EnumEditor(values=tablabels, format_func=lambda x: x, cols=1)),
+			Item('subgraph_type', show_label=False, style='custom', editor=EnumEditor(values=PanelMapper.list_tablabels, format_func=lambda x: x, cols=1)),
 			Item('add', show_label=False),
 			label='Add subgraph',
 			show_border=True,
@@ -107,6 +139,64 @@ class PythonTab(panels.Tab):
 	)
 
 	tablabel = 'Python'
+
+
+class ToolBarHandler(Handler):
+	def do_new(self, info):
+		if not self.close(info):
+			return False
+		mainwindow = info.ui.context['object']
+		mainwindow.clear()
+		return True
+
+	def close(self, info, is_ok=None):
+		mainwindow = info.ui.context['object']
+		if mainwindow.has_modifications():
+			dlg = wx.MessageDialog(info.ui.control, 'Save current project?', style=wx.YES_NO | wx.CANCEL | wx.ICON_EXCLAMATION)
+			ret = dlg.ShowModal()
+			if ret == wx.ID_CANCEL:
+				return False
+			elif ret == wx.ID_YES:
+				return self.do_save(info)
+		return True
+		
+	def do_open(self, info):
+		if not self.do_new(info):
+			return
+		dlg = wx.FileDialog(info.ui.control, style=wx.FD_OPEN, wildcard='Spacetime Project files (*.stp)|*.stp')
+		if dlg.ShowModal() != wx.ID_OK:
+			return
+		mainwindow = info.ui.context['object']
+		fp = open(dlg.Filename)
+		data = json.load(fp)
+		fp.close()
+		mainwindow.tabs[0].from_serialized(data.pop(0)[1])
+		# FIXME: check version number and emit warning
+		for id, props in data:
+			try:
+				obj = mainwindow.tabs[0]._init_tab(PanelMapper.get_class_by_id(id))
+			except KeyError:
+				pass # silently ignore unknown class names for backward and forward compatibility
+			obj.hold = True
+			obj.from_serialized(props)
+			obj.hold = False
+			mainwindow.add_tab(obj)
+		mainwindow.redraw_figure()
+
+	def do_save(self, info):
+		dlg = wx.FileDialog(info.ui.control, style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT, wildcard='Spacetime Project files (*.stp)|*.stp')
+		if dlg.ShowModal() != wx.ID_OK:
+			return False
+		mainwindow = info.ui.context['object']
+
+		data = [('general', mainwindow.tabs[0].get_serialized())]
+		for tab in mainwindow.tabs:
+			if isinstance(tab, panels.SubplotPanel):
+				data.append((PanelMapper.get_id_by_instance(tab), tab.get_serialized()))
+		fp = open(dlg.Filename, 'w')
+		json.dump(data, fp)
+		fp.close()
+		return True
 
 
 class App(HasTraits):
@@ -144,6 +234,14 @@ class App(HasTraits):
 	def _tabs_default(self):
 		return [self.maintab, PythonTab()]
 
+	def clear(self):
+		self.tabs = self._tabs_default()
+		for klass in PanelMapper.list_classes:
+			klass.number = 0
+
+	def has_modifications(self):
+		return len(self.tabs) > 2
+
 	def redraw_figure(self):
 		self.plot.clear()
 		[self.plot.add_subplot(tab.plot) for tab in self.tabs if isinstance(tab, panels.SubplotPanel) and tab.visible]
@@ -167,6 +265,10 @@ class App(HasTraits):
 	def _figure_default(self):
 		return self.plot.figure
 
+	action_new = Action(name="New", action="do_new", toolip="New Spacetime Project")
+	action_open = Action(name="Open", action="do_open", toolip="Open Spacetime Project")
+	action_save = Action(name="Save", action="do_save", toolip="Save Spacetime Project")
+
 	traits_view = View(
 			HSplit(
 				Item('figure', editor=MPLFigureEditor(status='status'), dock='vertical'),
@@ -176,7 +278,9 @@ class App(HasTraits):
 			resizable=True,
 			height=700, width=1100,
 			buttons=NoButtons,
-			title='Spacetime %s' % version.version
+			title='Spacetime %s' % version.version,
+			toolbar=ToolBar(action_new, action_open, action_save),
+			handler=ToolBarHandler()
 		)
 
 	def run(self):
