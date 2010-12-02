@@ -107,6 +107,7 @@ class GasCabinetFormatter(MultiTrendFormatter):
 
 class MultiTrend(Subplot):
 	legend = True
+	ylog = False
 
 	def __init__(self, data=None, formatter=None):
 		super(MultiTrend, self).__init__(data)
@@ -124,6 +125,8 @@ class MultiTrend(Subplot):
 		for d in self.data.iterchannels():
 			self.axes.plot(self.time_factor*d.time + self.time_offset/86400., d.value, self.formatter(d), label=d.id)
 		self.draw_legend()
+		if self.ylog:
+			self.axes.set_yscale('log')
 
 	def clear(self, quick=False):
 		if not quick:
@@ -131,6 +134,11 @@ class MultiTrend(Subplot):
 				del self.axes.lines[:]
 				self.axes.relim()
 		super(MultiTrend, self).clear(quick)
+
+	def set_ylog(self, ylog):
+		self.ylog = ylog
+		if self.axes:
+			self.axes.set_yscale('log' if ylog else 'linear')
 
 	def set_legend(self, legend):
 		self.legend = legend
@@ -146,6 +154,7 @@ class MultiTrend(Subplot):
 
 class DoubleMultiTrend(MultiTrend):
 	secondaryaxes = None
+	ylog2 = False
 
 	def __init__(self, data=None, secondarydata=None, formatter=None):
 		self.secondarydata = secondarydata
@@ -167,6 +176,8 @@ class DoubleMultiTrend(MultiTrend):
 			for d in self.secondarydata.iterchannels():
 				self.secondaryaxes.plot(self.time_factor*d.time + self.time_offset/86400., d.value, self.formatter(d), label=d.id)
 			self.draw_legend()
+			if self.ylog2:
+				self.secondaryaxes.set_yscale('log')
 
 	def draw_legend(self):
 		if self.legend:
@@ -179,8 +190,13 @@ class DoubleMultiTrend(MultiTrend):
 			if len(handles):
 				self.secondaryaxes.legend(handles, labels)
 
+	def set_ylog2(self, ylog2):
+		self.ylog2 = ylog2
+		if self.secondaryaxes:
+			self.secondaryaxes.set_yscale('log' if ylog2 else 'linear')
+
 	def set_legend(self, legend):
-		if not legend:
+		if not legend and self.secondaryaxes:
 			self.secondaryaxes.legend_ = None
 		super(DoubleMultiTrend, self).set_legend(legend)
 
@@ -202,7 +218,6 @@ class QMS(MultiTrend):
 	def setup(self):
 		super(QMS, self).setup()
 		self.axes.set_ylabel('Ion current (A)')
-		self.axes.set_yscale('log')
 
 
 class TPDirk(DoubleMultiTrend):

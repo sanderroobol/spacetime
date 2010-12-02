@@ -151,7 +151,7 @@ class ReactorEnvironment(LabviewMultiTrend):
 	def __init__(self, *args, **kwargs):
 		super(ReactorEnvironment, self).__init__(*args, **kwargs)
 		fp = open(self.filename)
-		columns = fp.readline().split('\t')
+		columns = fp.readline().strip().split('\t')
 		self.data = numpy.loadtxt(fp)
 		fp.close()
 
@@ -184,7 +184,6 @@ class TPDirk(MultiTrend):
 			Struct(id='pressure', time=data[:,0], value=data[:,1]),
 			Struct(id='temperature', time=data[:,0], value=data[:,2]),
 		]
-
 
 
 class ChainedImage(DataSource):

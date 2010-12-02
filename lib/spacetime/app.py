@@ -280,8 +280,9 @@ class App(HasTraits):
 			height=700, width=1100,
 			buttons=NoButtons,
 			title='Spacetime %s' % version.version,
-			toolbar=ToolBar(action_new, action_open, action_save),
-			handler=ToolBarHandler()
+# DISABLED FOR 0.3 RELEASE
+#			toolbar=ToolBar(action_new, action_open, action_save),
+#			handler=ToolBarHandler()
 		)
 
 	def run(self):

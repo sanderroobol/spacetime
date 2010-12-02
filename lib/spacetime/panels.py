@@ -259,11 +259,12 @@ class TimeTrendPanel(SubplotPanel):
 	legend = Bool(True)
 	ymin = Float(0.)
 	ymax = Float(1.)
+	ylog = Bool(False)
 	channels = List(Str)
 	selected_primary_channels = List(Str)
 	data = Instance(datasources.DataSource)
 
-	traits_saved = 'legend', 'ymin', 'ymax', 'selected_primary_channels'
+	traits_saved = 'legend', 'ymin', 'ymax', 'ylog', 'selected_primary_channels'
 
 	def _plot_default(self):
 		plot = self.plotfactory()
@@ -300,6 +301,10 @@ class TimeTrendPanel(SubplotPanel):
 			self.plot.axes.set_ylim(ymax=self.ymax)
 			self.update()
 
+	def _ylog_changed(self):
+		self.plot.set_ylog(self.ylog)
+		self.update()
+
 	def _legend_changed(self):
 		self.plot.set_legend(self.legend)
 		self.update()
@@ -308,6 +313,7 @@ class TimeTrendPanel(SubplotPanel):
 		Item('channels', editor=ListStrEditor(editable=False, multi_select=True, selected='selected_primary_channels')),
 		Item('ymin'),
 		Item('ymax'),
+		Item('ylog', label='Logarithmic'),
 		show_border=True,
 		label='Left y-axis'
 	)
@@ -333,8 +339,9 @@ class DoubleTimeTrendPanel(TimeTrendPanel):
 	selected_secondary_channels = List(Str)
 	ymin2 = Float(0.)
 	ymax2 = Float(1.)
+	ylog2 = Bool(False)
 
-	traits_saved = 'selected_secondary_channels', 'ymin2', 'ymax2'
+	traits_saved = 'selected_secondary_channels', 'ymin2', 'ymax2', 'ylog2'
 
 	def _plot_default(self):
 		plot = self.plotfactory()
@@ -357,6 +364,10 @@ class DoubleTimeTrendPanel(TimeTrendPanel):
 			self.plot.secondaryaxes.set_ylim(ymax=self.ymax2)
 			self.update()
 
+	def _ylog2_changed(self):
+		self.plot.set_ylog2(self.ylog2)
+		self.update()
+
 	@on_trait_change('selected_primary_channels, selected_secondary_channels')
 	def settings_changed(self):
 		self.plot.set_data(
@@ -369,6 +380,7 @@ class DoubleTimeTrendPanel(TimeTrendPanel):
 		Item('channels', editor=ListStrEditor(editable=False, multi_select=True, selected='selected_secondary_channels')),
 		Item('ymin2', label='Ymin'),
 		Item('ymax2', label='Ymax'),
+		Item('ylog2', label='Logarithmic'),
 		show_border=True,
 		label='Right y-axis'
 	)
@@ -516,6 +528,10 @@ class QMSPanel(TimeTrendPanel):
 	datafactory = datasources.QMS
 	plotfactory = subplots.QMS
 	filter = 'Quadera ASCII files (*.asc)', '*.asc'
+
+	def __init__(self, *args, **kwargs):
+		super(QMSPanel, self).__init__(*args, **kwargs)
+		self.ylog = True
 
 
 class TPDirkPanel(DoubleTimeTrendPanel):
