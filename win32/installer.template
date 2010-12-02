@@ -52,7 +52,6 @@ Section
   File python-dist\python.exe
   File python-dist\pythonw.exe
   File python-dist\python26.dll
-  File /r /x .* python-dist\DLLs
   File /r /x .* python-dist\Lib
 
   File debug.bat
@@ -84,9 +83,7 @@ Section "Uninstall"
   Delete "$INSTDIR\python.exe"
   Delete "$INSTDIR\pythonw.exe"
   Delete "$INSTDIR\python26.dll"
-  Delete "$INSTDIR\run.py"
   RMDir /r "$INSTDIR\Lib"
-  RMDir /r "$INSTDIR\DLLs"
 
   RMDir /r "$SMPROGRAMS\Spacetime"
   
