@@ -5,10 +5,12 @@ from . import plot, util, panels, version, uiutil
 
 from enthought.traits.api import *
 from enthought.traits.ui.api import *
+from enthought.pyface.api import ImageResource
 import matplotlib.figure, matplotlib.transforms
 import wx
 import datetime
 import json
+import os
 
 
 class DateTimeSelector(HasTraits):
@@ -142,7 +144,7 @@ class PythonTab(panels.Tab):
 	tablabel = 'Python'
 
 
-class ToolBarHandler(Handler):
+class MainWindowHandler(Handler):
 	def do_new(self, info):
 		if not self.close(info):
 			return False
@@ -198,6 +200,11 @@ class ToolBarHandler(Handler):
 		json.dump(data, fp)
 		fp.close()
 		return True
+
+
+ICON_PATH = [os.path.join(os.path.dirname(__file__), 'icons')]
+def GetIcon(id):
+	return ImageResource(id, search_path=ICON_PATH)
 
 
 class App(HasTraits):
@@ -266,9 +273,9 @@ class App(HasTraits):
 	def _figure_default(self):
 		return self.plot.figure
 
-	action_new = Action(name="New", action="do_new", toolip="New Spacetime Project")
-	action_open = Action(name="Open", action="do_open", toolip="Open Spacetime Project")
-	action_save = Action(name="Save", action="do_save", toolip="Save Spacetime Project")
+	action_new = Action(name="New", action="do_new", toolip="New Spacetime Project", image=GetIcon('new'))
+	action_open = Action(name="Open", action="do_open", toolip="Open Spacetime Project", image=GetIcon('open'))
+	action_save = Action(name="Save", action="do_save", toolip="Save Spacetime Project", image=GetIcon('save'))
 
 	traits_view = View(
 			HSplit(
@@ -280,9 +287,8 @@ class App(HasTraits):
 			height=700, width=1100,
 			buttons=NoButtons,
 			title='Spacetime %s' % version.version,
-# DISABLED FOR 0.3 RELEASE
-#			toolbar=ToolBar(action_new, action_open, action_save),
-#			handler=ToolBarHandler()
+			toolbar=ToolBar(action_new, action_open, action_save),
+			handler=MainWindowHandler()
 		)
 
 	def run(self):
