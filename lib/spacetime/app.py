@@ -45,6 +45,7 @@ class PanelMapper(object):
 		('quaderaqms',          panels.QMSPanel),
 		('lpmgascabinet',       panels.GasCabinetPanel),
 		('prototypegascabinet', panels.OldGasCabinetPanel),
+		('reactorenvironment',  panels.ReactorEnvironmentPanel),
 		('tpdirk',              panels.TPDirkPanel),
 		('cameracv',            panels.CVPanel),
 	)

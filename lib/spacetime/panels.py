@@ -255,6 +255,7 @@ class CameraFramePanel(CameraPanel):
 
 
 class TimeTrendPanel(SubplotPanel):
+	plotfactory = subplots.MultiTrend
 	legend = Bool(True)
 	ymin = Float(0.)
 	ymax = Float(1.)
@@ -328,6 +329,7 @@ class TimeTrendPanel(SubplotPanel):
 
 
 class DoubleTimeTrendPanel(TimeTrendPanel):
+	plotfactory = subplots.DoubleMultiTrend
 	selected_secondary_channels = List(Str)
 	ymin2 = Float(0.)
 	ymax2 = Float(1.)
@@ -390,7 +392,6 @@ class DoubleTimeTrendPanel(TimeTrendPanel):
 
 class CameraTrendPanel(DoubleTimeTrendPanel, CameraPanel):
 	tablabel = 'Camera Trend'
-	plotfactory = subplots.DoubleMultiTrend
 	filter = 'Camera RAW files (*.raw)', '*.raw'
 
 	averaging = Bool(True)
@@ -573,4 +574,10 @@ class OldGasCabinetPanel(DoubleTimeTrendPanel):
 	tablabel = 'Prototype gas cabinet'
 	plotfactory = subplots.GasCabinet
 	datafactory = datasources.OldGasCabinet
+	filter = 'ASCII text files (*.txt)', '*.txt',
+
+
+class ReactorEnvironmentPanel(DoubleTimeTrendPanel):
+	tablabel = 'Reactor Enviroment logger'
+	datafactory = datasources.ReactorEnvironment
 	filter = 'ASCII text files (*.txt)', '*.txt',

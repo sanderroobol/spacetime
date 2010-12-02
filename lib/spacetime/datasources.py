@@ -114,18 +114,21 @@ class OldGasCabinet(MultiTrend):
 		# NOTE: the last two columns (Leak dectector) are ignored
 
 
-class GasCabinet(MultiTrend):
-	controllers = ['NO', 'H2', 'O2', 'CO', 'Ar', 'Shunt', 'BPC1', 'BPC2']
-	parameters = ['time', 'measure', 'set point', 'valve output']
-	valves = ['MIX', 'MRS', 'INJ', 'OUT', 'Pump'] 
-	data = None
 
+class LabviewMultiTrend(MultiTrend):
 	@staticmethod
 	def parselabviewdate(fl):
 		# Labview uses the number of seconds since 1-1-1904 00:00:00 UTC.
 		# mpldtfromdatetime(datetime.datetime(1904, 1, 1, 0, 0, 0, tzinfo=pytz.utc)) = 695056
 		# FIXME: the + 1./24 is a hack to convert to local time
 		return fl / 86400. + 695056 + 1./24
+
+
+class GasCabinet(LabviewMultiTrend):
+	controllers = ['NO', 'H2', 'O2', 'CO', 'Ar', 'Shunt', 'BPC1', 'BPC2']
+	parameters = ['time', 'measure', 'set point', 'valve output']
+	valves = ['MIX', 'MRS', 'INJ', 'OUT', 'Pump'] 
+	data = None
 
 	def __init__(self, *args, **kwargs):
 		super(GasCabinet, self).__init__(*args, **kwargs)
@@ -142,7 +145,21 @@ class GasCabinet(MultiTrend):
 		time = self.parselabviewdate(self.data[:,colstart])
 		for i, v in enumerate(self.valves):
 			self.channels.append(Struct(time=time, value=self.data[:,colstart+i+1], id='%s valve' % v, valve=v))
-			
+
+
+class ReactorEnvironment(LabviewMultiTrend):
+	def __init__(self, *args, **kwargs):
+		super(ReactorEnvironment, self).__init__(*args, **kwargs)
+		fp = open(self.filename)
+		columns = fp.readline().split('\t')
+		self.data = numpy.loadtxt(fp)
+		fp.close()
+
+		self.channels = []
+		time = self.parselabviewdate(self.data[:,0])
+		for i, v in enumerate(columns[1:]):
+			self.channels.append(Struct(time=time, value=self.data[:,i+1], id=v))
+
 
 class TPDirk(MultiTrend):
 	def readiter(self):
