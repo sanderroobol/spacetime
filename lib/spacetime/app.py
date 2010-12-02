@@ -87,11 +87,8 @@ class MainTab(panels.SerializableTab):
 
 	mainwindow = Any
 
-	def _init_tab(self, klass):
-		return klass(update_canvas=self.mainwindow.update_canvas, autoscale=self.mainwindow.plot.autoscale, redraw_figure=self.mainwindow.redraw_figure)
-
 	def _add_fired(self):
-		self.mainwindow.add_tab(self._init_tab(PanelMapper.get_class_by_tablabel(self.subgraph_type)))
+		self.mainwindow.add_tab(PanelMapper.get_class_by_tablabel(self.subgraph_type))
 	
 	def xlim_callback(self, ax):
 		self.xmin.mpldt, self.xmax.mpldt = ax.get_xlim()
@@ -177,13 +174,9 @@ class MainWindowHandler(Handler):
 		# FIXME: check version number and emit warning
 		for id, props in data:
 			try:
-				obj = mainwindow.tabs[0]._init_tab(PanelMapper.get_class_by_id(id))
+				mainwindow.add_tab(PanelMapper.get_class_by_id(id), props)
 			except KeyError:
 				pass # silently ignore unknown class names for backward and forward compatibility
-			obj.hold = True
-			obj.from_serialized(props)
-			obj.hold = False
-			mainwindow.add_tab(obj)
 		mainwindow.redraw_figure()
 
 	def do_save(self, info):
@@ -222,7 +215,12 @@ class App(HasTraits):
 	def update_canvas(self):
 		wx.CallAfter(self.figure.canvas.draw)
 
-	def add_tab(self, tab):
+	def add_tab(self, klass, serialized_data=None):
+		tab = klass(update_canvas=self.update_canvas, autoscale=self.plot.autoscale, redraw_figure=self.redraw_figure)
+		if serialized_data is not None:
+			tab.hold = True
+			tab.from_serialized(serialized_data)
+			tab.hold = False
 		self.tabs.append(tab)
 
 	def _maintab_default(self):
