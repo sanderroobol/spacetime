@@ -232,11 +232,11 @@ class App(HasTraits):
 		self.redraw_figure()
 
 	def _tabs_items_changed(self, event):
-		#for removed in event.removed: FIXME doesn't work...
-		#	if isinstance(removed, MainTab):
-		#		self.tabs = [removed] + self.tabs
-		#	elif isinstance(removed, PythonShell):
-		#		self.tabs = [self.tabs[0], removed] + self.tabs[1:]
+		for removed in event.removed:
+			if isinstance(removed, MainTab):
+				self.tabs.insert(0, removed)
+			elif isinstance(removed, PythonTab):
+				self.tabs.insert(1, removed)
 		self.redraw_figure()
 
 	def _tabs_default(self):
