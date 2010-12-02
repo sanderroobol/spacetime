@@ -132,13 +132,14 @@ class MainTab(panels.SerializableTab):
 	))
 
 
-class PythonTab(panels.Tab):
+class PythonWindow(HasTraits):
 	shell = PythonValue({})
 	traits_view = View(
-		Item('shell', show_label=False, editor=ShellEditor(share=False))
+		Item('shell', show_label=False, editor=ShellEditor(share=False)),
+		title='Python shell',
+		height=600,
+		width=500,
 	)
-
-	tablabel = 'Python'
 
 
 class MainWindowHandler(Handler):
@@ -208,6 +209,9 @@ class MainWindowHandler(Handler):
 		self.set_ui_title(info, dlg.Filename)
 		return True
 
+	def do_python(self, info):
+		PythonWindow().edit_traits()
+
 
 ICON_PATH = [os.path.join(os.path.dirname(__file__), 'icons')]
 def GetIcon(id):
@@ -247,12 +251,10 @@ class App(HasTraits):
 		for removed in event.removed:
 			if isinstance(removed, MainTab):
 				self.tabs.insert(0, removed)
-			elif isinstance(removed, PythonTab):
-				self.tabs.insert(1, removed)
 		self.redraw_figure()
 
 	def _tabs_default(self):
-		return [self.maintab, PythonTab()]
+		return [self.maintab]
 
 	def clear(self):
 		self.tabs = self._tabs_default()
@@ -289,6 +291,8 @@ class App(HasTraits):
 	action_open = Action(name="Open", action="do_open", toolip="Open Spacetime Project", image=GetIcon('open'))
 	action_save = Action(name="Save", action="do_save", toolip="Save Spacetime Project", image=GetIcon('save'))
 
+	action_python = Action(name="Python", action="do_python", toolip="Open Python shell", image=GetIcon('python'))
+
 	traits_view = View(
 			HSplit(
 				Item('figure', editor=MPLFigureEditor(status='status'), dock='vertical'),
@@ -299,7 +303,11 @@ class App(HasTraits):
 			height=700, width=1100,
 			buttons=NoButtons,
 			title=MainWindowHandler.get_ui_title(),
-			toolbar=ToolBar(action_new, action_open, action_save),
+			toolbar=ToolBar(
+				'main', action_new, action_open, action_save,
+				'python', action_python,
+				show_tool_names=False
+			),
 			handler=MainWindowHandler()
 		)
 
