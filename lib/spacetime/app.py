@@ -142,11 +142,22 @@ class PythonTab(panels.Tab):
 
 
 class MainWindowHandler(Handler):
+	@staticmethod	
+	def get_ui_title(filename = None):
+		title = 'Spacetime %s' % version.version
+		if filename is not None:
+			title = '%s - %s' % (title, filename)
+		return title
+
+	def set_ui_title(self, info, filename=None):
+		info.ui.title = self.get_ui_title(filename)
+
 	def do_new(self, info):
 		if not self.close(info):
 			return False
 		mainwindow = info.ui.context['object']
 		mainwindow.clear()
+		self.set_ui_title(info)
 		return True
 
 	def close(self, info, is_ok=None):
@@ -161,12 +172,14 @@ class MainWindowHandler(Handler):
 		return True
 		
 	def do_open(self, info):
-		if not self.do_new(info):
+		if not self.close(info):
 			return
 		dlg = wx.FileDialog(info.ui.control, style=wx.FD_OPEN, wildcard='Spacetime Project files (*.stp)|*.stp')
 		if dlg.ShowModal() != wx.ID_OK:
 			return
 		mainwindow = info.ui.context['object']
+		mainwindow.clear()
+		self.set_ui_title(info, os.path.basename(dlg.Filename))
 		fp = open(dlg.Filename)
 		data = json.load(fp)
 		fp.close()
@@ -192,6 +205,7 @@ class MainWindowHandler(Handler):
 		fp = open(dlg.Filename, 'w')
 		json.dump(data, fp)
 		fp.close()
+		self.set_ui_title(info, os.path.basename(dlg.Filename))
 		return True
 
 
