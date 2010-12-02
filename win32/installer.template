@@ -66,6 +66,8 @@ Section
 
   SetOutPath "$INSTDIR\Lib\spacetime"
   File /x .* ..\lib\spacetime\*.py
+  SetOutPath "$INSTDIR\Lib\spacetime\icons"
+  File /x .* ..\lib\spacetime\icons\*.png
   
   ;Store installation folder
   WriteRegStr HKCU "Software\Spacetime" "" $INSTDIR
