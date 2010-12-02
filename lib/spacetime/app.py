@@ -179,8 +179,8 @@ class MainWindowHandler(Handler):
 			return
 		mainwindow = info.ui.context['object']
 		mainwindow.clear()
-		self.set_ui_title(info, os.path.basename(dlg.Filename))
-		fp = open(dlg.Filename)
+		self.set_ui_title(info, dlg.Filename)
+		fp = open(dlg.Path)
 		data = json.load(fp)
 		fp.close()
 		mainwindow.tabs[0].from_serialized(data.pop(0)[1])
@@ -202,10 +202,10 @@ class MainWindowHandler(Handler):
 		for tab in mainwindow.tabs:
 			if isinstance(tab, panels.SubplotPanel):
 				data.append((PanelMapper.get_id_by_instance(tab), tab.get_serialized()))
-		fp = open(dlg.Filename, 'w')
+		fp = open(dlg.Path, 'w')
 		json.dump(data, fp)
 		fp.close()
-		self.set_ui_title(info, os.path.basename(dlg.Filename))
+		self.set_ui_title(info, dlg.Filename)
 		return True
 
 
@@ -298,7 +298,7 @@ class App(HasTraits):
 			resizable=True,
 			height=700, width=1100,
 			buttons=NoButtons,
-			title='Spacetime %s' % version.version,
+			title=MainWindowHandler.get_ui_title(),
 			toolbar=ToolBar(action_new, action_open, action_save),
 			handler=MainWindowHandler()
 		)
