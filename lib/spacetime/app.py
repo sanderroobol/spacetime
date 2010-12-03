@@ -129,11 +129,6 @@ class MainTab(panels.SerializableTab):
 			label='Graph settings',
 			show_border=True,
 		),
-		Group(
-			Item('status', show_label=False, style='readonly'),
-			label='Cursor',
-			show_border=True,
-		),
 		layout='normal',
 	))
 
@@ -357,7 +352,8 @@ class App(HasTraits):
 					Action(name='Python', action='do_python', tooltip='Python shell', image=GetIcon('python')),
 				show_tool_names=False
 			),
-			handler=MainWindowHandler()
+			statusbar='status',
+			handler=MainWindowHandler(),
 		)
 
 	def run(self):
