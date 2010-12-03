@@ -35,3 +35,7 @@ class Message(HasTraits):
 	@classmethod
 	def file_open_failed(klass, filename):
 		return klass.exception(message='Failed to open file', desc='%s\nmight not be accessible or it is not in the correct format.' % filename)
+
+	@classmethod
+	def file_save_failed(klass, filename):
+		return klass.exception(message='Failed to save file', desc=filename)

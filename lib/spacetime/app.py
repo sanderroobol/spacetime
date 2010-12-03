@@ -203,14 +203,44 @@ class MainWindowHandler(Handler):
 		for tab in mainwindow.tabs:
 			if isinstance(tab, panels.SubplotPanel):
 				data.append((PanelMapper.get_id_by_instance(tab), tab.get_serialized()))
-		fp = open(dlg.Path, 'w')
-		json.dump(data, fp)
-		fp.close()
+		try:
+			fp = open(dlg.Path, 'w')
+			json.dump(data, fp)
+			fp.close()
+		except:
+			uiutil.Message.file_save_failed(path)
+			return False
 		self.set_ui_title(info, dlg.Filename)
 		return True
 
 	def do_python(self, info):
 		PythonWindow().edit_traits()
+
+	def do_export(self, info):
+		# mostly borrowed from Matplotlib's NavigationToolbar2Wx.save()
+		mainwindow = info.ui.context['object']
+		canvas = mainwindow.figure.canvas
+		# Fetch the required filename and file type.
+		filetypes, exts, filter_index = canvas._get_imagesave_wildcards()
+		default_file = "image." + canvas.get_default_filetype()
+		dlg = wx.FileDialog(info.ui.control, "Save to file", "", default_file, filetypes, wx.SAVE|wx.OVERWRITE_PROMPT)
+		dlg.SetFilterIndex(filter_index)
+		if dlg.ShowModal() == wx.ID_OK:
+			dirname  = dlg.GetDirectory()
+			filename = dlg.GetFilename()
+			format = exts[dlg.GetFilterIndex()]
+			basename, ext = os.path.splitext(filename)
+			if ext.startswith('.'):
+				ext = ext[1:]
+			if ext in ('svg', 'pdf', 'ps', 'eps', 'png') and format != ext:
+				#looks like they forgot to set the image type drop down, going with the extension.
+				#warnings.warn('extension %s did not match the selected image type %s; going with %s'%(
+				format = ext
+			path = os.path.join(dirname, filename)
+			try:
+				canvas.print_figure(path, format=format)
+			except:
+				uiutil.Message.file_save_failed(path)
 
 
 ICON_PATH = [os.path.join(os.path.dirname(__file__), 'icons')]
@@ -287,12 +317,6 @@ class App(HasTraits):
 	def _figure_default(self):
 		return self.plot.figure
 
-	action_new = Action(name="New", action="do_new", toolip="New Spacetime Project", image=GetIcon('new'))
-	action_open = Action(name="Open", action="do_open", toolip="Open Spacetime Project", image=GetIcon('open'))
-	action_save = Action(name="Save", action="do_save", toolip="Save Spacetime Project", image=GetIcon('save'))
-
-	action_python = Action(name="Python", action="do_python", toolip="Open Python shell", image=GetIcon('python'))
-
 	traits_view = View(
 			HSplit(
 				Item('figure', editor=MPLFigureEditor(status='status'), dock='vertical'),
@@ -304,8 +328,20 @@ class App(HasTraits):
 			buttons=NoButtons,
 			title=MainWindowHandler.get_ui_title(),
 			toolbar=ToolBar(
-				'main', action_new, action_open, action_save,
-				'python', action_python,
+				'main',
+					Action(name='New', action='do_new', tooltip='New project', image=GetIcon('new')),
+					Action(name='Open', action='do_open', tooltip='Open project', image=GetIcon('open')),
+					Action(name='Save', action='do_save', tooltip='Save project', image=GetIcon('save')),
+				'add',
+					Action(name='Add', action='do_add', tooltip='Add graph', image=GetIcon('add')),
+				'graph',
+					Action(name='Fit', action='do_fit', tooltip='Zoom to fit', image=GetIcon('fit')),
+					Action(name='Zoom', action='do_zoom', tooltip='Zoom rectangle', image=GetIcon('zoom')),
+					Action(name='Pan', action='do_pan', tooltip='Pan', image=GetIcon('pan')),
+				'export',
+					Action(name='Export', action='do_export', tooltip='Export', image=GetIcon('export')),
+				'python', 
+					Action(name='Python', action='do_python', tooltip='Python shell', image=GetIcon('python')),
 				show_tool_names=False
 			),
 			handler=MainWindowHandler()
