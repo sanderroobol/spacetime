@@ -93,13 +93,11 @@ class MainTab(panels.SerializableTab):
 	def xlim_callback(self, ax):
 		self.xmin.mpldt, self.xmax.mpldt = ax.get_xlim()
 
-	@on_trait_change('xmin.mpldt')
 	def _xmin_mpldt_changed(self):
 		if self.mainwindow.plot.master_axes and self.mainwindow.plot.master_axes.get_xlim()[0] != self.xmin.mpldt:
 			self.mainwindow.plot.master_axes.set_xlim(xmin=self.xmin.mpldt)
 			self.mainwindow.update_canvas()
 
-	@on_trait_change('xmax.mpldt')
 	def _xmax_mpldt_changed(self):
 		if self.mainwindow.plot.master_axes and self.mainwindow.plot.master_axes.get_xlim()[1] != self.xmax.mpldt:
 			self.mainwindow.plot.master_axes.set_xlim(xmax=self.xmax.mpldt)
