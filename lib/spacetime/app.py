@@ -72,6 +72,26 @@ class PanelMapper(object):
 		return klass.mapping_tablabel_class[label]
 
 
+class PanelSelector(HasTraits):
+	selected = Str
+	message = Str('Select subgraph type')
+	types = List(PanelMapper.list_tablabels)
+
+	traits_view = View(
+		Group(
+			Item('message', emphasized=True, style='readonly'),
+			Item('types', editor=ListStrEditor(editable=False, selected='selected')),
+			show_labels=False,
+			padding=5,
+		),
+		title='Select subgraph type',
+		height=300,
+		width=200,
+		buttons=OKCancelButtons,
+		kind='modal',
+	)
+
+
 class MainTab(panels.SerializableTab):
 	xmin = Instance(DateTimeSelector, args=())
 	xmax = Instance(DateTimeSelector, args=())
@@ -82,14 +102,8 @@ class MainTab(panels.SerializableTab):
 
 	traits_saved = 'xmin_mpldt', 'xmax_mpldt'
 
-	add = Button()
-	subgraph_type = Enum(*PanelMapper.list_tablabels)
-
 	mainwindow = Any
 
-	def _add_fired(self):
-		self.mainwindow.add_tab(PanelMapper.get_class_by_tablabel(self.subgraph_type))
-	
 	def xlim_callback(self, ax):
 		self.xmin.mpldt, self.xmax.mpldt = ax.get_xlim()
 
@@ -113,12 +127,6 @@ class MainTab(panels.SerializableTab):
 			Item('xmin', style='custom'),
 			Item('xmax', style='custom'),
 			label='Graph settings',
-			show_border=True,
-		),
-		Group(
-			Item('subgraph_type', show_label=False, style='custom', editor=EnumEditor(values=PanelMapper.list_tablabels, format_func=lambda x: x, cols=1)),
-			Item('add', show_label=False),
-			label='Add subgraph',
 			show_border=True,
 		),
 		Group(
@@ -210,6 +218,13 @@ class MainWindowHandler(Handler):
 			return False
 		self.set_ui_title(info, dlg.Filename)
 		return True
+
+	def do_add(self, info):
+		ps = PanelSelector()
+		ps.edit_traits()
+		if ps.selected:
+			mainwindow = info.ui.context['object']
+			mainwindow.add_tab(PanelMapper.get_class_by_tablabel(ps.selected))
 
 	def do_python(self, info):
 		PythonWindow().edit_traits()
