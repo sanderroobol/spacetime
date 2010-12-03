@@ -284,7 +284,7 @@ class TimeTrendPanel(SubplotPanel):
 				self.filename = ''
 				return
 			self.channels = list(self.data.iterchannelnames())
-			self.redraw()
+			self.settings_changed()
 
 	@on_trait_change('selected_primary_channels')
 	def settings_changed(self):
@@ -594,6 +594,6 @@ class OldGasCabinetPanel(DoubleTimeTrendPanel):
 
 
 class ReactorEnvironmentPanel(DoubleTimeTrendPanel):
-	tablabel = 'Reactor Enviroment logger'
+	tablabel = 'Reactor Environment logger'
 	datafactory = datasources.ReactorEnvironment
 	filter = 'ASCII text files (*.txt)', '*.txt',
