@@ -143,6 +143,24 @@ class PythonWindow(HasTraits):
 	)
 
 
+class AboutWindow(HasTraits):
+	title = Str('Spacetime ' + version.version)
+	desc = Str('Copyright 2010 Leiden University.\nWritten by Sander Roobol <roobol@physics.leidenuniv.nl>.\n\nRedistribution outside Leiden University is not permitted.')
+
+	def traits_view(self):
+		return View(
+			Group(
+				Item('title', emphasized=True, style='readonly'),
+				Item('desc', style='readonly', editor=TextEditor(multi_line=True)),
+				show_labels=False,
+				padding=5,
+			),
+			title=self.title,
+			buttons=[OKButton],
+			kind='modal',
+		)
+
+
 class MainWindowHandler(Handler):
 	@staticmethod	
 	def get_ui_title(filename = None):
@@ -223,6 +241,9 @@ class MainWindowHandler(Handler):
 
 	def do_python(self, info):
 		PythonWindow().edit_traits()
+
+	def do_about(self, info):
+		AboutWindow().edit_traits()
 
 	def do_export(self, info):
 		# mostly borrowed from Matplotlib's NavigationToolbar2Wx.save()
@@ -350,6 +371,8 @@ class App(HasTraits):
 					Action(name='Export', action='do_export', tooltip='Export', image=GetIcon('export')),
 				'python', 
 					Action(name='Python', action='do_python', tooltip='Python shell', image=GetIcon('python')),
+				'about',
+					Action(name='About', action='do_about', tooltip='About', image=GetIcon('about')),
 				show_tool_names=False
 			),
 			statusbar='status',
