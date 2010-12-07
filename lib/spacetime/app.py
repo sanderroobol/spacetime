@@ -147,27 +147,26 @@ class AboutWindow(HasTraits):
 	title = Str('Spacetime ' + version.version)
 	desc = Str('Copyright 2010 Leiden University.\nWritten by Sander Roobol <roobol@physics.leidenuniv.nl>.\n\nRedistribution outside Leiden University is not permitted.')
 
-	def traits_view(self):
-		return View(
-			Group(
-				Item('title', emphasized=True, style='readonly'),
-				Item('desc', style='readonly', editor=TextEditor(multi_line=True)),
-				show_labels=False,
-				padding=5,
-			),
-			title=self.title,
-			buttons=[OKButton],
-			kind='modal',
-		)
+	traits_view = View(
+		Group(
+			Item('title', emphasized=True, style='readonly'),
+			Item('desc', style='readonly', editor=TextEditor(multi_line=True)),
+			show_labels=False,
+			padding=5,
+		),
+		title='About Spacetime',
+		buttons=[OKButton],
+		kind='modal',
+	)
 
 
 class MainWindowHandler(Handler):
 	@staticmethod	
 	def get_ui_title(filename = None):
-		title = 'Spacetime %s' % version.version
-		if filename is not None:
-			title = '%s - %s' % (title, filename)
-		return title
+		if filename is None:
+			return 'Spacetime'
+		else:
+			return 'Spacetime - %s' % (title, filename)
 
 	def set_ui_title(self, info, filename=None):
 		info.ui.title = self.get_ui_title(filename)
