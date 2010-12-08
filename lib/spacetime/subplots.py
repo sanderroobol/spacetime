@@ -367,8 +367,8 @@ class Image(Subplot):
 				self.set_other_markers(tstart, tend)
 			else:
 				tendzoom = tstart + (tend - tstart) * self.tzoom
-				self.axes.imshow(numpy.rot90(d.image), extent=(tstart, tendzoom, 0, ysize+1), aspect='auto', cmap=self.colormap, interpolation=self.interpolation)
-				self.axes.add_patch(matplotlib.patches.Rectangle((tstart, 0), tendzoom-tstart, ysize+1, linewidth=1, edgecolor='black', fill=False))
+				self.axes.imshow(numpy.rot90(d.image), extent=(tstart, tendzoom, 0, 1), aspect='auto', cmap=self.colormap, interpolation=self.interpolation)
+				self.axes.add_patch(matplotlib.patches.Rectangle((tstart, 0), tendzoom-tstart, 1, linewidth=1, edgecolor='black', fill=False))
 	
 		# imshow() changes the axes xlim/ylim, so go back to something sensible
 		self.axes.autoscale_view()
