@@ -1,14 +1,17 @@
+High priority
+=============
 1. Subplot size hinting
-2. Graceful/explicit errors (especially when loading file)
-3. Better autoscale
-4. Reload/refresh option for most filetypes
-5. Interface redesign:
-   - menubar or toolbar; matplotlib toolbar integrated
-   - python shell only on demand and in separate window
-   - better location for the status/cursor text
-6. Project open/save
+2. Better autoscale
+3. Interface redesign:
+   - get rid of matplotlib toolbar
+   - decide what to do with the Main tab
+4. Finish open/save support: ListStr bugs, header for fileformat, ...
+5. Bug: cursor position with twinx'ed graphs
+6. X-axis labels and vertical spacing when using non-shared axes
 
-Non-prioritized items:
+Low priority
+============
+* L2R + R2L mode for CameraTrends
 * click in time graph and jump to camera image (single mode)
 * Camera: cursor should show time instead of pixels in single frame mode
 * Data export? How? Where? Why? When? Whatfor? Whatever! :)
@@ -20,7 +23,11 @@ Non-prioritized items:
 * Camera: add file chaining support to panel
 * Camera: improve performance when changing frames (update instead of complete rebuild)
 * Icon
+* CameraTrend: option to not link datapoints of different frames
+* Presentation / dual screen mode: separate windows for graph and configuration
 
 KNOWN BUGS (not my fault! :)
 * when selecting items in a ListStrEditor using SHIFT instead of CONTROL, the 'selected' trait isn't updated properly
+   (see also: https://svn.enthought.com/enthought/changeset?reponame=&old=19115%40TraitsBackendWX/trunk/enthought/traits&new=19161%40TraitsBackendWX/trunk/enthought/traits)
+* ListStrEditor editable=False is not honoured (GTK only? works fine on Windows)
 * time selector (x-axis limits) shows 12-hour clock

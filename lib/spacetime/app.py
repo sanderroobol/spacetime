@@ -73,14 +73,14 @@ class PanelMapper(object):
 
 
 class PanelSelector(HasTraits):
-	selected = Str
+	selected = List(Str)
 	message = Str('Select subgraph type')
 	types = List(PanelMapper.list_tablabels)
 
 	traits_view = View(
 		Group(
 			Item('message', emphasized=True, style='readonly'),
-			Item('types', editor=ListStrEditor(editable=False, selected='selected')),
+			Item('types', editor=ListStrEditor(editable=False, multi_select=True, selected='selected')),
 			show_labels=False,
 			padding=5,
 		),
@@ -166,7 +166,7 @@ class MainWindowHandler(Handler):
 		if filename is None:
 			return 'Spacetime'
 		else:
-			return 'Spacetime - %s' % (title, filename)
+			return 'Spacetime - %s' % filename
 
 	def set_ui_title(self, info, filename=None):
 		info.ui.title = self.get_ui_title(filename)
@@ -193,50 +193,42 @@ class MainWindowHandler(Handler):
 	def do_open(self, info):
 		if not self.close(info):
 			return
-		dlg = wx.FileDialog(info.ui.control, style=wx.FD_OPEN, wildcard='Spacetime Project files (*.stp)|*.stp')
+		dlg = wx.FileDialog(info.ui.control, style=wx.FD_OPEN, wildcard='Spacetime Project files (*.spacetime)|*.spacetime')
 		if dlg.ShowModal() != wx.ID_OK:
 			return
 		mainwindow = info.ui.context['object']
 		mainwindow.clear()
-		self.set_ui_title(info, dlg.Filename)
-		fp = open(dlg.Path)
-		data = json.load(fp)
-		fp.close()
-		mainwindow.tabs[0].from_serialized(data.pop(0)[1])
-		# FIXME: check version number and emit warning
-		for id, props in data:
-			try:
-				mainwindow.add_tab(PanelMapper.get_class_by_id(id), props)
-			except KeyError:
-				pass # silently ignore unknown class names for backward and forward compatibility
+		try:
+			mainwindow.open_project(dlg.Path)
+		except:
+			uiutil.Message.file_open_failed(dlg.Path)
+		else:
+			self.set_ui_title(info, dlg.Filename)
 		mainwindow.redraw_figure()
 
 	def do_save(self, info):
-		dlg = wx.FileDialog(info.ui.control, style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT, wildcard='Spacetime Project files (*.stp)|*.stp')
+		dlg = wx.FileDialog(info.ui.control, style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT, wildcard='Spacetime Project files (*.spacetime|*.spacetime')
 		if dlg.ShowModal() != wx.ID_OK:
 			return False
 		mainwindow = info.ui.context['object']
-
-		data = [('general', mainwindow.tabs[0].get_serialized())]
-		for tab in mainwindow.tabs:
-			if isinstance(tab, panels.SubplotPanel):
-				data.append((PanelMapper.get_id_by_instance(tab), tab.get_serialized()))
+		filename, path = dlg.Filename, dlg.Path
+		if not path.endswith('.spacetime'):
+			path += '.spacetime'
+			filename += '.spacetime'
 		try:
-			fp = open(dlg.Path, 'w')
-			json.dump(data, fp)
-			fp.close()
+			if mainwindow.save_project(path):
+				self.set_ui_title(info, filename)
+				return True
 		except:
-			uiutil.Message.file_save_failed(path)
-			return False
-		self.set_ui_title(info, dlg.Filename)
-		return True
+			uiutil.Message.file_open_failed(path)
+		return False
 
 	def do_add(self, info):
 		ps = PanelSelector()
 		ps.edit_traits()
-		if ps.selected:
-			mainwindow = info.ui.context['object']
-			mainwindow.add_tab(PanelMapper.get_class_by_tablabel(ps.selected))
+		mainwindow = info.ui.context['object']
+		for s in ps.selected:
+			mainwindow.add_tab(PanelMapper.get_class_by_tablabel(s))
 
 	def do_python(self, info):
 		PythonWindow().edit_traits()
@@ -318,6 +310,29 @@ class App(HasTraits):
 		self.tabs = self._tabs_default()
 		for klass in PanelMapper.list_classes:
 			klass.number = 0
+
+	def open_project(self, path):
+		with open(path, 'rb') as fp:
+			if fp.read(15) != 'Spacetime\nJSON\n':
+				raise ValueError('not a valid Spacetime project file')
+			data = json.load(fp)
+		self.tabs[0].from_serialized(data.pop(0)[1])
+		# FIXME: check version number and emit warning
+		for id, props in data:
+			try:
+				self.add_tab(PanelMapper.get_class_by_id(id), props)
+			except KeyError:
+				pass # silently ignore unknown class names for backward and forward compatibility
+
+	def save_project(self, path):
+		data = [('general', self.tabs[0].get_serialized())]
+		for tab in self.tabs:
+			if isinstance(tab, panels.SubplotPanel):
+				data.append((PanelMapper.get_id_by_instance(tab), tab.get_serialized()))
+		with open(path, 'wb') as fp:
+			fp.write('Spacetime\nJSON\n')
+			json.dump(data, fp)
+		return True
 
 	def has_modifications(self):
 		return len(self.tabs) > 2
