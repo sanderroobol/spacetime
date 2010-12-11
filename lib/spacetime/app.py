@@ -335,7 +335,7 @@ class App(HasTraits):
 		return True
 
 	def has_modifications(self):
-		return len(self.tabs) > 2
+		return len(self.tabs) > 1
 
 	def redraw_figure(self):
 		self.plot.clear()
