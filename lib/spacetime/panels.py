@@ -6,6 +6,14 @@ import string
 from . import subplots, datasources, filters, uiutil
 
 
+def PanelView(*args, **kwargs):
+	if 'handler' in kwargs:
+		newkwargs = kwargs.copy()
+		del newkwargs['handler']
+		return View(Group(*args, layout='normal', scrollable=True, **newkwargs), handler=kwargs['handler'])
+	return View(Group(*args, layout='normal', scrollable=True, **kwargs))
+
+
 class Tab(HasTraits):
 	pass
 
@@ -212,7 +220,7 @@ class CameraFramePanel(CameraPanel):
 		self.select_data()
 		self.redraw()
 
-	traits_view = View(Group(
+	traits_view = PanelView(
 		Group(
 			Item('visible'),
 			Item('filename', editor=FileEditor(filter=['Camera RAW files (*.raw)', '*.raw', 'All files', '*'], entries=0)),
@@ -248,8 +256,6 @@ class CameraFramePanel(CameraPanel):
 			label='Filters',
 		),
 		Include('relativistic_group'),
-		layout='normal',
-	),
 		handler=CameraFramePanelHandler()
 	)
 
@@ -319,7 +325,7 @@ class TimeTrendPanel(SubplotPanel):
 	)
 
 	def traits_view(self):
-		return View(Group(
+		return PanelView(
 			Group(
 				Item('visible'),
 				Item('filename', editor=FileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),
@@ -330,8 +336,7 @@ class TimeTrendPanel(SubplotPanel):
 			),
 			Include('left_yaxis_group'),
 			Include('relativistic_group'),
-			layout='normal',
-		))
+		)
 
 
 class DoubleTimeTrendPanel(TimeTrendPanel):
@@ -386,7 +391,7 @@ class DoubleTimeTrendPanel(TimeTrendPanel):
 	)
 
 	def traits_view(self):
-		return View(Group(
+		return PanelView(
 			Group(
 				Item('visible'),
 				Item('filename', editor=FileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),
@@ -398,8 +403,7 @@ class DoubleTimeTrendPanel(TimeTrendPanel):
 			Include('left_yaxis_group'),
 			Include('right_yaxis_group'),
 			Include('relativistic_group'),
-			layout='normal',
-		))
+		)
 
 
 class CameraTrendPanel(DoubleTimeTrendPanel, CameraPanel):
@@ -437,7 +441,7 @@ class CameraTrendPanel(DoubleTimeTrendPanel, CameraPanel):
 		)
 		self.redraw()
 
-	traits_view = View(Group(
+	traits_view = PanelView(
 		Group(
 			Item('visible'),
 			Item('filename', editor=FileEditor(filter=['Camera RAW files (*.raw)', '*.raw', 'All files', '*'], entries=0)),
@@ -453,8 +457,7 @@ class CameraTrendPanel(DoubleTimeTrendPanel, CameraPanel):
 		Include('left_yaxis_group'),
 		Include('right_yaxis_group'),
 		Include('relativistic_group'),
-		layout='normal',
-	))
+	)
 
 
 class CVPanel(CameraTrendPanel):
@@ -501,7 +504,7 @@ class CVPanel(CameraTrendPanel):
 		)
 		self.redraw()
 
-	traits_view = View(Group(
+	traits_view = PanelView(
 		Group(
 			Item('visible'),
 			Item('filename', editor=FileEditor(filter=['Camera RAW files (*.raw)', '*.raw', 'All files', '*'], entries=0)),
@@ -520,7 +523,7 @@ class CVPanel(CameraTrendPanel):
 			label='Channels',
 		),
 		Include('relativistic_group'),
-	))
+	)
 
 
 class QMSPanel(TimeTrendPanel):
@@ -553,7 +556,7 @@ class TPDirkPanel(DoubleTimeTrendPanel):
 			self.redraw()
 
 	def traits_view(self):
-		return View(Group(
+		return PanelView(
 			Group(
 				Item('visible'),
 				Item('filename', editor=FileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),
@@ -575,8 +578,7 @@ class TPDirkPanel(DoubleTimeTrendPanel):
 				label='Right y-axis'
 			),
 			Include('relativistic_group'),
-			layout='normal',
-		))
+		)
 
 
 class GasCabinetPanel(DoubleTimeTrendPanel):

@@ -78,7 +78,7 @@ class MultiTrendFormatter(object):
 	colors = 'bgrcmyk'
 
 	def __call__(self, data):
-		self.counter += 1
+		self.counter = (self.counter + 1) % len(self.colors)
 		return self.colors[self.counter] + '-'
 
 	def reset(self):

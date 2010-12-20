@@ -207,7 +207,7 @@ class MainWindowHandler(Handler):
 		mainwindow.redraw_figure()
 
 	def do_save(self, info):
-		dlg = wx.FileDialog(info.ui.control, style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT, wildcard='Spacetime Project files (*.spacetime|*.spacetime')
+		dlg = wx.FileDialog(info.ui.control, style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT, wildcard='Spacetime Project files (*.spacetime)|*.spacetime')
 		if dlg.ShowModal() != wx.ID_OK:
 			return False
 		mainwindow = info.ui.context['object']
