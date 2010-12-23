@@ -263,9 +263,10 @@ class CameraFramePanel(CameraPanel):
 class TimeTrendPanel(SubplotPanel):
 	plotfactory = subplots.MultiTrend
 	legend = Bool(True)
-	ymin = Float(0.)
-	ymax = Float(1.)
-	ylog = Bool(False)
+	ylimits = Instance(uiutil.LogAxisLimits, args=())
+	ymin = DelegatesTo('ylimits', 'min')
+	ymax = DelegatesTo('ylimits', 'max')
+	ylog = DelegatesTo('ylimits', 'log')
 	channels = List(Str)
 	selected_primary_channels = List(Str)
 	data = Instance(datasources.DataSource)
@@ -317,9 +318,7 @@ class TimeTrendPanel(SubplotPanel):
 
 	left_yaxis_group = Group(
 		Item('channels', editor=ListStrEditor(editable=False, multi_select=True, selected='selected_primary_channels')),
-		Item('ymin'),
-		Item('ymax'),
-		Item('ylog', label='Logarithmic'),
+		Item('ylimits', style='custom', label='Limits'),
 		show_border=True,
 		label='Left y-axis'
 	)
@@ -342,9 +341,11 @@ class TimeTrendPanel(SubplotPanel):
 class DoubleTimeTrendPanel(TimeTrendPanel):
 	plotfactory = subplots.DoubleMultiTrend
 	selected_secondary_channels = List(Str)
-	ymin2 = Float(0.)
-	ymax2 = Float(1.)
-	ylog2 = Bool(False)
+
+	ylimits2 = Instance(uiutil.LogAxisLimits, args=())
+	ymin2 = DelegatesTo('ylimits2', 'min')
+	ymax2 = DelegatesTo('ylimits2', 'max')
+	ylog2 = DelegatesTo('ylimits2', 'log')
 
 	traits_saved = 'selected_secondary_channels', 'ymin2', 'ymax2', 'ylog2'
 
@@ -383,9 +384,7 @@ class DoubleTimeTrendPanel(TimeTrendPanel):
 
 	right_yaxis_group = Group(
 		Item('channels', editor=ListStrEditor(editable=False, multi_select=True, selected='selected_secondary_channels')),
-		Item('ymin2', label='Ymin'),
-		Item('ymax2', label='Ymax'),
-		Item('ylog2', label='Logarithmic'),
+		Item('ylimits2', style='custom', label='Limits'),
 		show_border=True,
 		label='Right y-axis'
 	)
@@ -543,6 +542,10 @@ class TPDirkPanel(DoubleTimeTrendPanel):
 	datafactory = datasources.TPDirk
 	filter = 'Dirk\'s ASCII files (*.txt)', '*.txt'
 
+	def __init__(self, *args, **kwargs):
+		super(TPDirkPanel, self).__init__(*args, **kwargs)
+		self.ylog = True
+
 	@on_trait_change('filename, reload')
 	def load_file(self):
 		if self.filename:
@@ -566,16 +569,10 @@ class TPDirkPanel(DoubleTimeTrendPanel):
 				label='General',
 			),
 			Group(
-				Item('ymin'),
-				Item('ymax'),
+				Item('ylimits', style='custom', label='Left limits'),
+				Item('ylimits2', style='custom', label='Right limits'),
 				show_border=True,
-				label='Left y-axis'
-			),
-			Group(
-				Item('ymin2', label='Ymin'),
-				Item('ymax2', label='Ymax'),
-				show_border=True,
-				label='Right y-axis'
+				label='Y axes'
 			),
 			Include('relativistic_group'),
 		)
