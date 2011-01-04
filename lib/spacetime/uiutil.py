@@ -1,7 +1,11 @@
-import sys, traceback
+import os.path, sys, traceback
 
 from enthought.traits.api import *
 from enthought.traits.ui.api import *
+
+import enthought.traits.ui.basic_editor_factory
+import enthought.traits.ui.wx.file_editor
+import wx
 
 class Message(HasTraits):
 	message = Str
@@ -39,6 +43,62 @@ class Message(HasTraits):
 	@classmethod
 	def file_save_failed(klass, filename):
 		return klass.exception(message='Failed to save file', desc=filename)
+
+
+class ImprovedSimpleFileEditorImplementation(enthought.traits.ui.wx.file_editor.SimpleEditor):
+	# code borrowed from enthought.traits.ui.wx.file_editor.SimpleEditor
+	# slightly modified to make the dialog remember the directory
+
+	dialog_remember_path = Str
+
+	def show_file_dialog ( self, event ):
+		""" Displays the pop-up file dialog.
+		"""
+		if self.history is not None:
+			self.popup = self._create_file_popup()
+		else:
+			dlg       = self._create_file_dialog()
+			rc        = (dlg.ShowModal() == wx.ID_OK)
+			file_name = os.path.abspath( dlg.GetPath() )
+			if rc:
+				if self.factory.truncate_ext:
+					file_name = splitext( file_name )[0]
+
+				self.value = file_name
+				self.update_editor()
+				self.dialog_remember_path = dlg.GetDirectory()
+			dlg.Destroy()
+
+
+	def _create_file_dialog ( self ):
+		""" Creates the correct type of file dialog.
+		"""
+		if len( self.factory.filter ) > 0:
+			wildcard = '|'.join( self.factory.filter[:] )
+		else:
+			wildcard = 'All Files (*.*)|*.*'
+
+		if self.factory.dialog_style == 'save':
+			style = wx.FD_SAVE
+		elif self.factory.dialog_style == 'open':
+			style = wx.FD_OPEN
+		else:
+			style = ex.FD_DEFAULT_STYLE
+
+		dlg = wx.FileDialog( self.control,
+		                     message  = 'Select a File',
+		                     wildcard = wildcard,
+		                     style=style)
+
+		dlg.SetFilename( self._get_value() )
+		if self.dialog_remember_path:
+			dlg.SetDirectory(self.dialog_remember_path)
+
+		return dlg
+
+
+class ImprovedSimpleFileEditor(enthought.traits.ui.basic_editor_factory.BasicEditorFactory, FileEditor):
+	klass = ImprovedSimpleFileEditorImplementation
 
 
 def FormattedFloatEditor():

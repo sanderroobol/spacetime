@@ -1,5 +1,5 @@
 # keep this import at top to ensure proper matplotlib backend selection
-from mplfigure import MPLFigureEditor
+from .mplfigure import MPLFigureEditor
 
 from . import plot, util, panels, version, uiutil
 
