@@ -41,6 +41,7 @@ class DateTimeSelector(HasTraits):
 
 
 class PanelMapper(object):
+	# this is a list and  not a dictionary to preserve ordering
 	MAPPING = (
 		('camera',              panels.CameraFramePanel),
 		('cameratrend',         panels.CameraTrendPanel),
@@ -55,7 +56,7 @@ class PanelMapper(object):
 	list_classes = tuple(klass for (id, klass) in MAPPING)
 	list_tablabels = tuple(klass.tablabel for klass in list_classes)
 	
-	mapping_id_class = dict((id, klass) for (id, klass) in MAPPING)
+	mapping_id_class = dict(MAPPING)
 	mapping_classname_id = dict((klass.__name__, id) for (id, klass) in MAPPING)
 	mapping_tablabel_class = dict((klass.tablabel, klass) for klass in list_classes)
 
