@@ -93,6 +93,8 @@ class PanelSelector(HasTraits):
 
 
 class MainTab(panels.SerializableTab):
+	xauto = Bool(True)
+	not_xauto = Property(depends_on='xauto')
 	xmin = Instance(DateTimeSelector, args=())
 	xmax = Instance(DateTimeSelector, args=())
 	xmin_mpldt = DelegatesTo('xmin', 'mpldt')
@@ -103,6 +105,9 @@ class MainTab(panels.SerializableTab):
 	traits_saved = 'xmin_mpldt', 'xmax_mpldt'
 
 	mainwindow = Any
+
+	def _get_not_xauto(self):
+		return not self.xauto
 
 	def xlim_callback(self, ax):
 		self.xmin.mpldt, self.xmax.mpldt = ax.get_xlim()
@@ -124,9 +129,10 @@ class MainTab(panels.SerializableTab):
 
 	traits_view = View(Group(
 		Group(
-			Item('xmin', style='custom'),
-			Item('xmax', style='custom'),
-			label='Graph settings',
+			Item('xauto', label='Auto'),
+			Item('xmin', label='Min', style='custom', enabled_when='not_xauto'),
+			Item('xmax', label='Max', style='custom', enabled_when='not_xauto'),
+			label='Time axis limits',
 			show_border=True,
 		),
 		layout='normal',

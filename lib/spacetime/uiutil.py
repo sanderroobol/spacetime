@@ -101,11 +101,6 @@ class ImprovedSimpleFileEditor(enthought.traits.ui.basic_editor_factory.BasicEdi
 	klass = ImprovedSimpleFileEditorImplementation
 
 
-def FormattedFloatEditor():
-	# FIXME: implement!!!
-	return RangeEditor(mode='text')
-
-
 class AxisLimits(HasTraits):
 	min = Float(0)
 	max = Float(1)
@@ -129,8 +124,8 @@ class AxisLimits(HasTraits):
 
 	traits_view = View(HGroup(
 		Item('auto_list', style='custom', editor=CheckListEditor(values=['Auto'])),
-		Item('min', enabled_when='not_auto', editor=FormattedFloatEditor()),
-		Item('max', enabled_when='not_auto', editor=FormattedFloatEditor()),
+		Item('min', enabled_when='not_auto'),
+		Item('max', enabled_when='not_auto'),
 		show_labels=False,
 	))
 
@@ -150,8 +145,8 @@ class LogAxisLimits(AxisLimits):
 
 	traits_view = View(HGroup(
 		Item('auto_list', style='custom', editor=CheckListEditor(values=['Auto'])),
-		Item('min', enabled_when='not_auto', editor=FormattedFloatEditor()),
-		Item('max', enabled_when='not_auto', editor=FormattedFloatEditor()),
+		Item('min', enabled_when='not_auto'),
+		Item('max', enabled_when='not_auto'),
 		Item('scale'),
 		show_labels=False,
 	))
