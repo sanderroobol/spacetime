@@ -52,7 +52,7 @@ class PanelMapper(object):
 		('cameracv',            panels.CVPanel),
 	)
 
-	list_classes = tuple(klass for (id, klass) in MAPPING if id != 'general')
+	list_classes = tuple(klass for (id, klass) in MAPPING)
 	list_tablabels = tuple(klass.tablabel for klass in list_classes)
 	
 	mapping_id_class = dict((id, klass) for (id, klass) in MAPPING)
@@ -151,7 +151,7 @@ class PythonWindow(HasTraits):
 
 class AboutWindow(HasTraits):
 	title = Str('Spacetime ' + version.version)
-	desc = Str('Copyright 2010 Leiden University.\nWritten by Sander Roobol <roobol@physics.leidenuniv.nl>.\n\nRedistribution outside Leiden University is not permitted.')
+	desc = Str('Copyright 2010-2011 Leiden University.\nWritten by Sander Roobol <roobol@physics.leidenuniv.nl>.\n\nRedistribution outside Leiden University is not permitted.')
 
 	traits_view = View(
 		Group(
