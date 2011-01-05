@@ -2,6 +2,7 @@ from enthought.traits.api import *
 from enthought.traits.ui.api import *
 import matplotlib.cm
 import string
+import wx
 
 from . import subplots, datasources, filters, uiutil
 
@@ -31,12 +32,15 @@ class TraitsSavedMeta(HasTraits.__metaclass__):
 class SerializableTab(Tab):
 	__metaclass__ = TraitsSavedMeta
 
+	def _delayed_from_serialized(self, src):
+		# trait_set has to be called separately for each trait to respect the ordering of traits_saved
+		for id in self.traits_saved:
+			if id in src: # silently ignore unknown settings for backward and forward compatibility
+				 self.trait_set(**dict(((id, src[id]),)))
+
 	def from_serialized(self, src):
 		if hasattr(self, 'traits_saved'):
-			# trait_set has to be called separately for each trait to respect the ordering of traits_saved
-			for id in self.traits_saved:
-				if id in src: # silently ignore unknown settings for backward and forward compatibility
-					self.trait_set(**dict(((id, src[id]),)))
+			wx.CallAfter(lambda: self._delayed_from_serialized(src))
 
 	def get_serialized(self):
 		if hasattr(self, 'traits_saved'):
