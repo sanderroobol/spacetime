@@ -49,27 +49,6 @@ class ImprovedSimpleFileEditorImplementation(enthought.traits.ui.wx.file_editor.
 	# code borrowed from enthought.traits.ui.wx.file_editor.SimpleEditor
 	# slightly modified to make the dialog remember the directory
 
-	dialog_remember_path = Str
-
-	def show_file_dialog ( self, event ):
-		""" Displays the pop-up file dialog.
-		"""
-		if self.history is not None:
-			self.popup = self._create_file_popup()
-		else:
-			dlg       = self._create_file_dialog()
-			rc        = (dlg.ShowModal() == wx.ID_OK)
-			file_name = os.path.abspath( dlg.GetPath() )
-			if rc:
-				if self.factory.truncate_ext:
-					file_name = splitext( file_name )[0]
-
-				self.value = file_name
-				self.update_editor()
-				self.dialog_remember_path = dlg.GetDirectory()
-			dlg.Destroy()
-
-
 	def _create_file_dialog ( self ):
 		""" Creates the correct type of file dialog.
 		"""
@@ -90,9 +69,7 @@ class ImprovedSimpleFileEditorImplementation(enthought.traits.ui.wx.file_editor.
 		                     wildcard = wildcard,
 		                     style=style)
 
-		dlg.SetFilename( self._get_value() )
-		if self.dialog_remember_path:
-			dlg.SetDirectory(self.dialog_remember_path)
+		dlg.SetPath( self._get_value() ) # this was dlg.SetFilename()
 
 		return dlg
 
