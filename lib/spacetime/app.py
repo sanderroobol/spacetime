@@ -116,12 +116,12 @@ class MainTab(panels.SerializableTab):
 	def _xmin_mpldt_changed(self):
 		if self.mainwindow.plot.master_axes and self.mainwindow.plot.master_axes.get_xlim()[0] != self.xmin.mpldt:
 			self.mainwindow.plot.master_axes.set_xlim(xmin=self.xmin.mpldt)
-			self.mainwindow.update_canvas()
+			self.mainwindow.drawmgr.update_canvas()
 
 	def _xmax_mpldt_changed(self):
 		if self.mainwindow.plot.master_axes and self.mainwindow.plot.master_axes.get_xlim()[1] != self.xmax.mpldt:
 			self.mainwindow.plot.master_axes.set_xlim(xmax=self.xmax.mpldt)
-			self.mainwindow.update_canvas()
+			self.mainwindow.drawmgr.update_canvas()
 
 	def get_serialized(self):
 		d = super(MainTab, self).get_serialized()
@@ -211,7 +211,7 @@ class MainWindowHandler(Handler):
 			uiutil.Message.file_open_failed(dlg.Path)
 		else:
 			self.set_ui_title(info, dlg.Filename)
-		mainwindow.redraw_figure()
+		mainwindow.drawmgr.redraw_figure()
 
 	def do_save(self, info):
 		dlg = wx.FileDialog(info.ui.control, style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT, wildcard='Spacetime Project files (*.spacetime)|*.spacetime')
@@ -280,35 +280,37 @@ class App(HasTraits):
 	figure = Instance(matplotlib.figure.Figure)
 	maintab = Instance(MainTab)
 	status = DelegatesTo('maintab')
+	drawmgr = Instance(uiutil.DrawManager)
 
 	tabs = List(Instance(panels.Tab))
 
 	def on_figure_resize(self, event):
 		self.plot.setup_margins()
-		self.update_canvas()
+		self.drawmgr.update_canvas()
 
 	def update_canvas(self):
 		wx.CallAfter(self.figure.canvas.draw)
 
 	def add_tab(self, klass, serialized_data=None):
-		tab = klass(update_canvas=self.update_canvas, autoscale=self.plot.autoscale, redraw_figure=self.redraw_figure)
+		tab = klass(drawmgr=self.drawmgr, autoscale=self.plot.autoscale)
 		if serialized_data is not None:
-			tab.hold = True
 			tab.from_serialized(serialized_data)
-			tab.hold = False
 		self.tabs.append(tab)
 
 	def _maintab_default(self):
-		return MainTab(mainwindow=self)
+		return MainTab(mainwindow=self, drawmgr=self.drawmgr)
+
+	def _drawmgr_default(self):
+		return uiutil.DrawManager(self.redraw_figure, self.update_canvas)
 
 	def _tabs_changed(self):
-		self.redraw_figure()
+		self.drawmgr.redraw_figure()
 
 	def _tabs_items_changed(self, event):
 		for removed in event.removed:
 			if isinstance(removed, MainTab):
 				self.tabs.insert(0, removed)
-		self.redraw_figure()
+		self.drawmgr.redraw_figure()
 
 	def _tabs_default(self):
 		return [self.maintab]
@@ -323,13 +325,14 @@ class App(HasTraits):
 			if fp.read(15) != 'Spacetime\nJSON\n':
 				raise ValueError('not a valid Spacetime project file')
 			data = json.load(fp)
-		self.tabs[0].from_serialized(data.pop(0)[1])
-		# FIXME: check version number and emit warning
-		for id, props in data:
-			try:
-				self.add_tab(PanelMapper.get_class_by_id(id), props)
-			except KeyError:
-				pass # silently ignore unknown class names for backward and forward compatibility
+		with self.drawmgr.hold_delayed():
+			self.tabs[0].from_serialized(data.pop(0)[1])
+			# FIXME: check version number and emit warning
+			for id, props in data:
+				try:
+					self.add_tab(PanelMapper.get_class_by_id(id), props)
+				except KeyError:
+					pass # silently ignore unknown class names for backward and forward compatibility
 
 	def save_project(self, path):
 		data = [('general', self.tabs[0].get_serialized())]
@@ -350,7 +353,6 @@ class App(HasTraits):
 		self.plot.setup()
 		self.plot.draw()
 		self.plot.autoscale()
-		self.update_canvas()
 
 	def _plot_default(self):
 		p = plot.Plot.newmatplotlibfigure()

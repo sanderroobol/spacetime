@@ -31,12 +31,14 @@ class TraitsSavedMeta(HasTraits.__metaclass__):
 
 class SerializableTab(Tab):
 	__metaclass__ = TraitsSavedMeta
+	drawmgr = Instance(uiutil.DrawManager)
 
 	def _delayed_from_serialized(self, src):
-		# trait_set has to be called separately for each trait to respect the ordering of traits_saved
-		for id in self.traits_saved:
-			if id in src: # silently ignore unknown settings for backward and forward compatibility
-				 self.trait_set(**dict(((id, src[id]),)))
+		with self.drawmgr.hold():
+			# trait_set has to be called separately for each trait to respect the ordering of traits_saved
+			for id in self.traits_saved:
+				if id in src: # silently ignore unknown settings for backward and forward compatibility
+					 self.trait_set(**dict(((id, src[id]),)))
 
 	def from_serialized(self, src):
 		if hasattr(self, 'traits_saved'):
@@ -56,12 +58,10 @@ class SubplotPanel(SerializableTab):
 	time_dilation_factor = Float(1.)
 
 	plot = Instance(subplots.Subplot)
-	update_canvas = Callable
-	autoscale = Callable
-	redraw_figure = Callable
 	visible = Bool(True)
 	number = 0
-	hold = False
+
+	autoscale = Callable
 
 	# Magic attribute with "class level" "extension inheritance". Does this make any sense?
 	# It means that when you derive a class from this class, you only have to
@@ -85,20 +85,21 @@ class SubplotPanel(SerializableTab):
 		if self.__class__.number != 1:
 			self.tablabel = '%s %d' % (self.tablabel, self.__class__.number)
 
+	def redraw_figure(self):
+		self.drawmgr.redraw_figure()
+
 	def redraw(self):
-		if not self.hold:
-			self.plot.clear()
-			self.plot.draw()
-			self.autoscale(self.plot.axes)
-			self.update_canvas()
+		self.drawmgr.redraw_subgraph(lambda: (
+			self.plot.clear(),
+			self.plot.draw(),
+			self.autoscale(self.plot.axes),
+		))
 
 	def update(self):
-		if not self.hold:
-			self.update_canvas()
+		self.drawmgr.update_canvas()
 
 	def _visible_changed(self):
-		if not self.hold:
-			self.redraw_figure()
+		self.redraw_figure()
 
 	@on_trait_change('simultaneity_offset, time_dilation_factor')
 	def relativistics_changed(self):
