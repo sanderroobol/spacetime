@@ -257,13 +257,13 @@ class GasCabinet(DoubleMultiTrend):
 
 		if self.data and list(self.data.iterchannelnames()):
 			if all(chan.startswith('MF') for chan in self.data.iterchannelnames()):
-				self.axes.set_ylabel('Mass flow (ml/min)')
+				self.axes.set_ylabel('Mass flow (mbar l/min)')
 			elif all(chan.startswith('BPC') for chan in self.data.iterchannelnames()):
 				self.axes.set_ylabel('Pressure (bar)')
 
 		if self.secondarydata and list(self.secondarydata.iterchannelnames()):
 			if all(chan.startswith('MF') for chan in self.secondarydata.iterchannelnames()):
-				self.secondaryaxes.set_ylabel('Mass flow (ml/min)')
+				self.secondaryaxes.set_ylabel('Mass flow (mbar l/min)')
 			elif all(chan.startswith('BPC') for chan in self.secondarydata.iterchannelnames()):
 				self.secondaryaxes.set_ylabel('Pressure (bar)')
 
