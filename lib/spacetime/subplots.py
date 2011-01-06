@@ -78,8 +78,11 @@ class MultiTrendFormatter(object):
 	colors = 'bgrcmyk'
 
 	def __call__(self, data):
-		self.counter = (self.counter + 1) % len(self.colors)
+		self.increase_counter()
 		return self.colors[self.counter] + '-'
+
+	def increase_counter(self):
+		self.counter = (self.counter + 1) % len(self.colors)
 
 	def reset(self):
 		self.counter = -1
@@ -99,7 +102,7 @@ class GasCabinetFormatter(MultiTrendFormatter):
 			linestyle = '-' # solid
 	
 		if self.prevcontroller != data.controller:
-			self.counter += 1
+			self.increase_counter()
 			self.prevcontroller = data.controller
 
 		return self.colors[self.counter] + linestyle
