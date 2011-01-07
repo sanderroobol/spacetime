@@ -228,7 +228,7 @@ class CameraFramePanel(CameraPanel):
 	traits_view = PanelView(
 		Group(
 			Item('visible'),
-			Item('filename', editor=uiutil.ImprovedSimpleFileEditor(filter=['Camera RAW files (*.raw)', '*.raw', 'All files', '*'], entries=0)),
+			Item('filename', editor=uiutil.FileEditor(filter=['Camera RAW files (*.raw)', '*.raw', 'All files', '*'], entries=0)),
 			Item('channel', editor=RangeEditor(low=0, high_name='channelcount', mode='spinner')),
 			Item('mode', style='custom'),
 			Item('firstframe', label='First frame', editor=RangeEditor(low=0, high_name='framecount', mode='spinner')),
@@ -332,7 +332,7 @@ class TimeTrendPanel(SubplotPanel):
 		return PanelView(
 			Group(
 				Item('visible'),
-				Item('filename', editor=uiutil.ImprovedSimpleFileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),
+				Item('filename', editor=uiutil.FileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),
 				Item('reload', show_label=False),
 				Item('legend'),
 				show_border=True,
@@ -398,7 +398,7 @@ class DoubleTimeTrendPanel(TimeTrendPanel):
 		return PanelView(
 			Group(
 				Item('visible'),
-				Item('filename', editor=uiutil.ImprovedSimpleFileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),
+				Item('filename', editor=uiutil.FileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),
 				Item('reload', show_label=False),
 				Item('legend'),
 				show_border=True,
@@ -448,7 +448,7 @@ class CameraTrendPanel(DoubleTimeTrendPanel, CameraPanel):
 	traits_view = PanelView(
 		Group(
 			Item('visible'),
-			Item('filename', editor=uiutil.ImprovedSimpleFileEditor(filter=['Camera RAW files (*.raw)', '*.raw', 'All files', '*'], entries=0)),
+			Item('filename', editor=uiutil.FileEditor(filter=['Camera RAW files (*.raw)', '*.raw', 'All files', '*'], entries=0)),
 			Item('firstframe', label='First frame', editor=RangeEditor(low=0, high_name='framecount', mode='spinner')),
 			Item('lastframe', label='Last frame', editor=RangeEditor(low=0, high_name='framecount', mode='spinner')),
 			Item('stepframe', label='Key frame mode'),
@@ -511,7 +511,7 @@ class CVPanel(CameraTrendPanel):
 	traits_view = PanelView(
 		Group(
 			Item('visible'),
-			Item('filename', editor=uiutil.ImprovedSimpleFileEditor(filter=['Camera RAW files (*.raw)', '*.raw', 'All files', '*'], entries=0)),
+			Item('filename', editor=uiutil.FileEditor(filter=['Camera RAW files (*.raw)', '*.raw', 'All files', '*'], entries=0)),
 			Item('firstframe', label='First frame', editor=RangeEditor(low=0, high_name='framecount', mode='spinner')),
 			Item('lastframe', label='Last frame', editor=RangeEditor(low=0, high_name='framecount', mode='spinner')),
 			Item('stepframe', label='Key frame mode'),
@@ -567,7 +567,7 @@ class TPDirkPanel(DoubleTimeTrendPanel):
 		return PanelView(
 			Group(
 				Item('visible'),
-				Item('filename', editor=uiutil.ImprovedSimpleFileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),
+				Item('filename', editor=uiutil.FileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),
 				Item('reload', show_label=False),
 				Item('legend'),
 				show_border=True,

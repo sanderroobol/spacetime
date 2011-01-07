@@ -4,7 +4,7 @@ from enthought.traits.api import *
 from enthought.traits.ui.api import *
 
 import enthought.traits.ui.basic_editor_factory
-import enthought.traits.ui.wx.file_editor
+import enthought.traits.ui.wx.file_editor, enthought.traits.ui.wx.time_editor
 import wx
 
 class Message(HasTraits):
@@ -45,7 +45,7 @@ class Message(HasTraits):
 		return klass.exception(message='Failed to save file', desc=filename)
 
 
-class ImprovedSimpleFileEditorImplementation(enthought.traits.ui.wx.file_editor.SimpleEditor):
+class FileEditorImplementation(enthought.traits.ui.wx.file_editor.SimpleEditor):
 	# code borrowed from enthought.traits.ui.wx.file_editor.SimpleEditor
 	# slightly modified to make the dialog remember the directory
 
@@ -74,8 +74,20 @@ class ImprovedSimpleFileEditorImplementation(enthought.traits.ui.wx.file_editor.
 		return dlg
 
 
-class ImprovedSimpleFileEditor(enthought.traits.ui.basic_editor_factory.BasicEditorFactory, FileEditor):
-	klass = ImprovedSimpleFileEditorImplementation
+class FileEditor(enthought.traits.ui.basic_editor_factory.BasicEditorFactory, FileEditor):
+	klass = FileEditorImplementation
+
+
+class TimeEditorImplementation(enthought.traits.ui.wx.time_editor.SimpleEditor):
+	def init(self, parent):
+		# use 24 hour clock, update on enter and lost focus, not on any keystroke
+		self.control = wx.lib.masked.TimeCtrl(parent, -1, style=wx.TE_PROCESS_TAB|wx.TE_PROCESS_ENTER, fmt24hr=True)
+		wx.EVT_KILL_FOCUS(self.control, self.time_updated)
+		wx.EVT_TEXT_ENTER(parent, self.control.GetId(), self.time_updated)
+
+
+class TimeEditor(enthought.traits.ui.basic_editor_factory.BasicEditorFactory, TimeEditor):
+	klass = TimeEditorImplementation
 
 
 def FloatEditor(**kwargs):

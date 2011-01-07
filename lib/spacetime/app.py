@@ -34,7 +34,7 @@ class DateTimeSelector(HasTraits):
 
 	traits_view = View(
 		HGroup(
-			Item('time', editor=TimeEditor(strftime='%H:%M:%D')),
+			Item('time', editor=uiutil.TimeEditor()),
 			Item('date'),
 			show_labels=False,
 	))
