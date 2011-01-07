@@ -1,7 +1,7 @@
 from __future__ import division
 
 import numpy
-import matplotlib.patches, matplotlib.cm, matplotlib.colors, matplotlib.dates
+import matplotlib.patches, matplotlib.cm, matplotlib.colors, matplotlib.dates, matplotlib.font_manager
 
 from . import datasources
 from .util import *
@@ -108,6 +108,9 @@ class GasCabinetFormatter(MultiTrendFormatter):
 		return self.colors[self.counter] + linestyle
 
 
+LEGENDPROP = matplotlib.font_manager.FontProperties(size='medium')
+
+
 class MultiTrend(Subplot):
 	legend = True
 	ylog = False
@@ -152,7 +155,7 @@ class MultiTrend(Subplot):
 
 	def draw_legend(self):
 		if self.legend and self.axes and self.axes.get_legend_handles_labels()[0]:
-			self.axes.legend()
+			self.axes.legend(prop=LEGENDPROP)
 
 
 class DoubleMultiTrend(MultiTrend):
@@ -191,7 +194,7 @@ class DoubleMultiTrend(MultiTrend):
 			labels.extend(labels2)
 			self.axes.legend_ = None
 			if len(handles):
-				self.secondaryaxes.legend(handles, labels)
+				self.secondaryaxes.legend(handles, labels, prop=LEGENDPROP)
 
 	def set_ylog2(self, ylog2):
 		self.ylog2 = ylog2
