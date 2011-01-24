@@ -9,7 +9,10 @@ class Plot(object):
 	hspace = .2
 	wspace = .2
 
-	xlim_callback = None
+	shared_xlim_callback = None
+	shared_xmin = 0.
+	shared_xmax = 1.
+	shared_xauto = True
 	
 	subplots = []
 	master_axes = None
@@ -72,12 +75,14 @@ class Plot(object):
 					shared = axes = self.figure.add_subplot(total, 1, i+1)
 				self.shared_axes.append(axes)	
 				self.setup_xaxis_labels(axes)
+			axes.autoscale(False)
 
 			if r.twinx:
 				twin = axes.twinx()
 				self.twinx_axes.append(twin)
 				self.setup_xaxis_labels(twin)
 				axes = (axes, twin)
+				twin.autoscale(False)
 			
 			ret.append((p, axes))
 
@@ -129,23 +134,43 @@ class Plot(object):
 	def set_xlim_callback(self, func):
 		self.xlim_callback = func
 
-	def autoscale(self, master=None):
+	def autoscale(self, subplot=None):
+		if subplot:
+			subplots = [subplot]
+		else:
+			subplots = self.subplots
+		
+		# this silently assumes that a single subplot will not have multiple
+		# graphs with mixed shared/non-shared x-axis
+		shared_xlim_rescale = False
+		for subplot in subplots:
+			subplot.ylim_rescale()
+			try:
+				subplot.xlim_rescale()
+			except AttributeError:
+				shared_xlim_rescale = True
+
+		if shared_xlim_rescale:
+			self.shared_xlim_rescale()
+
+	def set_shared_xlim(self, min, max, auto):
+		self.shared_xmin = min
+		self.shared_xmax = max
+		self.shared_xauto = auto
+		self.shared_xlim_rescale()
+
+	def shared_xlim_rescale(self):
+		if not self.master_axes:
+			return
+		if self.shared_xauto:
+			self.autoscale_shared_x()
+		else:
+			self.master_axes.set_xlim(self.shared_xmin, self.shared_xmax)
+			
+	def autoscale_shared_x(self):
 		# NOTE: this is a workaround for matplotlib's internal autoscaling routines. 
 		# it imitates axes.autoscale_view(), but only takes the dataLim into account when
 		# there are actually some lines or images in the graph
-
-		# NOTE: master axes detection only works when all axes from a Subplot are either all shared
-		# or all independent
-		if master and master in self.independent_axes:
-			master.autoscale_view()
-			return
-			
-		if not self.shared_axes:
-			return
-		# NOTE: this assumes twinx axes always belong to a shared axes
-		for ax in self.shared_axes + self.twinx_axes:
-			ax.autoscale_view(scalex=False)
-
 		dl = [ax.dataLim for ax in self.shared_axes + self.twinx_axes if ax.lines or ax.images or ax.patches]
 		if dl:
 			bb = matplotlib.transforms.BboxBase.union(dl)

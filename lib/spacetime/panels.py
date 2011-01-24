@@ -92,7 +92,7 @@ class SubplotPanel(SerializableTab):
 		self.drawmgr.redraw_subgraph(lambda: (
 			self.plot.clear(),
 			self.plot.draw(),
-			self.autoscale(self.plot.axes),
+			self.autoscale(self.plot),
 		))
 
 	def update(self):
@@ -191,7 +191,7 @@ class CameraFramePanel(CameraPanel):
 		if self.zoom:
 			self.plot.axes.set_xlim(*self.plot.axes.dataLim.intervalx)
 		else:
-			self.autoscale()
+			self.autoscale(self.plot)
 		self.update()
 
 	def _rotate_changed(self):
@@ -269,6 +269,7 @@ class TimeTrendPanel(SubplotPanel):
 	plotfactory = subplots.MultiTrend
 	legend = Bool(True)
 	ylimits = Instance(uiutil.LogAxisLimits, args=())
+	yauto = DelegatesTo('ylimits', 'auto')
 	ymin = DelegatesTo('ylimits', 'min')
 	ymax = DelegatesTo('ylimits', 'max')
 	ylog = DelegatesTo('ylimits', 'log')
@@ -276,7 +277,7 @@ class TimeTrendPanel(SubplotPanel):
 	selected_primary_channels = List(Str)
 	data = Instance(datasources.DataSource)
 
-	traits_saved = 'legend', 'ymin', 'ymax', 'ylog', 'selected_primary_channels'
+	traits_saved = 'legend', 'yauto', 'ymin', 'ymax', 'ylog', 'selected_primary_channels'
 
 	def _plot_default(self):
 		plot = self.plotfactory()
@@ -303,15 +304,10 @@ class TimeTrendPanel(SubplotPanel):
 		self.plot.set_data(self.data.selectchannels(lambda chan: chan.id in self.selected_primary_channels))
 		self.redraw()
 
-	def _ymin_changed(self):
-		if self.plot.axes and self.plot.axes.get_ylim()[0] != self.ymin:
-			self.plot.axes.set_ylim(ymin=self.ymin)
-			self.update()
-
-	def _ymax_changed(self):
-		if self.plot.axes and self.plot.axes.get_ylim()[1] != self.ymax:
-			self.plot.axes.set_ylim(ymax=self.ymax)
-			self.update()
+	@on_trait_change('ymin, ymax, yauto')
+	def ylim_changed(self):
+		self.plot.set_ylim(self.ylimits.min, self.ylimits.max, self.ylimits.auto)
+		self.update()
 
 	def _ylog_changed(self):
 		self.plot.set_ylog(self.ylog)
@@ -348,11 +344,12 @@ class DoubleTimeTrendPanel(TimeTrendPanel):
 	selected_secondary_channels = List(Str)
 
 	ylimits2 = Instance(uiutil.LogAxisLimits, args=())
+	yauto2 = DelegatesTo('ylimits2', 'auto')
 	ymin2 = DelegatesTo('ylimits2', 'min')
 	ymax2 = DelegatesTo('ylimits2', 'max')
 	ylog2 = DelegatesTo('ylimits2', 'log')
 
-	traits_saved = 'selected_secondary_channels', 'ymin2', 'ymax2', 'ylog2'
+	traits_saved = 'selected_secondary_channels', 'yauto2', 'ymin2', 'ymax2', 'ylog2'
 
 	def _plot_default(self):
 		plot = self.plotfactory()
@@ -365,15 +362,10 @@ class DoubleTimeTrendPanel(TimeTrendPanel):
 		elif ax is self.plot.secondaryaxes:
 			self.ymin2, self.ymax2 = ax.get_ylim()
 
-	def _ymin2_changed(self):
-		if self.plot.secondaryaxes and self.plot.secondaryaxes.get_ylim()[0] != self.ymin2:
-			self.plot.secondaryaxes.set_ylim(ymin=self.ymin2)
-			self.update()
-
-	def _ymax2_changed(self):
-		if self.plot.secondaryaxes and self.plot.secondaryaxes.get_ylim()[1] != self.ymax2:
-			self.plot.secondaryaxes.set_ylim(ymax=self.ymax2)
-			self.update()
+	@on_trait_change('ymin2, ymax2, yauto2')
+	def ylim2_changed(self):
+		self.plot.set_ylim2(self.ylimits2.min, self.ylimits2.max, self.ylimits2.auto)
+		self.update()
 
 	def _ylog2_changed(self):
 		self.plot.set_ylog2(self.ylog2)

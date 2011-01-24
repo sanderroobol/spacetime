@@ -103,7 +103,7 @@ class MainTab(panels.SerializableTab):
 	tablabel = 'Main'
 	status = Str('')
 
-	traits_saved = 'xmin_mpldt', 'xmax_mpldt'
+	traits_saved = 'xmin_mpldt', 'xmax_mpldt', 'xauto'
 
 	mainwindow = Any
 
@@ -113,15 +113,10 @@ class MainTab(panels.SerializableTab):
 	def xlim_callback(self, ax):
 		self.xmin.mpldt, self.xmax.mpldt = ax.get_xlim()
 
-	def _xmin_mpldt_changed(self):
-		if self.mainwindow.plot.master_axes and self.mainwindow.plot.master_axes.get_xlim()[0] != self.xmin.mpldt:
-			self.mainwindow.plot.master_axes.set_xlim(xmin=self.xmin.mpldt)
-			self.mainwindow.drawmgr.update_canvas()
-
-	def _xmax_mpldt_changed(self):
-		if self.mainwindow.plot.master_axes and self.mainwindow.plot.master_axes.get_xlim()[1] != self.xmax.mpldt:
-			self.mainwindow.plot.master_axes.set_xlim(xmax=self.xmax.mpldt)
-			self.mainwindow.drawmgr.update_canvas()
+	@on_trait_change('xmin_mpldt, xmax_mpldt, xauto')
+	def xlim_changed(self):
+		self.mainwindow.plot.set_shared_xlim(self.xmin.mpldt, self.xmax.mpldt, self.xauto)
+		self.mainwindow.update_canvas()
 
 	def get_serialized(self):
 		d = super(MainTab, self).get_serialized()

@@ -8,7 +8,6 @@ from .util import *
 
 class Subplot(object):
 	axes = None
-	ylim_callback = None
 	marker_callbacks = None
 	time_offset = 0.
 	time_factor = 1.
@@ -28,8 +27,6 @@ class Subplot(object):
 
 	def setup(self):
 		self.axes.fmt_xdata = matplotlib.dates.DateFormatter('%Y-%m-%d %H:%M:%S.%f')
-		if self.ylim_callback:
-			self.axes.callbacks.connect('ylim_changed', self.ylim_callback)
 
 	def draw(self):
 		raise NotImplementedError
@@ -40,8 +37,17 @@ class Subplot(object):
 		# Subplot and leave the axes untouched
 		self.clear_other_markers(quick=quick)
 
-	def set_ylim_callback(self, func):
-		self.ylim_callback = func
+	@staticmethod
+	def autoscale_x(axes):
+		x0, x1 = axes.dataLim.intervalx
+		XL = axes.xaxis.get_major_locator().view_limits(x0, x1)
+		axes.set_xbound(XL)
+
+	@staticmethod
+	def autoscale_y(axes):
+		y0, y1 = axes.dataLim.intervaly
+		YL = axes.yaxis.get_major_locator().view_limits(y0, y1)
+		axes.set_ybound(YL)
 
 	def clear_other_markers(self, quick=False):
 		if not quick:
@@ -113,6 +119,10 @@ LEGENDPROP = matplotlib.font_manager.FontProperties(size='medium')
 
 class MultiTrend(Subplot):
 	legend = True
+	ylim_callback = None
+	ylim_min = 0.
+	ylim_max = 1.
+	ylim_auto = True
 	ylog = False
 
 	def __init__(self, data=None, formatter=None):
@@ -123,6 +133,11 @@ class MultiTrend(Subplot):
 			if not isinstance(formatter, MultiTrendFormatter):
 				raise TypeError("formatter must be a MultiTrendFormatter object (got '%s')" % formatter.__class__.__name__)
 			self.formatter = formatter
+
+	def setup(self):
+		super(MultiTrend, self).setup()
+		if self.ylim_callback:
+			self.axes.callbacks.connect('ylim_changed', self.ylim_callback)
 
 	def draw(self):
 		if not self.data:
@@ -140,6 +155,23 @@ class MultiTrend(Subplot):
 				del self.axes.lines[:]
 				self.axes.relim()
 		super(MultiTrend, self).clear(quick)
+
+	def set_ylim_callback(self, func):
+		self.ylim_callback = func
+
+	def set_ylim(self, min, max, auto):
+		self.ylim_min = min
+		self.ylim_max = max
+		self.ylim_auto = auto
+		self.ylim_rescale()
+
+	def ylim_rescale(self):
+		if not self.axes:
+			return
+		if self.ylim_auto:
+			self.autoscale_y(self.axes)
+		else:
+			self.axes.set_ylim(self.ylim_min, self.ylim_max)
 
 	def set_ylog(self, ylog):
 		self.ylog = ylog
@@ -160,6 +192,9 @@ class MultiTrend(Subplot):
 
 class DoubleMultiTrend(MultiTrend):
 	secondaryaxes = None
+	ylim_min = 0.
+	ylim_max = 1.
+	ylim_auto = True
 	ylog2 = False
 
 	def __init__(self, data=None, secondarydata=None, formatter=None):
@@ -195,6 +230,21 @@ class DoubleMultiTrend(MultiTrend):
 			self.axes.legend_ = None
 			if len(handles):
 				self.secondaryaxes.legend(handles, labels, prop=LEGENDPROP)
+
+	def set_ylim2(self, min, max, auto):
+		self.ylim2_min = min
+		self.ylim2_max = max
+		self.ylim2_auto = auto
+		self.ylim_rescale()
+
+	def ylim_rescale(self):
+		super(DoubleMultiTrend, self).ylim_rescale()
+		if not self.secondaryaxes:
+			return
+		if self.ylim2_auto:
+			self.autoscale_y(self.secondaryaxes)
+		else:
+			self.secondaryaxes.set_ylim(self.ylim2_min, self.ylim2_max)
 
 	def set_ylog2(self, ylog2):
 		self.ylog2 = ylog2

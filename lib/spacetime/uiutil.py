@@ -114,7 +114,6 @@ class AxisLimits(HasTraits):
 	def _set_auto_list(self, value):
 		self.auto = bool(value)
 
-
 	traits_view = View(HGroup(
 		Item('auto_list', style='custom', editor=CheckListEditor(values=['Auto'])),
 		Item('min', enabled_when='not_auto', editor=FloatEditor()),
