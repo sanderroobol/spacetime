@@ -1,6 +1,8 @@
 import itertools
 import matplotlib, matplotlib.figure
 
+from . import util
+
 class Plot(object):
 	left = .75
 	right = .75
@@ -147,7 +149,7 @@ class Plot(object):
 			subplot.ylim_rescale()
 			try:
 				subplot.xlim_rescale()
-			except AttributeError:
+			except (AttributeError, util.SharedXError):
 				shared_xlim_rescale = True
 
 		if shared_xlim_rescale:

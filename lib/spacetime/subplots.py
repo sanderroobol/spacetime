@@ -3,8 +3,7 @@ from __future__ import division
 import numpy
 import matplotlib.patches, matplotlib.cm, matplotlib.colors, matplotlib.dates, matplotlib.font_manager
 
-from . import datasources
-from .util import *
+from . import datasources, util
 
 class Subplot(object):
 	axes = None
@@ -20,7 +19,7 @@ class Subplot(object):
 		self.data = data
 
 	def get_axes_requirements(self):
-		return [Struct()] # request a single subplot
+		return [util.Struct()] # request a single subplot
 
 	def set_axes(self, axes):
 		self.axes = axes[0]
@@ -257,7 +256,7 @@ class DoubleMultiTrend(MultiTrend):
 		super(DoubleMultiTrend, self).set_legend(legend)
 
 	def get_axes_requirements(self):
-		return [Struct(twinx=True)]
+		return [util.Struct(twinx=True)]
 
 	def set_axes(self, axes):
 		self.axes, self.secondaryaxes = axes[0]
@@ -327,7 +326,7 @@ class CV(Subplot):
 	marker_points = None, None
 
 	def get_axes_requirements(self):
-		return [Struct(independent_x = True)]
+		return [util.Struct(independent_x = True)]
 
 	def set_data(self, x, y):
 		self.x = next(x.iterchannels())
@@ -391,9 +390,9 @@ class Image(Subplot):
 
 	def get_axes_requirements(self):
 		if self.mode == 'single frame':
-			return [Struct(independent_x = True)]
+			return [util.Struct(independent_x = True)]
 		else:
-			return [Struct()]
+			return [util.Struct()]
 
 	def setup(self):
 		super(Image, self).setup()
@@ -427,10 +426,22 @@ class Image(Subplot):
 				self.axes.add_patch(matplotlib.patches.Rectangle((tstart, 0), tendzoom-tstart, 1, linewidth=1, edgecolor='black', fill=False))
 	
 		# imshow() changes the axes xlim/ylim, so go back to something sensible
-		self.axes.autoscale_view()
+		self.ylim_rescale()
+		try:
+			self.xlim_rescale()
+		except util.SharedXError:
+			pass
 		# NOTE: IMHO the better solution is to change
 		# matplotlib.image.ImageAxes.set_extent(); this should call
 		# axes.autoscale_view(tight=True) instead of messing with the axes
+
+	def ylim_rescale(self):
+		self.autoscale_y(self.axes)
+
+	def xlim_rescale(self):
+		if self.mode == 'film strip':
+			raise util.SharedXError
+		self.autoscale_x(self.axes)
 
 	def clear(self, quick=False):
 		if not quick:
