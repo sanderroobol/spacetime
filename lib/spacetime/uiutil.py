@@ -37,12 +37,12 @@ class Message(HasTraits):
 		return klass(message=message, title=title, desc=desc, bt=traceback.format_exc(sys.exc_info()[2]), buttons=['OK']).edit_traits(parent=parent).result
 
 	@classmethod
-	def file_open_failed(klass, filename):
-		return klass.exception(message='Failed to open file', desc='%s\nmight not be accessible or it is not in the correct format.' % filename)
+	def file_open_failed(klass, filename, parent=None):
+		return klass.exception(message='Failed to open file', desc='%s\nmight not be accessible or it is not in the correct format.' % filename, parent=parent)
 
 	@classmethod
-	def file_save_failed(klass, filename):
-		return klass.exception(message='Failed to save file', desc=filename)
+	def file_save_failed(klass, filename, parent=None):
+		return klass.exception(message='Failed to save file', desc=filename, parent=parent)
 
 
 class FileEditorImplementation(enthought.traits.ui.wx.file_editor.SimpleEditor):

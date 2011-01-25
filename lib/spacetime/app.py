@@ -203,7 +203,7 @@ class MainWindowHandler(Handler):
 		try:
 			mainwindow.open_project(dlg.Path)
 		except:
-			uiutil.Message.file_open_failed(dlg.Path)
+			uiutil.Message.file_open_failed(dlg.Path, parent=info.ui.control)
 		else:
 			self.set_ui_title(info, dlg.Filename)
 		mainwindow.drawmgr.redraw_figure()
@@ -222,7 +222,7 @@ class MainWindowHandler(Handler):
 				self.set_ui_title(info, filename)
 				return True
 		except:
-			uiutil.Message.file_open_failed(path)
+			uiutil.Message.file_open_failed(path, parent=info.ui.control)
 		return False
 
 	def do_add(self, info):
@@ -233,10 +233,10 @@ class MainWindowHandler(Handler):
 			mainwindow.add_tab(PanelMapper.get_class_by_tablabel(s))
 
 	def do_python(self, info):
-		PythonWindow().edit_traits()
+		PythonWindow().edit_traits(parent=info.ui.control)
 
 	def do_about(self, info):
-		AboutWindow().edit_traits()
+		AboutWindow().edit_traits(parent=info.ui.control)
 
 	def do_export(self, info):
 		# mostly borrowed from Matplotlib's NavigationToolbar2Wx.save()
@@ -262,7 +262,7 @@ class MainWindowHandler(Handler):
 			try:
 				canvas.print_figure(path, format=format)
 			except:
-				uiutil.Message.file_save_failed(path)
+				uiutil.Message.file_save_failed(path, parent=info.ui.control)
 
 	def do_fit(self, info):
 		pass
@@ -326,7 +326,7 @@ class App(HasTraits):
 		wx.CallAfter(self.figure.canvas.draw)
 
 	def add_tab(self, klass, serialized_data=None):
-		tab = klass(drawmgr=self.drawmgr, autoscale=self.plot.autoscale)
+		tab = klass(drawmgr=self.drawmgr, autoscale=self.plot.autoscale, parent=self.ui.control)
 		if serialized_data is not None:
 			tab.from_serialized(serialized_data)
 		self.tabs.append(tab)
@@ -453,14 +453,14 @@ class App(HasTraits):
 
 	def run(self):
 		import sys
+		app = wx.PySimpleApp()
 		if len(sys.argv) > 1 and sys.argv[1] == '--presentation':
-			app = wx.PySimpleApp()
 			figwin = FigureWindow(mainwindow=self, figure=self.figure)
 			figwin.edit_traits()
-			self.edit_traits(view='presentation_view')
-			app.MainLoop()
+			self.ui = self.edit_traits(view='presentation_view')
 		else:
-			self.configure_traits()
+			self.ui = self.edit_traits()
+		app.MainLoop()
 
 if __name__ == '__main__':
 	app = App()

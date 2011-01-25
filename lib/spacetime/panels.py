@@ -62,6 +62,7 @@ class SubplotPanel(SerializableTab):
 	number = 0
 
 	autoscale = Callable
+	parent = Any
 
 	# Magic attribute with "class level" "extension inheritance". Does this make any sense?
 	# It means that when you derive a class from this class, you only have to
@@ -293,7 +294,7 @@ class TimeTrendPanel(SubplotPanel):
 			try:
 				self.data = self.datafactory(self.filename)
 			except:
-				uiutil.Message.file_open_failed(self.filename)
+				uiutil.Message.file_open_failed(self.filename, parent=self.parent)
 				self.filename = ''
 				return
 			self.channels = list(self.data.iterchannelnames())
@@ -416,7 +417,7 @@ class CameraTrendPanel(DoubleTimeTrendPanel, CameraPanel):
 			try:
 				self.data = datasources.Camera(self.filename)
 			except:
-				uiutil.Message.file_open_failed(self.filename)
+				uiutil.Message.file_open_failed(self.filename, parent=self.parent)
 				self.filename = ''
 				return
 			self.channels = list(self.data.iterchannelnames())
@@ -472,7 +473,7 @@ class CVPanel(CameraTrendPanel):
 			try:
 				self.data = datasources.Camera(self.filename)
 			except:
-				uiutil.Message.file_open_failed(self.filename)
+				uiutil.Message.file_open_failed(self.filename, parent=self.parent)
 				self.filename = ''
 				return
 			self.channelcount = self.data.getchannelcount() - 1
@@ -549,7 +550,7 @@ class TPDirkPanel(DoubleTimeTrendPanel):
 			try:
 				self.data = self.datafactory(self.filename)
 			except:
-				uiutil.Message.file_open_failed(self.filename)
+				uiutil.Message.file_open_failed(self.filename, parent=self.parent)
 				self.filename = ''
 				return
 			self.plot.set_data(self.data)
