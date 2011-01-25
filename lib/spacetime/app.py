@@ -227,7 +227,7 @@ class MainWindowHandler(Handler):
 
 	def do_add(self, info):
 		ps = PanelSelector()
-		ps.edit_traits()
+		ps.edit_traits(parent=info.ui.control)
 		mainwindow = info.ui.context['object']
 		for s in ps.selected:
 			mainwindow.add_tab(PanelMapper.get_class_by_tablabel(s))
