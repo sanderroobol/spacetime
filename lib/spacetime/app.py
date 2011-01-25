@@ -264,6 +264,21 @@ class MainWindowHandler(Handler):
 			except:
 				uiutil.Message.file_save_failed(path)
 
+	def do_fit(self, info):
+		pass
+
+	def do_zoom(self, info):
+		mainwindow = info.ui.context['object']
+		mainwindow.figure.toolbar.zoom()
+		mainwindow.zoom_checked = not mainwindow.zoom_checked
+		mainwindow.pan_checked = False
+
+	def do_pan(self, info):
+		mainwindow = info.ui.context['object']
+		mainwindow.figure.toolbar.pan()
+		mainwindow.pan_checked = not mainwindow.pan_checked
+		mainwindow.zoom_checked = False
+
 
 class FigureWindow(HasTraits):
 	mainwindow = Any
@@ -297,6 +312,9 @@ class App(HasTraits):
 	maintab = Instance(MainTab)
 	status = DelegatesTo('maintab')
 	drawmgr = Instance(uiutil.DrawManager)
+
+	pan_checked = Bool(False)
+	zoom_checked = Bool(False)
 
 	tabs = List(Instance(panels.Tab))
 
@@ -394,8 +412,8 @@ class App(HasTraits):
 			Action(name='Add', action='do_add', tooltip='Add graph', image=GetIcon('add')),
 		'graph',
 			Action(name='Fit', action='do_fit', tooltip='Zoom to fit', image=GetIcon('fit')),
-			Action(name='Zoom', action='do_zoom', tooltip='Zoom rectangle', image=GetIcon('zoom')),
-			Action(name='Pan', action='do_pan', tooltip='Pan', image=GetIcon('pan')),
+			Action(name='Zoom', action='do_zoom', tooltip='Zoom rectangle', image=GetIcon('zoom'), checked_when='zoom_checked', style='toggle'),
+			Action(name='Pan', action='do_pan', tooltip='Pan', image=GetIcon('pan'), checked_when='pan_checked', style='toggle'),
 		'export',
 			Action(name='Export', action='do_export', tooltip='Export', image=GetIcon('export')),
 		'python', 
@@ -407,8 +425,8 @@ class App(HasTraits):
 
 	traits_view = View(
 			HSplit(
-				Item('figure', editor=MPLFigureEditor(status='status'), dock='vertical'),
-				Item('tabs', style='custom', width=200, editor=ListEditor(use_notebook=True, deletable=True, page_name='.tablabel')),
+				Item('figure', width=600, editor=MPLFigureEditor(status='status'), dock='vertical'),
+				Item('tabs', style='custom', editor=ListEditor(use_notebook=True, deletable=True, page_name='.tablabel')),
 				show_labels=False,
 			),
 			resizable=True,
@@ -422,7 +440,7 @@ class App(HasTraits):
 
 	presentation_view = View(
 		Group(
-			Item('tabs', style='custom', width=200, editor=ListEditor(use_notebook=True, deletable=True, page_name='.tablabel')),
+			Item('tabs', style='custom', editor=ListEditor(use_notebook=True, deletable=True, page_name='.tablabel')),
 			show_labels=False,
 		),
 		resizable=True,
