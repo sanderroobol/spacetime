@@ -191,9 +191,9 @@ class MultiTrend(Subplot):
 
 class DoubleMultiTrend(MultiTrend):
 	secondaryaxes = None
-	ylim_min = 0.
-	ylim_max = 1.
-	ylim_auto = True
+	ylim2_min = 0.
+	ylim2_max = 1.
+	ylim2_auto = True
 	ylog2 = False
 
 	def __init__(self, data=None, secondarydata=None, formatter=None):

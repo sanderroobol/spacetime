@@ -265,6 +265,27 @@ class MainWindowHandler(Handler):
 				uiutil.Message.file_save_failed(path)
 
 
+class FigureWindow(HasTraits):
+	mainwindow = Any
+	figure = Instance(matplotlib.figure.Figure)
+	status = DelegatesTo('mainwindow')
+
+	def on_figure_resize(self, event):
+		self.mainwindow.on_figure_resize(event)
+
+	traits_view = View(
+		Group(
+			Item('figure', editor=MPLFigureEditor(status='status')),
+			show_labels=False,
+		),
+		resizable=True,
+		height=700, width=1100,
+		buttons=NoButtons,
+		title=MainWindowHandler.get_ui_title(),
+		statusbar='status',
+	)
+
+
 ICON_PATH = [os.path.join(os.path.dirname(__file__), 'icons')]
 def GetIcon(id):
 	return ImageResource(id, search_path=ICON_PATH)
@@ -364,6 +385,26 @@ class App(HasTraits):
 	def _figure_default(self):
 		return self.plot.figure
 
+	main_toolbar = ToolBar(
+		'main',
+			Action(name='New', action='do_new', tooltip='New project', image=GetIcon('new')),
+			Action(name='Open', action='do_open', tooltip='Open project', image=GetIcon('open')),
+			Action(name='Save', action='do_save', tooltip='Save project', image=GetIcon('save')),
+		'add',
+			Action(name='Add', action='do_add', tooltip='Add graph', image=GetIcon('add')),
+		'graph',
+			Action(name='Fit', action='do_fit', tooltip='Zoom to fit', image=GetIcon('fit')),
+			Action(name='Zoom', action='do_zoom', tooltip='Zoom rectangle', image=GetIcon('zoom')),
+			Action(name='Pan', action='do_pan', tooltip='Pan', image=GetIcon('pan')),
+		'export',
+			Action(name='Export', action='do_export', tooltip='Export', image=GetIcon('export')),
+		'python', 
+			Action(name='Python', action='do_python', tooltip='Python shell', image=GetIcon('python')),
+		'about',
+			Action(name='About', action='do_about', tooltip='About', image=GetIcon('about')),
+		show_tool_names=False
+	)
+
 	traits_view = View(
 			HSplit(
 				Item('figure', editor=MPLFigureEditor(status='status'), dock='vertical'),
@@ -374,32 +415,34 @@ class App(HasTraits):
 			height=700, width=1100,
 			buttons=NoButtons,
 			title=MainWindowHandler.get_ui_title(),
-			toolbar=ToolBar(
-				'main',
-					Action(name='New', action='do_new', tooltip='New project', image=GetIcon('new')),
-					Action(name='Open', action='do_open', tooltip='Open project', image=GetIcon('open')),
-					Action(name='Save', action='do_save', tooltip='Save project', image=GetIcon('save')),
-				'add',
-					Action(name='Add', action='do_add', tooltip='Add graph', image=GetIcon('add')),
-				'graph',
-					Action(name='Fit', action='do_fit', tooltip='Zoom to fit', image=GetIcon('fit')),
-					Action(name='Zoom', action='do_zoom', tooltip='Zoom rectangle', image=GetIcon('zoom')),
-					Action(name='Pan', action='do_pan', tooltip='Pan', image=GetIcon('pan')),
-				'export',
-					Action(name='Export', action='do_export', tooltip='Export', image=GetIcon('export')),
-				'python', 
-					Action(name='Python', action='do_python', tooltip='Python shell', image=GetIcon('python')),
-				'about',
-					Action(name='About', action='do_about', tooltip='About', image=GetIcon('about')),
-				show_tool_names=False
-			),
+			toolbar=main_toolbar,
 			statusbar='status',
 			handler=MainWindowHandler(),
 		)
 
-	def run(self):
-		self.configure_traits()
+	presentation_view = View(
+		Group(
+			Item('tabs', style='custom', width=200, editor=ListEditor(use_notebook=True, deletable=True, page_name='.tablabel')),
+			show_labels=False,
+		),
+		resizable=True,
+		height=700, width=700,
+		buttons=NoButtons,
+		title=MainWindowHandler.get_ui_title(),
+		toolbar=main_toolbar,
+		handler=MainWindowHandler(),
+	)
 
+	def run(self):
+		import sys
+		if len(sys.argv) > 1 and sys.argv[1] == '--presentation':
+			app = wx.PySimpleApp()
+			figwin = FigureWindow(mainwindow=self, figure=self.figure)
+			figwin.edit_traits()
+			self.edit_traits(view='presentation_view')
+			app.MainLoop()
+		else:
+			self.configure_traits()
 
 if __name__ == '__main__':
 	app = App()
