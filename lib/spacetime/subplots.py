@@ -103,6 +103,8 @@ class GasCabinetFormatter(MultiTrendFormatter):
 	def __call__(self, data):
 		if data.parameter == 'set point':
 			linestyle = '--' # dashed
+		elif data.parameter == 'valve output':
+			linestyle = ':'
 		else:
 			linestyle = '-' # solid
 	
@@ -318,6 +320,25 @@ class GasCabinet(DoubleMultiTrend):
 				self.secondaryaxes.set_ylabel('Mass flow (mbar l/min)')
 			elif all(chan.startswith('BPC') for chan in self.secondarydata.iterchannelnames()):
 				self.secondaryaxes.set_ylabel('Pressure (bar)')
+
+	def draw_legend(self):
+		if self.legend:
+			handles1, labels1 = self.axes.get_legend_handles_labels()
+			handles2, labels2 = self.secondaryaxes.get_legend_handles_labels()
+
+			handles = []
+			labels = []
+			previd = None
+			for (h, l) in zip(handles1 + handles2, labels1 + labels2):
+				id = l.split()[0]
+				if id != previd:
+					handles.append(h)
+					labels.append(id)
+					previd = id
+
+			self.axes.legend_ = None
+			if len(handles):
+				self.secondaryaxes.legend(handles, labels, prop=LEGENDPROP)
 
 
 class CV(Subplot):
