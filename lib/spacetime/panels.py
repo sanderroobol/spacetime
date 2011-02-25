@@ -107,6 +107,9 @@ class SubplotPanel(SerializableTab):
 		self.plot.adjust_time(self.simultaneity_offset, self.time_dilation_factor)
 		self.redraw()
 
+	def reset_autoscale(self):
+		pass
+
 
 class CameraPanel(SubplotPanel):
 	data = Instance(datasources.Camera)
@@ -314,6 +317,10 @@ class TimeTrendPanel(SubplotPanel):
 		self.plot.set_ylog(self.ylog)
 		self.update()
 
+	def reset_autoscale(self):
+		super(TimeTrendPanel, self).reset_autoscale()
+		self.yauto = True
+
 	def _legend_changed(self):
 		self.plot.set_legend(self.legend)
 		self.update()
@@ -372,6 +379,10 @@ class DoubleTimeTrendPanel(TimeTrendPanel):
 		self.plot.set_ylog2(self.ylog2)
 		self.update()
 
+	def reset_autoscale(self):
+		super(DoubleTimeTrendPanel, self).reset_autoscale()
+		self.yauto2 = True
+
 	@on_trait_change('selected_primary_channels, selected_secondary_channels')
 	def settings_changed(self):
 		self.plot.set_data(
@@ -403,13 +414,60 @@ class DoubleTimeTrendPanel(TimeTrendPanel):
 		)
 
 
-class CameraTrendPanel(DoubleTimeTrendPanel, CameraPanel):
+class XlimitsPanel(HasTraits):
+	xlimits = Instance(uiutil.LogAxisLimits, args=())
+	xauto = DelegatesTo('xlimits', 'auto')
+	xmin = DelegatesTo('xlimits', 'min')
+	xmax = DelegatesTo('xlimits', 'max')
+	xlog = DelegatesTo('xlimits', 'log')
+
+	traits_saved = 'xauto', 'xmin', 'xmax', 'xlog'
+
+	@on_trait_change('xmin, xmax, xauto')
+	def xlim_changed(self):
+		self.plot.set_xlim(self.xlimits.min, self.xlimits.max, self.xlimits.auto)
+		self.update()
+
+	def _xlog_changed(self):
+		self.plot.set_xlog(self.xlog)
+		self.update()
+
+	def xlim_callback(self, ax):
+		self.xmin, self.xmax = ax.get_xlim()
+
+	def reset_autoscale(self):
+		self.xauto = True
+
+
+class CameraTrendPanel(DoubleTimeTrendPanel, CameraPanel, XlimitsPanel):
 	tablabel = 'Camera Trend'
 	filter = 'Camera RAW files (*.raw)', '*.raw'
+	plotfactory = subplots.CameraTrend
 
 	averaging = Bool(True)
+	direction = Enum(1, 2, 3)
+	fft = Bool(False)
+	not_fft = Property(depends_on='fft')
 
-	traits_saved = 'averaging',
+	traits_saved = 'averaging', 'fft'
+
+	def _get_not_fft(self):
+		return not self.fft
+
+	def _fft_changed(self):
+		self.plot.fft = self.fft
+		with self.drawmgr.hold():
+			self.settings_changed()
+			self.redraw_figure()
+
+	def reset_autoscale(self):
+		DoubleTimeTrendPanel.reset_autoscale(self)
+		XlimitsPanel.reset_autoscale(self)
+
+	def _plot_default(self):
+		plot = super(CameraTrendPanel, self)._plot_default()
+		plot.set_xlim_callback(self.xlim_callback)
+		return plot
 
 	@on_trait_change('filename')
 	def load_file(self):
@@ -430,8 +488,12 @@ class CameraTrendPanel(DoubleTimeTrendPanel, CameraPanel):
 		if not self.data:
 			return
 		# FIXME: implement a smarter first/last frame selection, don't redraw everything
-		data = self.data.selectframes(self.firstframe, self.lastframe, self.stepframe)
+		if self.fft:
+			data = self.data.selectframes(self.firstframe, self.firstframe, 1)
+		else:
+			data = self.data.selectframes(self.firstframe, self.lastframe, self.stepframe)
 		self.data.averaging = self.averaging
+		self.data.fft = self.fft
 		self.plot.set_data(
 			data.selectchannels(lambda chan: chan.id in self.selected_primary_channels),
 			data.selectchannels(lambda chan: chan.id in self.selected_secondary_channels),
@@ -443,16 +505,22 @@ class CameraTrendPanel(DoubleTimeTrendPanel, CameraPanel):
 			Item('visible'),
 			Item('filename', editor=uiutil.FileEditor(filter=['Camera RAW files (*.raw)', '*.raw', 'All files', '*'], entries=0)),
 			Item('firstframe', label='First frame', editor=RangeEditor(low=0, high_name='framecount', mode='spinner')),
-			Item('lastframe', label='Last frame', editor=RangeEditor(low=0, high_name='framecount', mode='spinner')),
-			Item('stepframe', label='Key frame mode'),
-			Item('direction', editor=EnumEditor(values={1:'1:L2R', 2:'2:R2L'})), # FIXME: for trends, it should be possible to show both!
-			Item('averaging', tooltip='Per-line averaging'),
+			Item('lastframe', label='Last frame', editor=RangeEditor(low=0, high_name='framecount', mode='spinner'), enabled_when='not_fft'),
+			Item('stepframe', label='Key frame mode', enabled_when='not_fft'),
+			Item('direction', editor=EnumEditor(values={1:'1:L2R', 2:'2:R2L', 3:'3:both'})),
+			Item('averaging', tooltip='Per-line averaging', enabled_when='not_fft'),
+			Item('fft', label='FFT', tooltip='Perform Fast Fourier Transform'),
 			Item('legend'),
 			show_border=True,
 			label='General',
 		),
 		Include('left_yaxis_group'),
 		Include('right_yaxis_group'),
+		Group(
+			Item('xlimits', style='custom', label='Limits', enabled_when='fft'),
+			show_border=True,
+			label='X-axis',
+		),
 		Include('relativistic_group'),
 	)
 

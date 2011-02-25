@@ -82,7 +82,8 @@ class Plot(object):
 			if r.twinx:
 				twin = axes.twinx()
 				self.twinx_axes.append(twin)
-				self.setup_xaxis_labels(twin)
+				if not r.independent_x:
+					self.setup_xaxis_labels(twin)
 				axes = (axes, twin)
 				twin.autoscale(False)
 			
@@ -122,7 +123,7 @@ class Plot(object):
 
 	def setup_xaxis_labels(self, axes):
 		axes.xaxis_date()
-	
+
 		if hasattr(axes, 'is_last_row') and axes.is_last_row():
 			for label in axes.get_xticklabels():
 				label.set_ha('right')
@@ -173,6 +174,7 @@ class Plot(object):
 		# NOTE: this is a workaround for matplotlib's internal autoscaling routines. 
 		# it imitates axes.autoscale_view(), but only takes the dataLim into account when
 		# there are actually some lines or images in the graph
+		# see also Subplots.autoscale_x
 		dl = [ax.dataLim for ax in self.shared_axes + self.twinx_axes if ax.lines or ax.images or ax.patches]
 		if dl:
 			bb = matplotlib.transforms.BboxBase.union(dl)

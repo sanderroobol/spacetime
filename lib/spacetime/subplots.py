@@ -1,7 +1,7 @@
 from __future__ import division
 
 import numpy
-import matplotlib.patches, matplotlib.cm, matplotlib.colors, matplotlib.dates, matplotlib.font_manager
+import matplotlib.patches, matplotlib.cm, matplotlib.colors, matplotlib.dates, matplotlib.font_manager, matplotlib.transforms
 
 from . import datasources, util
 
@@ -25,7 +25,9 @@ class Subplot(object):
 		self.axes = axes[0]
 
 	def setup(self):
-		self.axes.fmt_xdata = matplotlib.dates.DateFormatter('%Y-%m-%d %H:%M:%S.%f')
+		# what could possibly go wrong? a lot, but it will do the right thing most of the time
+		if not any(i.independent_x for i in self.get_axes_requirements()):
+			self.axes.fmt_xdata = matplotlib.dates.DateFormatter('%Y-%m-%d %H:%M:%S.%f')
 
 	def draw(self):
 		raise NotImplementedError
@@ -38,7 +40,15 @@ class Subplot(object):
 
 	@staticmethod
 	def autoscale_x(axes):
-		x0, x1 = axes.dataLim.intervalx
+		# FIXME: Look at Axes.autoscale_view (line 1761) in matplotlib/axes.py
+		# See also Plot.autoscale_x_shared
+		xshared = axes._shared_x_axes.get_siblings(axes)
+		dl = [ax.dataLim for ax in xshared if ax.lines or ax.images or ax.patches]
+		if dl:
+			bb = matplotlib.transforms.BboxBase.union(dl)
+			x0, x1 = bb.intervalx
+		else:
+			x0, x1 = 0, 1
 		XL = axes.xaxis.get_major_locator().view_limits(x0, x1)
 		axes.set_xbound(XL)
 
@@ -341,13 +351,66 @@ class GasCabinet(DoubleMultiTrend):
 				self.secondaryaxes.legend(handles, labels, prop=LEGENDPROP)
 
 
-class CV(Subplot):
-	x = y = None
-	markers = None, None
-	marker_points = None, None
+class IndependentX(object):
+	xlim_callback = None
+	xlim_min = 0.
+	xlim_max = 1.
+	xlim_auto = True
+	xlog = False
 
 	def get_axes_requirements(self):
 		return [util.Struct(independent_x = True)]
+
+	def set_xlim_callback(self, func):
+		self.xlim_callback = func
+
+	def set_xlim(self, min, max, auto):
+		self.xlim_min = min
+		self.xlim_max = max
+		self.xlim_auto = auto
+		self.xlim_rescale()
+
+	def xlim_rescale(self):
+		if not self.axes:
+			return
+		if self.xlim_auto:
+			self.autoscale_x(self.axes)
+		else:
+			self.axes.set_xlim(self.xlim_min, self.xlim_max)
+
+	def set_xlog(self, xlog):
+		self.xlog = xlog
+		if self.axes:
+			self.axes.set_xscale('log' if xlog else 'linear')
+		if self.secondaryaxes:
+			self.secondaryaxes.set_xscale('log' if xlog else 'linear')
+
+class CameraTrend(DoubleMultiTrend, IndependentX):
+	fft = False
+
+	def xlim_rescale(self):
+		if self.fft:
+			super(CameraTrend, self).xlim_rescale()
+
+	def get_axes_requirements(self):
+		return [util.Struct(twinx=True, independent_x=self.fft)]
+
+	def setup(self):
+		super(CameraTrend, self).setup()
+		if self.fft and self.xlim_callback:
+			self.axes.callbacks.connect('xlim_changed', self.xlim_callback)
+
+	def draw(self):
+		super(CameraTrend, self).draw()
+		if self.fft and self.xlog:
+			self.axes.set_xscale('log')
+			self.secondaryaxes.set_xscale('log')
+
+
+class CV(Subplot, IndependentX):
+	x = y = None
+	markers = None, None
+	marker_points = None, None
 
 	def set_data(self, x, y):
 		self.x = next(x.iterchannels())

@@ -200,6 +200,7 @@ class ChainedImage(DataSource):
 class Camera(MultiTrend):
 	direction = raw.RawFileChannelInfo.LR
 	averaging = False # only for trend mode
+	fft = False
 
 	def __init__(self, *args, **kwargs):
 		super(Camera, self).__init__(*args, **kwargs)
@@ -212,7 +213,7 @@ class Camera(MultiTrend):
 
 		frameinfo = self.rawfile.frameInfo(frame)
 		ret.tstart = mpldtfromtimestamp(frameinfo.acquisitionTime)
-		ret.tend = ret.tstart + (xsize*ysize / frameinfo.pixelclock_kHz / 1000 * 2) / 86400
+		ret.tend = ret.tstart + ret.image.size * 2 / frameinfo.pixelclock_kHz / 1000 / 86400
 		return ret
 
 	def getchanneldata(self, channel, frameiter=None):
@@ -220,19 +221,34 @@ class Camera(MultiTrend):
 		time = []
 		if frameiter is None:
 			frameiter = self.framenumberiter()
-		for frame in frameiter:
-			image = self.rawfile.channelImage(frame, channel).asArray(direction=self.direction)
-
-			frameinfo = self.rawfile.frameInfo(frame)
+		for frameno in frameiter:
+			frame = self.rawfile.channelImage(frameno, channel)
+			frameinfo = self.rawfile.frameInfo(frameno)
 			tstart = mpldtfromtimestamp(frameinfo.acquisitionTime)
-			tend = tstart + (image.size / frameinfo.pixelclock_kHz / 1000 * 2) / 86400
 
-			if self.averaging:
-				im = image.mean(axis=1) # FIXME: check if this is really the right axis to average
+			if self.direction == (raw.RawFileChannelInfo.LR | raw.RawFileChannelInfo.RL):
+				lrdata = frame.asArray(direction=raw.RawFileChannelInfo.LR)
+				rldata = frame.asArray(direction=raw.RawFileChannelInfo.RL)
+
+				image = numpy.zeros((lrdata.shape[0], lrdata.shape[1]*2))
+				image[:, 0:lrdata.shape[1]] = lrdata
+				image[:, lrdata.shape[1]:] = rldata[:, ::-1]
+				tend = tstart + image.size / frameinfo.pixelclock_kHz / 1000 / 86400
 			else:
-				im = image.flatten()
-			data.append(im)
-			time.append(numpy.linspace(tstart, tend, im.size))
+				image = frame.asArray(direction=self.direction)
+				tend = tstart + image.size * 2 / frameinfo.pixelclock_kHz / 1000 / 86400
+
+			if self.fft:
+				freq, power = easyfft(image.flatten(), frameinfo.pixelclock_kHz * 1000)
+				data.append(power)
+				time.append(freq)
+			else:
+				if self.averaging:
+					im = image.mean(axis=1)
+				else:
+					im = image.flatten()
+				data.append(im)
+				time.append(numpy.linspace(tstart, tend, im.size))
 		return Struct(id=str(channel), value=numpy.hstack(data), time=numpy.hstack(time))
 
 	def getframecount(self):

@@ -118,6 +118,9 @@ class MainTab(panels.SerializableTab):
 		self.mainwindow.plot.set_shared_xlim(self.xmin.mpldt, self.xmax.mpldt, self.xauto)
 		self.mainwindow.update_canvas()
 
+	def reset_autoscale(self):
+		self.xauto = True
+
 	def get_serialized(self):
 		d = super(MainTab, self).get_serialized()
 		d['version'] = version.version
@@ -265,7 +268,10 @@ class MainWindowHandler(Handler):
 				uiutil.Message.file_save_failed(path, parent=info.ui.control)
 
 	def do_fit(self, info):
-		pass
+		mainwindow = info.ui.context['object']
+		with mainwindow.drawmgr.hold():
+			for tab in mainwindow.tabs:
+				tab.reset_autoscale()
 
 	def do_zoom(self, info):
 		mainwindow = info.ui.context['object']
