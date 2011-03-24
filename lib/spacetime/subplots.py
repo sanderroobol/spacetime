@@ -497,10 +497,10 @@ class Image(Subplot):
 			tend = self.time_factor * d.tend + self.time_offset / 86400.
 
 			if self.mode == 'single frame':
+				# somehow, origin=upper is not respected here for imshow, fix manually
+				image = d.image[::-1,:]
 				if self.rotate:
-					image = numpy.rot90(d.image)
-				else:
-					image = d.image
+					image = numpy.rot90(image, 3)
 				self.axes.imshow(image, aspect='equal', cmap=self.colormap, interpolation=self.interpolation)
 
 				self.set_other_markers(tstart, tend)
@@ -554,9 +554,9 @@ class Image(Subplot):
 		im = self.axes.images[0]
 		# NOTE this uses a feature that is not officially in the matplotlib API
 		if rotate:
-			im.set_data(numpy.rot90(im._A))
-		else:
 			im.set_data(numpy.rot90(im._A, 3))
+		else:
+			im.set_data(numpy.rot90(im._A))
 
 	def set_marker(self, left, right=None):
 		# don't allow markers on this kind of plot, doesn't play nice with clear()
