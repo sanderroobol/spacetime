@@ -1,0 +1,281 @@
+from enthought.traits.api import *
+from enthought.traits.ui.api import *
+import wx
+
+from ... import uiutil
+
+from . import subplots
+from . import datasources
+
+def PanelView(*args, **kwargs):
+	if 'handler' in kwargs:
+		newkwargs = kwargs.copy()
+		del newkwargs['handler']
+		return View(Group(*args, layout='normal', scrollable=True, **newkwargs), handler=kwargs['handler'])
+	return View(Group(*args, layout='normal', scrollable=True, **kwargs))
+
+
+class Tab(HasTraits):
+	pass
+
+
+class TraitsSavedMeta(HasTraits.__metaclass__):
+	def __new__(mcs, name, bases, dict):
+		if 'traits_saved' not in dict:
+			dict['traits_saved'] = ()
+		for base in bases:
+			if 'traits_saved' in base.__dict__:
+				dict['traits_saved'] = tuple(i for i in base.__dict__['traits_saved'] if 'traits_not_saved' not in dict or i not in dict['traits_not_saved']) + dict['traits_saved']
+		return HasTraits.__metaclass__.__new__(mcs, name, bases, dict)
+
+
+class SerializableTab(Tab):
+	__metaclass__ = TraitsSavedMeta
+	drawmgr = Instance(uiutil.DrawManager)
+
+	def _delayed_from_serialized(self, src):
+		with self.drawmgr.hold():
+			# trait_set has to be called separately for each trait to respect the ordering of traits_saved
+			for id in self.traits_saved:
+				if id in src: # silently ignore unknown settings for backward and forward compatibility
+					 self.trait_set(**dict(((id, src[id]),)))
+
+	def from_serialized(self, src):
+		if hasattr(self, 'traits_saved'):
+			wx.CallAfter(lambda: self._delayed_from_serialized(src))
+
+	def get_serialized(self):
+		if hasattr(self, 'traits_saved'):
+			return dict((id, getattr(self, id)) for id in self.traits_saved)
+		else:
+			return dict()
+
+
+class SubplotPanel(SerializableTab):
+	filename = File
+	reload = Button
+	simultaneity_offset = Float(0.)
+	time_dilation_factor = Float(1.)
+
+	plot = Instance(subplots.Subplot)
+	visible = Bool(True)
+	number = 0
+
+	autoscale = Callable
+	parent = Any
+
+	# Magic attribute with "class level" "extension inheritance". Does this make any sense?
+	# It means that when you derive a class from this class, you only have to
+	# specify the attributes that are "new" in the derived class, any
+	# attributed listed in one of the parent classes will be added
+	# automatically.
+	# Anyway, this is possible thanks to the TraitsSavedMeta metaclass.
+	traits_saved = 'visible', 'filename', 'simultaneity_offset', 'time_dilation_factor'
+	# traits_not_saved = ... can be used to specify parameters that should not be copied in a derived classes
+
+	relativistic_group = Group(
+		Item('simultaneity_offset', label='Simultaneity offset (s)', editor=uiutil.FloatEditor()),
+		Item('time_dilation_factor', editor=RangeEditor(low=.999, high=1.001)),
+		show_border=True,
+		label='Relativistic corrections',
+	)
+
+	def __init__(self, *args, **kwargs):
+		super(SubplotPanel, self).__init__(*args, **kwargs)
+		self.__class__.number += 1
+		if self.__class__.number != 1:
+			self.tablabel = '%s %d' % (self.tablabel, self.__class__.number)
+
+	def redraw_figure(self):
+		self.drawmgr.redraw_figure()
+
+	def redraw(self):
+		self.drawmgr.redraw_subgraph(lambda: (
+			self.plot.clear(),
+			self.plot.draw(),
+			self.autoscale(self.plot),
+		))
+
+	def update(self):
+		self.drawmgr.update_canvas()
+
+	def _visible_changed(self):
+		self.redraw_figure()
+
+	@on_trait_change('simultaneity_offset, time_dilation_factor')
+	def relativistics_changed(self):
+		self.plot.adjust_time(self.simultaneity_offset, self.time_dilation_factor)
+		self.redraw()
+
+	def reset_autoscale(self):
+		pass
+
+
+class TimeTrendPanel(SubplotPanel):
+	plotfactory = subplots.MultiTrend
+	legend = Bool(True)
+	ylimits = Instance(uiutil.LogAxisLimits, args=())
+	yauto = DelegatesTo('ylimits', 'auto')
+	ymin = DelegatesTo('ylimits', 'min')
+	ymax = DelegatesTo('ylimits', 'max')
+	ylog = DelegatesTo('ylimits', 'log')
+	channels = List(Str)
+	selected_primary_channels = List(Str)
+	data = Instance(datasources.DataSource)
+
+	traits_saved = 'legend', 'yauto', 'ymin', 'ymax', 'ylog', 'selected_primary_channels'
+
+	def _plot_default(self):
+		plot = self.plotfactory()
+		plot.set_ylim_callback(self.ylim_callback)
+		return plot
+
+	def ylim_callback(self, ax):
+		self.ymin, self.ymax = ax.get_ylim()
+
+	@on_trait_change('filename, reload')
+	def load_file(self):
+		if self.filename:
+			try:
+				self.data = self.datafactory(self.filename)
+			except:
+				uiutil.Message.file_open_failed(self.filename, parent=self.parent)
+				self.filename = ''
+				return
+			self.channels = list(self.data.iterchannelnames())
+			self.settings_changed()
+
+	@on_trait_change('selected_primary_channels')
+	def settings_changed(self):
+		self.plot.set_data(self.data.selectchannels(lambda chan: chan.id in self.selected_primary_channels))
+		self.redraw()
+
+	@on_trait_change('ymin, ymax, yauto')
+	def ylim_changed(self):
+		self.plot.set_ylim(self.ylimits.min, self.ylimits.max, self.ylimits.auto)
+		self.update()
+
+	def _ylog_changed(self):
+		self.plot.set_ylog(self.ylog)
+		self.update()
+
+	def reset_autoscale(self):
+		super(TimeTrendPanel, self).reset_autoscale()
+		self.yauto = True
+
+	def _legend_changed(self):
+		self.plot.set_legend(self.legend)
+		self.update()
+
+	left_yaxis_group = Group(
+		Item('channels', editor=ListStrEditor(editable=False, multi_select=True, selected='selected_primary_channels')),
+		Item('ylimits', style='custom', label='Limits'),
+		show_border=True,
+		label='Left y-axis'
+	)
+
+	def traits_view(self):
+		return PanelView(
+			Group(
+				Item('visible'),
+				Item('filename', editor=uiutil.FileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),
+				Item('reload', show_label=False),
+				Item('legend'),
+				show_border=True,
+				label='General',
+			),
+			Include('left_yaxis_group'),
+			Include('relativistic_group'),
+		)
+
+
+class DoubleTimeTrendPanel(TimeTrendPanel):
+	plotfactory = subplots.DoubleMultiTrend
+	selected_secondary_channels = List(Str)
+
+	ylimits2 = Instance(uiutil.LogAxisLimits, args=())
+	yauto2 = DelegatesTo('ylimits2', 'auto')
+	ymin2 = DelegatesTo('ylimits2', 'min')
+	ymax2 = DelegatesTo('ylimits2', 'max')
+	ylog2 = DelegatesTo('ylimits2', 'log')
+
+	traits_saved = 'selected_secondary_channels', 'yauto2', 'ymin2', 'ymax2', 'ylog2'
+
+	def _plot_default(self):
+		plot = self.plotfactory()
+		plot.set_ylim_callback(self.ylim_callback)
+		return plot
+
+	def ylim_callback(self, ax):
+		if ax is self.plot.axes:
+			self.ymin, self.ymax = ax.get_ylim()
+		elif ax is self.plot.secondaryaxes:
+			self.ymin2, self.ymax2 = ax.get_ylim()
+
+	@on_trait_change('ymin2, ymax2, yauto2')
+	def ylim2_changed(self):
+		self.plot.set_ylim2(self.ylimits2.min, self.ylimits2.max, self.ylimits2.auto)
+		self.update()
+
+	def _ylog2_changed(self):
+		self.plot.set_ylog2(self.ylog2)
+		self.update()
+
+	def reset_autoscale(self):
+		super(DoubleTimeTrendPanel, self).reset_autoscale()
+		self.yauto2 = True
+
+	@on_trait_change('selected_primary_channels, selected_secondary_channels')
+	def settings_changed(self):
+		self.plot.set_data(
+			self.data.selectchannels(lambda chan: chan.id in self.selected_primary_channels),
+			self.data.selectchannels(lambda chan: chan.id in self.selected_secondary_channels),
+		)
+		self.redraw()
+
+	right_yaxis_group = Group(
+		Item('channels', editor=ListStrEditor(editable=False, multi_select=True, selected='selected_secondary_channels')),
+		Item('ylimits2', style='custom', label='Limits'),
+		show_border=True,
+		label='Right y-axis'
+	)
+
+	def traits_view(self):
+		return PanelView(
+			Group(
+				Item('visible'),
+				Item('filename', editor=uiutil.FileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),
+				Item('reload', show_label=False),
+				Item('legend'),
+				show_border=True,
+				label='General',
+			),
+			Include('left_yaxis_group'),
+			Include('right_yaxis_group'),
+			Include('relativistic_group'),
+		)
+
+
+class XlimitsPanel(HasTraits):
+	xlimits = Instance(uiutil.LogAxisLimits, args=())
+	xauto = DelegatesTo('xlimits', 'auto')
+	xmin = DelegatesTo('xlimits', 'min')
+	xmax = DelegatesTo('xlimits', 'max')
+	xlog = DelegatesTo('xlimits', 'log')
+
+	traits_saved = 'xauto', 'xmin', 'xmax', 'xlog'
+
+	@on_trait_change('xmin, xmax, xauto')
+	def xlim_changed(self):
+		self.plot.set_xlim(self.xlimits.min, self.xlimits.max, self.xlimits.auto)
+		self.update()
+
+	def _xlog_changed(self):
+		self.plot.set_xlog(self.xlog)
+		self.update()
+
+	def xlim_callback(self, ax):
+		self.xmin, self.xmax = ax.get_xlim()
+
+	def reset_autoscale(self):
+		self.xauto = True

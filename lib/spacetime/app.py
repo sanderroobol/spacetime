@@ -1,7 +1,8 @@
 # keep this import at top to ensure proper matplotlib backend selection
 from .mplfigure import MPLFigureEditor
 
-from . import plot, util, panels, version, uiutil
+from . import plot, util, version, uiutil
+import modules
 
 from enthought.traits.api import *
 from enthought.traits.ui.api import *
@@ -43,14 +44,14 @@ class DateTimeSelector(HasTraits):
 class PanelMapper(object):
 	# this is a list and  not a dictionary to preserve ordering
 	MAPPING = (
-		('camera',              panels.CameraFramePanel),
-		('cameratrend',         panels.CameraTrendPanel),
-		('quaderaqms',          panels.QMSPanel),
-		('lpmgascabinet',       panels.GasCabinetPanel),
-		('prototypegascabinet', panels.OldGasCabinetPanel),
-		('reactorenvironment',  panels.ReactorEnvironmentPanel),
-		('tpdirk',              panels.TPDirkPanel),
-		('cameracv',            panels.CVPanel),
+		('camera',              modules.lpmcamera.panels.CameraFramePanel),
+		('cameratrend',         modules.lpmcamera.panels.CameraTrendPanel),
+		('quaderaqms',          modules.quadera.panels.QMSPanel),
+		('lpmgascabinet',       modules.lpmgascabinet.panels.GasCabinetPanel),
+		('prototypegascabinet', modules.interfacephysics.panels.OldGasCabinetPanel),
+		('reactorenvironment',  modules.interfacephysics.panels.ReactorEnvironmentPanel),
+		('tpdirk',              modules.interfacephysics.panels.TPDirkPanel),
+		('cameracv',            modules.interfacephysics.panels.CVPanel),
 	)
 
 	list_classes = tuple(klass for (id, klass) in MAPPING)
@@ -93,7 +94,7 @@ class PanelSelector(HasTraits):
 	)
 
 
-class MainTab(panels.SerializableTab):
+class MainTab(modules.generic.panels.SerializableTab):
 	xauto = Bool(True)
 	not_xauto = Property(depends_on='xauto')
 	xmin = Instance(DateTimeSelector, args=())
@@ -322,7 +323,7 @@ class App(HasTraits):
 	pan_checked = Bool(False)
 	zoom_checked = Bool(False)
 
-	tabs = List(Instance(panels.Tab))
+	tabs = List(Instance(modules.generic.panels.Tab))
 
 	def on_figure_resize(self, event):
 		self.plot.setup_margins()
@@ -389,7 +390,7 @@ class App(HasTraits):
 
 	def redraw_figure(self):
 		self.plot.clear()
-		[self.plot.add_subplot(tab.plot) for tab in self.tabs if isinstance(tab, panels.SubplotPanel) and tab.visible]
+		[self.plot.add_subplot(tab.plot) for tab in self.tabs if isinstance(tab, modules.generic.panels.SubplotPanel) and tab.visible]
 		self.plot.setup()
 		self.plot.draw()
 		self.plot.autoscale()

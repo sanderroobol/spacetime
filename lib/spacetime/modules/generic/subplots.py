@@ -3,7 +3,7 @@ from __future__ import division
 import numpy
 import matplotlib.patches, matplotlib.cm, matplotlib.colors, matplotlib.dates, matplotlib.font_manager, matplotlib.transforms
 
-from . import datasources, util
+from ... import util
 
 class Subplot(object):
 	axes = None
@@ -101,28 +101,6 @@ class MultiTrendFormatter(object):
 
 	def reset(self):
 		self.counter = -1
-
-
-class GasCabinetFormatter(MultiTrendFormatter):
-	prevcontroller = None
-
-	def reset(self):
-		self.prevcontroller = None
-		super(GasCabinetFormatter, self).reset()
-
-	def __call__(self, data):
-		if data.parameter == 'set point':
-			linestyle = '--' # dashed
-		elif data.parameter == 'valve output':
-			linestyle = ':'
-		else:
-			linestyle = '-' # solid
-	
-		if self.prevcontroller != data.controller:
-			self.increase_counter()
-			self.prevcontroller = data.controller
-
-		return self.colors[self.counter] + linestyle
 
 
 LEGENDPROP = matplotlib.font_manager.FontProperties(size='medium')
@@ -281,76 +259,6 @@ class DoubleMultiTrend(MultiTrend):
 		super(DoubleMultiTrend, self).clear(quick)
 
 
-class QMS(MultiTrend):
-	def setup(self):
-		super(QMS, self).setup()
-		self.axes.set_ylabel('Ion current (A)')
-
-
-class TPDirk(DoubleMultiTrend):
-	def __init__(self, data=None, formatter=None):
-		self.set_data(data)
-		super(TPDirk, self).__init__(self.data, self.secondarydata, formatter)
-	
-	def set_data(self, data):
-		self.realdata = data
-		if data:
-			self.data = data.selectchannels(lambda x: x.id == 'pressure')
-			self.secondarydata = data.selectchannels(lambda x: x.id == 'temperature')
-		else:
-			self.data = None
-			self.secondarydata = None
-
-	def setup(self):
-		super(TPDirk, self).setup()
-		self.axes.set_ylabel('Pressure (mbar)')
-		self.axes.set_yscale('log')
-		self.secondaryaxes.set_ylabel('Temperature (K)')
-
-
-class GasCabinet(DoubleMultiTrend):
-	def __init__(self, data=None, secondarydata=None, formatter=None):
-		if formatter is None:
-			formatter = GasCabinetFormatter()
-		super(GasCabinet, self).__init__(data, secondarydata, formatter)
-
-	def draw(self):
-		super(GasCabinet, self).draw()
-		self.axes.set_ylabel('')
-		self.secondaryaxes.set_ylabel('')
-
-		if self.data and list(self.data.iterchannelnames()):
-			if all(chan.startswith('MF') for chan in self.data.iterchannelnames()):
-				self.axes.set_ylabel('Mass flow (mbar l/min)')
-			elif all(chan.startswith('BPC') for chan in self.data.iterchannelnames()):
-				self.axes.set_ylabel('Pressure (bar)')
-
-		if self.secondarydata and list(self.secondarydata.iterchannelnames()):
-			if all(chan.startswith('MF') for chan in self.secondarydata.iterchannelnames()):
-				self.secondaryaxes.set_ylabel('Mass flow (mbar l/min)')
-			elif all(chan.startswith('BPC') for chan in self.secondarydata.iterchannelnames()):
-				self.secondaryaxes.set_ylabel('Pressure (bar)')
-
-	def draw_legend(self):
-		if self.legend:
-			handles1, labels1 = self.axes.get_legend_handles_labels()
-			handles2, labels2 = self.secondaryaxes.get_legend_handles_labels()
-
-			handles = []
-			labels = []
-			previd = None
-			for (h, l) in zip(handles1 + handles2, labels1 + labels2):
-				id = l.split()[0]
-				if id != previd:
-					handles.append(h)
-					labels.append(id)
-					previd = id
-
-			self.axes.legend_ = None
-			if len(handles):
-				self.secondaryaxes.legend(handles, labels, prop=LEGENDPROP)
-
-
 class IndependentX(object):
 	xlim_callback = None
 	xlim_min = 0.
@@ -384,81 +292,6 @@ class IndependentX(object):
 			self.axes.set_xscale('log' if xlog else 'linear')
 		if self.secondaryaxes:
 			self.secondaryaxes.set_xscale('log' if xlog else 'linear')
-
-class CameraTrend(DoubleMultiTrend, IndependentX):
-	fft = False
-
-	def xlim_rescale(self):
-		if self.fft:
-			super(CameraTrend, self).xlim_rescale()
-
-	def get_axes_requirements(self):
-		return [util.Struct(twinx=True, independent_x=self.fft)]
-
-	def setup(self):
-		super(CameraTrend, self).setup()
-		if self.fft and self.xlim_callback:
-			self.axes.callbacks.connect('xlim_changed', self.xlim_callback)
-
-	def draw(self):
-		super(CameraTrend, self).draw()
-		if self.fft and self.xlog:
-			self.axes.set_xscale('log')
-			self.secondaryaxes.set_xscale('log')
-
-
-class CV(Subplot, IndependentX):
-	x = y = None
-	markers = None, None
-	marker_points = None, None
-
-	def set_data(self, x, y):
-		self.x = next(x.iterchannels())
-		self.y = next(y.iterchannels())
-
-	def draw(self):
-		if not self.x:
-			return
-		self.axes.plot(self.x.value, self.y.value, 'b-')
-		self.plot_marker()
-
-	def clear(self, quick=False):
-		if not quick:
-			if self.axes:
-				del self.axes.lines[:]
-			self.axes.relim()
-		super(CV, self).clear(quick)
-
-	def clear_marker(self):
-		left, right = self.marker_points
-		if left:
-			self.axes.lines.remove(left)
-		if right:
-			self.axes.lines.remove(right)
-		self.markers = self.marker_points = None, None
-
-	def set_marker(self, left, right=None):
-		self.markers = left, right
-		if self.x:
-			self.plot_marker()
-		return self.clear_marker
-
-	def plot_marker(self):
-		left, right = self.markers
-
-		index_left = numpy.searchsorted(self.x.time, left, 'left')
-		if index_left == self.x.time.size:
-			index_left -= 1
-
-		left_point = self.axes.plot([self.x.value[index_left]], [self.y.value[index_left]], 'go')[0]
-		if right is None:
-			self.marker_points = left_point, None
-		else:
-			index_right = numpy.searchsorted(self.x.time, right, 'right')
-			if index_right == self.x.time.size:
-				index_right -= 1
-			right_point = self.axes.plot([self.x.value[index_right]], [self.y.value[index_right]], 'ro')[0]
-			self.marker_points = left_point, right_point
 
 
 class Image(Subplot):
