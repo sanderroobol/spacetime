@@ -4,7 +4,9 @@ from . import subplots, datasources
 
 
 class QMSPanel(TimeTrendPanel):
-	tablabel = 'QMS'
+	id = 'quaderaqms'
+	label = 'QMS'
+
 	datafactory = datasources.QMS
 	plotfactory = subplots.QMS
 	filter = 'Quadera ASCII files (*.asc)', '*.asc'

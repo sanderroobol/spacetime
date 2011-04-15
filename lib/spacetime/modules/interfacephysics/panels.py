@@ -11,7 +11,9 @@ from . import datasources
 
 
 class CVPanel(CameraTrendPanel):
-	tablabel = 'Cyclic voltammetry'
+	id = 'cameracv'
+	label = 'Cyclic voltammetry'
+
 	plotfactory = subplots.CV
 	voltage_channel = Int(0)
 	current_channel = Int(0)
@@ -77,7 +79,9 @@ class CVPanel(CameraTrendPanel):
 
 
 class TPDirkPanel(DoubleTimeTrendPanel):
-	tablabel = 'TPDirk'
+	id = 'tpdirk'
+	label = 'TPDirk'
+
 	plotfactory = subplots.TPDirk
 	datafactory = datasources.TPDirk
 	filter = 'Dirk\'s ASCII files (*.txt)', '*.txt'
@@ -119,13 +123,17 @@ class TPDirkPanel(DoubleTimeTrendPanel):
 
 
 class OldGasCabinetPanel(DoubleTimeTrendPanel):
-	tablabel = 'Prototype gas cabinet'
+	id = 'prototypegascabinet'
+	label = 'Prototype gas cabinet'
+
 	plotfactory = lpmsubplots.GasCabinet
 	datafactory = datasources.OldGasCabinet
 	filter = 'ASCII text files (*.txt)', '*.txt',
 
 
 class ReactorEnvironmentPanel(DoubleTimeTrendPanel):
-	tablabel = 'Reactor Environment logger'
+	id = 'reactorenvironment'
+	label = 'Reactor Environment logger'
+
 	datafactory = datasources.ReactorEnvironment
 	filter = 'ASCII text files (*.txt)', '*.txt',

@@ -41,43 +41,14 @@ class DateTimeSelector(HasTraits):
 	))
 
 
-class PanelMapper(object):
-	# this is a list and  not a dictionary to preserve ordering
-	MAPPING = (
-		('camera',              modules.lpmcamera.panels.CameraFramePanel),
-		('cameratrend',         modules.lpmcamera.panels.CameraTrendPanel),
-		('quaderaqms',          modules.quadera.panels.QMSPanel),
-		('lpmgascabinet',       modules.lpmgascabinet.panels.GasCabinetPanel),
-		('prototypegascabinet', modules.interfacephysics.panels.OldGasCabinetPanel),
-		('reactorenvironment',  modules.interfacephysics.panels.ReactorEnvironmentPanel),
-		('tpdirk',              modules.interfacephysics.panels.TPDirkPanel),
-		('cameracv',            modules.interfacephysics.panels.CVPanel),
-	)
-
-	list_classes = tuple(klass for (id, klass) in MAPPING)
-	list_tablabels = tuple(klass.tablabel for klass in list_classes)
-	
-	mapping_id_class = dict(MAPPING)
-	mapping_classname_id = dict((klass.__name__, id) for (id, klass) in MAPPING)
-	mapping_tablabel_class = dict((klass.tablabel, klass) for klass in list_classes)
-
-	@classmethod
-	def get_class_by_id(klass, id):
-		return klass.mapping_id_class[id]
-
-	@classmethod
-	def get_id_by_instance(klass, obj):
-		return klass.mapping_classname_id[obj.__class__.__name__]
-
-	@classmethod
-	def get_class_by_tablabel(klass, label):
-		return klass.mapping_tablabel_class[label]
-
-
 class PanelSelector(HasTraits):
+	panelmgr = Instance(modules.PanelManager)
 	selected = List(Str)
 	message = Str('Select subgraph type')
-	types = List(PanelMapper.list_tablabels)
+	types = Tuple()
+
+	def _types_default(self):
+		return self.panelmgr.list_labels()
 
 	traits_view = View(
 		Group(
@@ -101,7 +72,7 @@ class MainTab(modules.generic.panels.SerializableTab):
 	xmax = Instance(DateTimeSelector, args=())
 	xmin_mpldt = DelegatesTo('xmin', 'mpldt')
 	xmax_mpldt = DelegatesTo('xmax', 'mpldt')
-	tablabel = 'Main'
+	label = 'Main'
 	status = Str('')
 
 	traits_saved = 'xmin_mpldt', 'xmax_mpldt', 'xauto'
@@ -230,11 +201,13 @@ class MainWindowHandler(Handler):
 		return False
 
 	def do_add(self, info):
-		ps = PanelSelector()
-		ps.edit_traits(parent=info.ui.control)
 		mainwindow = info.ui.context['object']
+		ps = PanelSelector(panelmgr=mainwindow.panelmgr)
+		#ps.types = mainwindow.panelmgr.list_labels()
+		ps.edit_traits(parent=info.ui.control)
+
 		for s in ps.selected:
-			mainwindow.add_tab(PanelMapper.get_class_by_tablabel(s))
+			mainwindow.add_tab(mainwindow.panelmgr.get_class_by_label(s))
 
 	def do_python(self, info):
 		PythonWindow().edit_traits(parent=info.ui.control)
@@ -319,6 +292,7 @@ class App(HasTraits):
 	maintab = Instance(MainTab)
 	status = DelegatesTo('maintab')
 	drawmgr = Instance(uiutil.DrawManager)
+	panelmgr = Instance(modules.PanelManager, args=())
 
 	pan_checked = Bool(False)
 	zoom_checked = Bool(False)
@@ -358,7 +332,7 @@ class App(HasTraits):
 
 	def clear(self):
 		self.tabs = self._tabs_default()
-		for klass in PanelMapper.list_classes:
+		for klass in self.panelmgr.list_classes():
 			klass.number = 0
 
 	def open_project(self, path):
@@ -371,7 +345,7 @@ class App(HasTraits):
 			# FIXME: check version number and emit warning
 			for id, props in data:
 				try:
-					self.add_tab(PanelMapper.get_class_by_id(id), props)
+					self.add_tab(self.panelmgr.get_class_by_id(id), props)
 				except KeyError:
 					pass # silently ignore unknown class names for backward and forward compatibility
 
@@ -379,7 +353,7 @@ class App(HasTraits):
 		data = [('general', self.tabs[0].get_serialized())]
 		for tab in self.tabs:
 			if isinstance(tab, panels.SubplotPanel):
-				data.append((PanelMapper.get_id_by_instance(tab), tab.get_serialized()))
+				data.append((self.panelmgr.get_id_by_instance(tab), tab.get_serialized()))
 		with open(path, 'wb') as fp:
 			fp.write('Spacetime\nJSON\n')
 			json.dump(data, fp)
@@ -433,7 +407,7 @@ class App(HasTraits):
 	traits_view = View(
 			HSplit(
 				Item('figure', width=600, editor=MPLFigureEditor(status='status'), dock='vertical'),
-				Item('tabs', style='custom', editor=ListEditor(use_notebook=True, deletable=True, page_name='.tablabel')),
+				Item('tabs', style='custom', editor=ListEditor(use_notebook=True, deletable=True, page_name='.label')),
 				show_labels=False,
 			),
 			resizable=True,
@@ -447,7 +421,7 @@ class App(HasTraits):
 
 	presentation_view = View(
 		Group(
-			Item('tabs', style='custom', editor=ListEditor(use_notebook=True, deletable=True, page_name='.tablabel')),
+			Item('tabs', style='custom', editor=ListEditor(use_notebook=True, deletable=True, page_name='.label')),
 			show_labels=False,
 		),
 		resizable=True,

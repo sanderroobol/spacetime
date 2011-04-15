@@ -37,6 +37,9 @@ class CameraFramePanelHandler(Handler):
 
 
 class CameraFramePanel(CameraPanel):
+	id = 'camera'
+	label = 'Camera'
+
 	channel = Int(0)
 	channelcount = Int(0)
 	bgsubtract = Bool(True)
@@ -50,8 +53,6 @@ class CameraFramePanel(CameraPanel):
 
 	is_singleframe = Property(depends_on='mode')
 	is_filmstrip = Property(depends_on='mode')
-
-	tablabel = 'Camera'
 
 	traits_saved = 'channel', 'bgsubtract', 'clip', 'colormap', 'interpolation', 'zoom', 'rotate', 'mode'
 	
@@ -171,7 +172,9 @@ class CameraFramePanel(CameraPanel):
 
 
 class CameraTrendPanel(DoubleTimeTrendPanel, CameraPanel, XlimitsPanel):
-	tablabel = 'Camera Trend'
+	id = 'cameratrend'
+	label = 'Camera Trend'
+
 	filter = 'Camera RAW files (*.raw)', '*.raw'
 	plotfactory = subplots.CameraTrend
 

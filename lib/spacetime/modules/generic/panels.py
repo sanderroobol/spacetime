@@ -84,7 +84,7 @@ class SubplotPanel(SerializableTab):
 		super(SubplotPanel, self).__init__(*args, **kwargs)
 		self.__class__.number += 1
 		if self.__class__.number != 1:
-			self.tablabel = '%s %d' % (self.tablabel, self.__class__.number)
+			self.label = '%s %d' % (self.label, self.__class__.number)
 
 	def redraw_figure(self):
 		self.drawmgr.redraw_figure()
