@@ -1,21 +1,29 @@
 TODO for 1.0
 ============
-1. Subplot size hinting
-2. Better autoscale
-3. Interface redesign:
-   - get rid of matplotlib toolbar
-   - decide what to do with the Main tab
-4. Finish open/save support: ListStr bugs
-5. Bug: cursor position with twinx'ed graphs
-6. X-axis labels and vertical spacing when using non-shared axes
-7. Icon
-8. Restructure: plugins dir with one file per "measurement type": camera.py, qms.py, gascab.py, tpdirk.py. Think about auto-detection of plugins.
-9. Descriptions in Add subplot dialog
-10. API docs and examples
+ESSENTIAL:
+2. Enh: Delayed redraw / redraw on idle
+3. Bug: cursor position with twinx'ed graphs
+4. Enh: rework subplot management:
+         - Subplot size hinting
+         - X-axis labels and vertical spacing when using non-shared axes
+5. New: Relative / rezero'ed time axis
+6. New: Smart legend positioning: outside graphs, multicolumn, ... 
+
+POLISHING:
+1. Enh: Interface redesign: decide what to do with the Main tab
+2. New: Icon
+3. Enh: Auto-detection of modules.
+4. Enh: Descriptions in Add subplot dialog
+5. New: API docs and examples
+6. Enh: Save/open/export dialogs should remember path
+7. New: Subgraph manager (reorder graphs)
+8. New: Axes labels (mostly y-axis, but also others)
+9. New: More filters for Camera images (differential)
+10. New: Camera multi-image-mode for a single frame
+
 
 Low priority
 ============
-* L2R + R2L mode for CameraTrends
 * click in time graph and jump to camera image (single mode)
 * Camera: cursor should show time instead of pixels in single frame mode
 * Data export? How? Where? Why? When? Whatfor? Whatever! :)
@@ -26,10 +34,12 @@ Low priority
 * Camera: add file chaining support to panel
 * Camera: improve performance when changing frames (update instead of complete rebuild)
 * CameraTrend: option to not link datapoints of different frames
-* Presentation / dual screen mode: separate windows for graph and configuration
+* Generalize DoubleMultiTrend to an arbitrary number of subplots (with or without twinx'ed graphs).
+* Native Mac OS X package
+* Fix CV support again
 
 KNOWN BUGS (not my fault! :)
 * when selecting items in a ListStrEditor using SHIFT instead of CONTROL, the 'selected' trait isn't updated properly
    (see also: https://svn.enthought.com/enthought/changeset?reponame=&old=19115%40TraitsBackendWX/trunk/enthought/traits&new=19161%40TraitsBackendWX/trunk/enthought/traits)
 * ListStrEditor editable=False is not honoured (GTK only? works fine on Windows)
-* time selector (x-axis limits) shows 12-hour clock
+* Dragging text in TimeEditor could make a big mess
