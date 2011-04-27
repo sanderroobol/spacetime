@@ -4,22 +4,7 @@ import datetime
 import numpy
 
 from ..generic.datasources import MultiTrend
-from ..lpmgascabinet.datasources import LabviewMultiTrend
 from ...util import Struct, mpldtfromdatetime
-
-
-class ReactorEnvironment(LabviewMultiTrend):
-	def __init__(self, *args, **kwargs):
-		super(ReactorEnvironment, self).__init__(*args, **kwargs)
-		fp = open(self.filename)
-		columns = fp.readline().strip().split('\t')
-		self.data = numpy.loadtxt(fp)
-		fp.close()
-
-		self.channels = []
-		time = self.parselabviewdate(self.data[:,0])
-		for i, v in enumerate(columns[1:]):
-			self.channels.append(Struct(time=time, value=self.data[:,i+1], id=v))
 
 
 class TPDirk(MultiTrend):

@@ -4,6 +4,7 @@ from enthought.traits.ui.api import *
 from ..generic.panels import DoubleTimeTrendPanel, PanelView
 from ..lpmcamera.panels import CameraTrendPanel
 from ..lpmgascabinet import subplots as lpmsubplots
+from ..lpmgascabinet.datasources import LabviewMultiTrend
 from ... import uiutil
 
 from . import subplots
@@ -135,5 +136,5 @@ class ReactorEnvironmentPanel(DoubleTimeTrendPanel):
 	id = 'reactorenvironment'
 	label = 'Reactor Environment logger'
 
-	datafactory = datasources.ReactorEnvironment
+	datafactory = LabviewMultiTrend
 	filter = 'ASCII text files (*.txt)', '*.txt',
