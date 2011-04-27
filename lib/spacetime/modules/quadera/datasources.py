@@ -13,11 +13,11 @@ class QMS(MultiTrend):
 
 	@staticmethod
 	def parseDT(s):
-		return util.mpldtfromdatetime(datetime.datetime.strptime(s, '%m/%d/%Y %I:%M:%S %p'))
+		return util.mpldtstrptime(s, '%m/%d/%Y %I:%M:%S %p')
 
 	@staticmethod
 	def parseExtDT(s):
-		return util.mpldtfromdatetime(datetime.datetime.strptime(s, '%m/%d/%Y %I:%M:%S.%f %p'))
+		return util.mpldtstrptime(s, '%m/%d/%Y %I:%M:%S.%f %p')
 
 	@staticmethod
 	def parseLine(line):

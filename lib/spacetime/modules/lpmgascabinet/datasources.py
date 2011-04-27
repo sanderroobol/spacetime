@@ -10,8 +10,7 @@ class LabviewMultiTrend(MultiTrend):
 	def parselabviewtimestamp(fl):
 		# Labview uses the number of seconds since 1-1-1904 00:00:00 UTC.
 		# mpldtfromdatetime(datetime.datetime(1904, 1, 1, 0, 0, 0, tzinfo=pytz.utc)) = 695056
-		# FIXME: the + 1./24 is a hack to convert to local time
-		return fl / 86400. + 695056 + 1./24
+		return fl / 86400. + 695056
 
 	def set_header(self, line):
 		self.channel_labels = line.strip().split('\t')

@@ -4,7 +4,7 @@ import datetime
 import numpy
 
 from ..generic.datasources import MultiTrend
-from ...util import Struct, mpldtfromdatetime
+from ...util import Struct, mpldtfromdatetime, mpldtstrptime, localtz
 
 
 class TPDirk(MultiTrend):
@@ -18,7 +18,7 @@ class TPDirk(MultiTrend):
 				continue
 			no, dt, pressure, temperature = data
 			yield numpy.array((
-				mpldtfromdatetime(datetime.datetime.strptime(dt, '%y/%m/%d %H:%M:%S')),
+				mpldtstrptime(dt, '%y/%m/%d %H:%M:%S'),
 				float(pressure),
 				float(temperature)
 			))
@@ -44,7 +44,7 @@ class OldGasCabinet(MultiTrend):
         # modified such that date information is stored INSIDE the file
 		import re
 		y, m, d = re.search('(20[0-9]{2})([0-9]{2})([0-9]{2})', self.filename).groups()
- 		self.offset = mpldtfromdatetime(datetime.datetime(int(y), int(m), int(d)))
+ 		self.offset = mpldtfromdatetime(localtz.localize(datetime.datetime(int(y), int(m), int(d))))
 
 		columns = self.data.shape[1]
 		assert (columns - 2)  % 4 == 0

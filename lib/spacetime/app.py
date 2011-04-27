@@ -21,7 +21,7 @@ class DateTimeSelector(HasTraits):
 	mpldt = Property(depends_on='datetime')
 
 	def _get_datetime(self):
-		return datetime.datetime.combine(self.date, self.time)
+		return util.localtz.localize(datetime.datetime.combine(self.date, self.time))
 
 	def _set_datetime(self, dt):
 		self.date = dt.date()
@@ -31,7 +31,7 @@ class DateTimeSelector(HasTraits):
 		return util.mpldtfromdatetime(self.datetime)
 
 	def _set_mpldt(self, f):
-		self.datetime = util.datetimefrommpldt(f)
+		self.datetime = util.datetimefrommpldt(f, tz=util.localtz)
 
 	traits_view = View(
 		HGroup(

@@ -1,5 +1,5 @@
 import itertools
-import matplotlib, matplotlib.figure
+import matplotlib, matplotlib.figure, matplotlib.dates
 
 from . import util
 
@@ -122,7 +122,12 @@ class Plot(object):
 		)
 
 	def setup_xaxis_labels(self, axes):
-		axes.xaxis_date()
+		axes.xaxis_date(tz=util.localtz)
+		
+		# Timezone support is not working properly with xaxis_date(), so override manually
+		locator = matplotlib.dates.AutoDateLocator(tz=util.localtz)
+		axes.xaxis.set_major_locator(locator)
+		axes.xaxis.set_major_formatter(matplotlib.dates.AutoDateFormatter(locator, tz=util.localtz))
 
 		if hasattr(axes, 'is_last_row') and axes.is_last_row():
 			for label in axes.get_xticklabels():

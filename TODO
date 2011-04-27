@@ -1,6 +1,7 @@
 TODO for 1.0
 ============
 ESSENTIAL:
+1. Bug: X-axis limits GUI controls not updating
 2. Enh: Delayed redraw / redraw on idle
 3. Bug: cursor position with twinx'ed graphs
 4. Enh: rework subplot management:
@@ -8,6 +9,7 @@ ESSENTIAL:
          - X-axis labels and vertical spacing when using non-shared axes
 5. New: Relative / rezero'ed time axis
 6. New: Smart legend positioning: outside graphs, multicolumn, ... 
+7. Enh: Timezone autodetection
 
 POLISHING:
 1. Enh: Interface redesign: decide what to do with the Main tab

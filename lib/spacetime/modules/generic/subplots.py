@@ -27,7 +27,7 @@ class Subplot(object):
 	def setup(self):
 		# what could possibly go wrong? a lot, but it will do the right thing most of the time
 		if not any(i.independent_x for i in self.get_axes_requirements()):
-			self.axes.fmt_xdata = matplotlib.dates.DateFormatter('%Y-%m-%d %H:%M:%S.%f')
+			self.axes.fmt_xdata = matplotlib.dates.DateFormatter('%Y-%m-%d %H:%M:%S.%f', util.localtz)
 
 	def draw(self):
 		raise NotImplementedError

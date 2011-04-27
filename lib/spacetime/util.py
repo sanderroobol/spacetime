@@ -1,5 +1,5 @@
 import matplotlib.dates
-import datetime
+import time, datetime, pytz
 import scipy.fftpack, numpy
 
 from .superstruct import Struct
@@ -9,12 +9,21 @@ class SharedXError(Exception):
 	pass
 
 
-# FIXME: These functions are currently not timezone aware, this could cause problems eventually.
-def mpldtfromtimestamp(ts):
-	return matplotlib.dates.date2num(datetime.datetime.fromtimestamp(ts))
+localtz = pytz.timezone('Europe/Amsterdam') # FIXME: should be detected
+utctz = pytz.utc
 
-mpldtfromdatetime = matplotlib.dates.date2num
-datetimefrommpldt = matplotlib.dates.num2date
+def mpldtfromtimestamp(ts, tz=localtz):
+	return matplotlib.dates.date2num(tz.localize(datetime.datetime.fromtimestamp(ts)))
+
+def mpldtfromdatetime(dt):
+	assert dt.tzinfo is not None
+	return matplotlib.dates.date2num(dt)
+
+def datetimefrommpldt(num, tz=localtz):
+	return matplotlib.dates.num2date(num, tz)
+
+def mpldtstrptime(str, format, tz=localtz):
+	return mpldtfromdatetime(tz.localize(datetime.datetime.strptime(str, format)))
 
 
 def easyfft(data, sample_frequency):
