@@ -25,16 +25,13 @@ class PanelManager(object):
 		panel_files = glob.glob(os.path.join(mdir, '*', 'panels.py'))
 		modules = [os.path.split(os.path.split(f)[0])[1] for f in panel_files]
 		for mname in modules:
-			if mname == 'generic':
-				continue
-
 			self.modules[mname] = getattr(__import__('spacetime.modules', globals(), locals(), [mname], -1), mname)
 			module = __import__('spacetime.modules.%s' % mname, globals(), locals(), ['panels'], -1)
 			self.panels_by_module[mname] = []
 			for i in dir(module.panels):
 				obj = getattr(module.panels, i)
 				try:
-					if issubclass(obj, SubplotPanel) and hasattr(obj, 'id') and obj.__module__ == 'spacetime.modules.%s.panels' % mname:
+					if issubclass(obj, SubplotPanel) and hasattr(obj, 'id') and obj.id and obj.__module__ == 'spacetime.modules.%s.panels' % mname:
 						self.panels_by_module[mname].append(obj)
 						self._list_classes.append(obj)
 				except TypeError: # obj is not a class

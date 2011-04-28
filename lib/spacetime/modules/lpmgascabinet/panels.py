@@ -4,7 +4,7 @@ from . import subplots, datasources
 
 class GasCabinetPanel(DoubleTimeTrendPanel):
 	id = 'lpmgascabinet'
-	label = 'LPM gas cabinet'
+	label = 'LPM Gas Cabinet'
 	desc = 'Reads logs from LPM Gas Cabinet control software.'
 
 	plotfactory = subplots.GasCabinet
