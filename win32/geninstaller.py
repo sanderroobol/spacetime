@@ -1,3 +1,8 @@
+import sys, os
+sys.path.append(os.path.realpath('lib'))
+import spacetime.version
+
+print """
 ; Based on: NSIS Modern User Interface/Basic Example Script by Joost Verburg
 
 ;--------------------------------
@@ -9,9 +14,14 @@
 ;General
 
   ;Name and file
+"""
+
+print """
   Name "Spacetime #VERSION#"
   OutFile "Spacetime-#VERSION#.exe"
+""".replace('#VERSION#', spacetime.version.version)
 
+print """
   ;Default installation folder
   InstallDir "$PROGRAMFILES\Spacetime"
   
@@ -56,7 +66,34 @@ Section
 
   File debug.bat
 
+  ; AUTOMATICALLY GENERATED LIST OF FILES AND DIRS
+"""
+
+uninstall_dirs = []
+uninstall_files = []
+os.chdir('lib')
+
+for dirpath, dirnames, files in os.walk('spacetime'):
+	dirpath = dirpath.replace('/', '\\')
+	uninstall_dirs.append(dirpath)
+
+	print '  CreateDirectory "$INSTDIR\%s"' % dirpath
+	print '  SetOutPath "$INSTDIR\%s"' % dirpath
+	for f in files:
+		extension = f.split('.')[-1]
+		if f.startswith('.') or extension in ('pyc', 'pyo', 'orig'):
+			continue
+		uninstall_files.append('%s\%s' % (dirpath, f))
+		if extension == 'py':
+			uninstall_files.append('%s\%sc' % (dirpath, f))
+			uninstall_files.append('%s\%so' % (dirpath, f))
+		print '  File ..\lib\%s\%s' % (dirpath, f)
+
+print """
+  ; END AUTOMATICALLY GENERATED LIST
+
   CreateShortCut "$INSTDIR\Spacetime.lnk" "$INSTDIR\pythonw.exe" "-m spacetime.app"
+  CreateShortCut "$INSTDIR\Spacetime (presentation mode).lnk" "$INSTDIR\pythonw.exe" "-m spacetime.app --presentation"
   CreateShortCut "$INSTDIR\Spacetime (debug mode).lnk" "$INSTDIR\debug.bat"
 
   CreateDirectory "$SMPROGRAMS\Spacetime"
@@ -64,11 +101,6 @@ Section
   CreateShortCut "$SMPROGRAMS\Spacetime\Spacetime (presentation mode).lnk" "$INSTDIR\pythonw.exe" "-m spacetime.app --presentation"
   CreateShortCut "$SMPROGRAMS\Spacetime\Spacetime (debug mode).lnk" "$INSTDIR\debug.bat"
   CreateShortCut "$SMPROGRAMS\Spacetime\Uninstall.lnk" "$INSTDIR\Uninstall.exe"
-
-  SetOutPath "$INSTDIR\Lib\spacetime"
-  File /x .* ..\lib\spacetime\*.py
-  SetOutPath "$INSTDIR\Lib\spacetime\icons"
-  File /x .* ..\lib\spacetime\icons\*.png
   
   ;Store installation folder
   WriteRegStr HKCU "Software\Spacetime" "" $INSTDIR
@@ -88,6 +120,24 @@ Section "Uninstall"
   Delete "$INSTDIR\python26.dll"
   RMDir /r "$INSTDIR\Lib"
 
+  Delete "$INSTDIR\debug.bat"
+  Delete "$INSTDIR\Spacetime.lnk"
+  Delete "$INSTDIR\Spacetime (presentation mode).lnk"
+  Delete "$INSTDIR\Spacetime (debug mode).lnk"
+
+  ; AUTOMATICALLY GENERATED LIST OF FILES AND DIRS
+"""
+
+for f in uninstall_files:
+	print '  Delete "$INSTDIR\%s"' % f
+
+uninstall_dirs.reverse()
+for d in uninstall_dirs:
+	print '  RMDir "$INSTDIR\%s"' % d
+
+print """
+  ; END AUTOMATICALLY GENERATED LIST
+
   RMDir /r "$SMPROGRAMS\Spacetime"
   
   Delete "$INSTDIR\Uninstall.exe"
@@ -97,3 +147,4 @@ Section "Uninstall"
   DeleteRegKey /ifempty HKCU "Software\Spacetime"
 
 SectionEnd
+"""
