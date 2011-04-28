@@ -3,7 +3,6 @@ TODO for 1.0
 ESSENTIAL:
 1. Bug: X-axis limits GUI controls not updating when having shared-x subplots
 2. Enh: Delayed redraw / redraw on idle
-3. Bug: cursor position with twinx'ed graphs
 4. Enh: rework subplot management:
          - Subplot size hinting
          - X-axis labels and vertical spacing when using non-shared axes

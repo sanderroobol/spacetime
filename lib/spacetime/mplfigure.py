@@ -2,6 +2,7 @@ import matplotlib
 matplotlib.use('WXAgg')
 
 import matplotlib.figure, matplotlib.transforms, matplotlib.backends.backend_wx, matplotlib.backends.backend_wxagg, matplotlib.backend_bases
+from matplotlib.backend_bases import cursors
 import wx
 
 from enthought.traits.api import Str
@@ -16,6 +17,63 @@ class ModifiedToolbar(matplotlib.backends.backend_wx.NavigationToolbar2Wx):
 		self._idle = True
 		self.statbar = None
 		self.statuscallback = statuscallback
+
+	@staticmethod
+	def event2coords(ax, event):
+		try:
+			xdata, ydata = ax.transData.inverted().transform_point((event.x, event.y))
+		except ValueError:
+			return '???', '???'
+		else:
+			return ax.format_xdata(xdata), ax.format_ydata(ydata)
+
+	def build_coord_str(self, axes, event):
+		all_strs = [self.event2coords(a, event) for a in axes]
+		xs, ys = zip(*all_strs)
+		 
+		if len(set(xs)) == 1:
+			xs = xs[0].strip()
+		else:
+			xs = '(%s)' % ', '.join(i.strip() for i in xs)
+
+		if len(set(ys)) == 1:
+			ys = ys[0].strip()
+		else:
+			ys = '(%s)' % ', '.join(i.strip() for i in ys)
+
+		return 'x=%s, y=%s' % (xs, ys)
+
+	def mouse_move(self, event):
+		# adapted from matplotlib.backend_bases.NavigationToolbar2.mouse_move
+
+		if not event.inaxes or not self._active:
+			if self._lastCursor != cursors.POINTER:
+				self.set_cursor(cursors.POINTER)
+				self._lastCursor = cursors.POINTER
+		else:
+			if self._active=='ZOOM':
+				if self._lastCursor != cursors.SELECT_REGION:
+					self.set_cursor(cursors.SELECT_REGION)
+					self._lastCursor = cursors.SELECT_REGION
+			elif (self._active=='PAN' and
+				  self._lastCursor != cursors.MOVE):
+				self.set_cursor(cursors.MOVE)
+
+				self._lastCursor = cursors.MOVE
+
+		if event.inaxes and event.inaxes.get_navigate():
+
+			all_inaxes = [a for a in self.canvas.figure.get_axes() if a.in_axes(event)]
+			try:
+				s = self.build_coord_str(all_inaxes, event)
+			except ValueError: pass
+			except OverflowError: pass
+			else:
+				if len(self.mode):
+					self.set_message('%s, %s' % (self.mode, s))
+				else:
+					self.set_message(s)
+		else: self.set_message(self.mode)
 
 	def set_message(self, s):
 		self.statuscallback(s)
