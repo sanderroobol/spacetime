@@ -89,7 +89,6 @@ class PanelSelector(HasTraits):
 		return PanelTreeRoot(modules=modules)
 
 	def iter_selected(self):
-		print self.panelmgr
 		for s in self.selected:
 			if isinstance(s, PanelTreePanel):
 				yield s.id
