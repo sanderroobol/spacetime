@@ -1,7 +1,7 @@
 TODO for 1.0
 ============
 ESSENTIAL:
-1. Bug: X-axis limits GUI controls not updating
+1. Bug: X-axis limits GUI controls not updating when having shared-x subplots
 2. Enh: Delayed redraw / redraw on idle
 3. Bug: cursor position with twinx'ed graphs
 4. Enh: rework subplot management:
@@ -14,7 +14,6 @@ ESSENTIAL:
 POLISHING:
 1. Enh: Interface redesign: decide what to do with the Main tab
 2. New: Icon
-3. Enh: Auto-detection of modules.
 4. Enh: Descriptions in Add subplot dialog
 5. New: API docs and examples
 6. Enh: Save/open/export dialogs should remember path

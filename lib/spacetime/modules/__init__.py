@@ -1,28 +1,38 @@
-# FIXME: 
-# The submodules should not be imported when importing this module.
-# Instead the PanelMapper should be explicitly initiated on request (by the
-# GUI) and should take care of automagically importing all submodules in this
-# directory.
-
-from . import generic, interfacephysics, lpmcamera, lpmgascabinet, quadera
+from .generic.panels import SubplotPanel
+import os, glob
 
 class PanelManager(object):
-	_list_classes = (
-		lpmcamera.panels.CameraFramePanel,
-		lpmcamera.panels.CameraTrendPanel,
-		quadera.panels.QMSPanel,
-		lpmgascabinet.panels.GasCabinetPanel,
-		interfacephysics.panels.OldGasCabinetPanel,
-		interfacephysics.panels.ReactorEnvironmentPanel,
-		interfacephysics.panels.TPDirkPanel,
-		interfacephysics.panels.CVPanel,
-	)
+	def __init__(self):
+		self._list_classes = list(self._detect_panels())
+		self._list_labels = tuple(klass.label for klass in self._list_classes)
 
-	_list_labels = tuple(klass.label for klass in _list_classes)
+		self.mapping_id_class = dict((klass.id, klass) for klass in self._list_classes)
+		self.mapping_classname_id = dict((klass.__name__, id) for klass in self._list_classes)
+		self.mapping_label_class = dict((klass.label, klass) for klass in self._list_classes)
 
-	mapping_id_class = dict((klass.id, klass) for klass in _list_classes)
-	mapping_classname_id = dict((klass.__name__, id) for klass in _list_classes)
-	mapping_label_class = dict((klass.label, klass) for klass in _list_classes)
+	def _detect_panels(self):
+		# this function looks through in spacetime.modules.*.panels.* for any class that
+        # 1. inherits from SubplotPanel
+		# 2. has a id attribute
+		# 3. is found in the same module where it is defined (suppose
+		#    modules.A.panels imports modules.B.panels.B, than B will be ignored
+		#    a when looking through A.panels.*)
+		
+		mdir = os.path.dirname(__file__)
+		panel_files = glob.glob(os.path.join(mdir, '*', 'panels.py'))
+		modules = [os.path.split(os.path.split(f)[0])[1] for f in panel_files]
+		for mname in modules:
+			if mname == 'generic':
+				continue
+
+			module = __import__('spacetime.modules.%s' % mname, globals(), locals(), ['panels'], -1)
+			for i in dir(module.panels):
+				obj = getattr(module.panels, i)
+				try:
+					if issubclass(obj, SubplotPanel) and hasattr(obj, 'id') and obj.__module__ == 'spacetime.modules.%s.panels' % mname:
+						yield obj
+				except TypeError: # obj is not a class
+					pass
 
 	def list_classes(self):
 		return self._list_classes
