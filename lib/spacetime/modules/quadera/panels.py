@@ -6,6 +6,7 @@ from . import subplots, datasources
 class QMSPanel(TimeTrendPanel):
 	id = 'quaderaqms'
 	label = 'QMS'
+	desc = 'Reads ASCII exported Quadera files containing data from a Pfeiffer PrismaPlus quadrupole mass spectrometer.'
 
 	datafactory = datasources.QMS
 	plotfactory = subplots.QMS

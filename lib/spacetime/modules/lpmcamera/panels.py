@@ -39,6 +39,7 @@ class CameraFramePanelHandler(Handler):
 class CameraFramePanel(CameraPanel):
 	id = 'camera'
 	label = 'Camera'
+	desc = 'Reads Camera RAW files and plots one or more images.'
 
 	channel = Int(0)
 	channelcount = Int(0)
@@ -174,6 +175,7 @@ class CameraFramePanel(CameraPanel):
 class CameraTrendPanel(DoubleTimeTrendPanel, CameraPanel, XlimitsPanel):
 	id = 'cameratrend'
 	label = 'Camera Trend'
+	desc = 'Reads Camera RAW files and makes graphs of one or more channels as a function of time.'
 
 	filter = 'Camera RAW files (*.raw)', '*.raw'
 	plotfactory = subplots.CameraTrend

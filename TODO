@@ -14,7 +14,6 @@ ESSENTIAL:
 POLISHING:
 1. Enh: Interface redesign: decide what to do with the Main tab
 2. New: Icon
-4. Enh: Descriptions in Add subplot dialog
 5. New: API docs and examples
 6. Enh: Save/open/export dialogs should remember path
 7. New: Subgraph manager (reorder graphs)

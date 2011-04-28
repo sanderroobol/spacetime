@@ -1,1 +1,2 @@
-from . import datasources, subplots, panels
+label = 'Quadera'
+desc = 'Modules to handle Pfeiffer QMS data.'

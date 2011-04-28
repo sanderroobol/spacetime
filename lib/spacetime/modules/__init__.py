@@ -3,7 +3,10 @@ import os, glob
 
 class PanelManager(object):
 	def __init__(self):
-		self._list_classes = list(self._detect_panels())
+		self.panels_by_module = {}
+		self.modules = {}
+		self._list_classes = []
+		self._detect_panels()
 		self._list_labels = tuple(klass.label for klass in self._list_classes)
 
 		self.mapping_id_class = dict((klass.id, klass) for klass in self._list_classes)
@@ -25,12 +28,15 @@ class PanelManager(object):
 			if mname == 'generic':
 				continue
 
+			self.modules[mname] = getattr(__import__('spacetime.modules', globals(), locals(), [mname], -1), mname)
 			module = __import__('spacetime.modules.%s' % mname, globals(), locals(), ['panels'], -1)
+			self.panels_by_module[mname] = []
 			for i in dir(module.panels):
 				obj = getattr(module.panels, i)
 				try:
 					if issubclass(obj, SubplotPanel) and hasattr(obj, 'id') and obj.__module__ == 'spacetime.modules.%s.panels' % mname:
-						yield obj
+						self.panels_by_module[mname].append(obj)
+						self._list_classes.append(obj)
 				except TypeError: # obj is not a class
 					pass
 
@@ -48,3 +54,6 @@ class PanelManager(object):
 
 	def get_class_by_label(self, label):
 		return self.mapping_label_class[label]
+
+	def get_module_by_name(self, name):
+		return self.modules[name]

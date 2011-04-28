@@ -52,6 +52,8 @@ class SerializableTab(Tab):
 
 
 class SubplotPanel(SerializableTab):
+	# required attributes: id, label
+	desc = '' # not required
 	filename = File
 	reload = Button
 	simultaneity_offset = Float(0.)

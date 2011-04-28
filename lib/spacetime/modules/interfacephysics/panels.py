@@ -14,6 +14,7 @@ from . import datasources
 class CVPanel(CameraTrendPanel):
 	id = 'cameracv'
 	label = 'Cyclic voltammetry'
+	desc = 'Reads Camera RAW files and plots one channel versus another. Experimental.' 
 
 	plotfactory = subplots.CV
 	voltage_channel = Int(0)
@@ -82,6 +83,7 @@ class CVPanel(CameraTrendPanel):
 class TPDirkPanel(DoubleTimeTrendPanel):
 	id = 'tpdirk'
 	label = 'TPDirk'
+	desc = 'Simple temperature/pressure readout for Dirk and the VT STM.'
 
 	plotfactory = subplots.TPDirk
 	datafactory = datasources.TPDirk
@@ -126,6 +128,7 @@ class TPDirkPanel(DoubleTimeTrendPanel):
 class OldGasCabinetPanel(DoubleTimeTrendPanel):
 	id = 'prototypegascabinet'
 	label = 'Prototype gas cabinet'
+	desc = 'Reads the data of the ReactorSTM gas cabinet.'
 
 	plotfactory = lpmsubplots.GasCabinet
 	datafactory = datasources.OldGasCabinet
@@ -135,6 +138,7 @@ class OldGasCabinetPanel(DoubleTimeTrendPanel):
 class ReactorEnvironmentPanel(DoubleTimeTrendPanel):
 	id = 'reactorenvironment'
 	label = 'Reactor Environment logger'
+	desc = 'Reads the log of the pressure, temperature and heater control for the ReactorAFM.'
 
 	datafactory = LabviewMultiTrend
 	filter = 'ASCII text files (*.txt)', '*.txt',

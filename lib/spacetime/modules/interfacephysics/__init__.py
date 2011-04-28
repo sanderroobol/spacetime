@@ -1,1 +1,2 @@
-from . import datasources, subplots, panels
+label = 'Interface Physics'
+desc = 'Modules specific for the IP group at Leiden University.'

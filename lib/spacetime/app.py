@@ -41,25 +41,72 @@ class DateTimeSelector(HasTraits):
 	))
 
 
+class PanelTreePanel(HasTraits):
+	id = Str
+	label = Str
+	desc = Str
+
+	traits_view = View(VGroup(
+			Item('label', style='readonly', emphasized=True),
+			Item('desc', style='readonly', resizable=True, editor=TextEditor(multi_line=True)),
+			show_labels=False,
+			scrollable=False,
+		),
+		width=100,
+	)
+
+
+class PanelTreeModule(HasTraits):
+	label = Str
+	desc = Str
+	panels = List(PanelTreePanel)
+
+	traits_view = View(VGroup(
+			Item('label', style='readonly', emphasized=True),
+			Item('desc', style='readonly', resizable=True, editor=TextEditor(multi_line=True)),
+			show_labels=False,
+		),
+		width=100,
+	)
+
+
+class PanelTreeRoot(HasTraits):
+	modules = List(PanelTreeModule)
+	traits_view = View()
+
+
 class PanelSelector(HasTraits):
 	panelmgr = Instance(modules.PanelManager)
-	selected = List(Str)
-	message = Str('Select subgraph type')
-	types = Tuple()
+	selected = List()
+	root = Instance(PanelTreeRoot)
 
-	def _types_default(self):
-		return self.panelmgr.list_labels()
+	def _root_default(self):
+		modules = []
+		for name, panels in self.panelmgr.panels_by_module.iteritems():
+			treepanels = [PanelTreePanel(id=panel.id, label=panel.label, desc=panel.desc) for panel in panels]
+			module = self.panelmgr.get_module_by_name(name)
+			modules.append(PanelTreeModule(label=module.label, desc=module.desc, panels=treepanels))
+		return PanelTreeRoot(modules=modules)
+
+	def iter_selected(self):
+		print self.panelmgr
+		for s in self.selected:
+			if isinstance(s, PanelTreePanel):
+				yield s.id
 
 	traits_view = View(
 		Group(
-			Item('message', emphasized=True, style='readonly'),
-			Item('types', editor=ListStrEditor(editable=False, multi_select=True, selected='selected')),
+			Item('root', editor=TreeEditor(editable=True, selection_mode='extended', selected='selected', hide_root=True, nodes=[
+				TreeNode(node_for=[PanelTreeRoot], auto_open=True, children='modules', label='label'),
+				TreeNode(node_for=[PanelTreeModule], auto_open=True, children='panels', label='label'),
+				TreeNode(node_for=[PanelTreePanel], label='label'),
+			])),
 			show_labels=False,
 			padding=5,
 		),
 		title='Select subgraph type',
-		height=300,
-		width=200,
+		height=400,
+		width=600,
 		buttons=OKCancelButtons,
 		kind='modal',
 	)
@@ -203,11 +250,9 @@ class MainWindowHandler(Handler):
 	def do_add(self, info):
 		mainwindow = info.ui.context['object']
 		ps = PanelSelector(panelmgr=mainwindow.panelmgr)
-		#ps.types = mainwindow.panelmgr.list_labels()
-		ps.edit_traits(parent=info.ui.control)
-
-		for s in ps.selected:
-			mainwindow.add_tab(mainwindow.panelmgr.get_class_by_label(s))
+		ps.edit_traits(parent=info.ui.control, scrollable=False)
+		for id in ps.iter_selected():
+			mainwindow.add_tab(mainwindow.panelmgr.get_class_by_id(id))
 
 	def do_python(self, info):
 		PythonWindow().edit_traits(parent=info.ui.control)
