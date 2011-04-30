@@ -398,7 +398,7 @@ class App(HasTraits):
 	def save_project(self, path):
 		data = [('general', self.tabs[0].get_serialized())]
 		for tab in self.tabs:
-			if isinstance(tab, panels.SubplotPanel):
+			if isinstance(tab, modules.generic.panels.SubplotPanel):
 				data.append((self.panelmgr.get_id_by_instance(tab), tab.get_serialized()))
 		with open(path, 'wb') as fp:
 			fp.write('Spacetime\nJSON\n')

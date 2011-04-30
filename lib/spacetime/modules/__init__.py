@@ -9,9 +9,14 @@ class PanelManager(object):
 		self._detect_panels()
 		self._list_labels = tuple(klass.label for klass in self._list_classes)
 
-		self.mapping_id_class = dict((klass.id, klass) for klass in self._list_classes)
-		self.mapping_classname_id = dict((klass.__name__, id) for klass in self._list_classes)
-		self.mapping_label_class = dict((klass.label, klass) for klass in self._list_classes)
+		self.mapping_id_class = {}
+		self.mapping_classobjectid_id = {}
+		for klass in self._list_classes:
+			if klass.id in self.mapping_id_class:
+				old = self.mapping_id_class[klass.id]
+				raise ValueError("panel id '%s' conflict: %s.%s and %s.%s" % (klass.id, klass.__module__, klass.__name__, old.__module__, old.__name__))
+			self.mapping_id_class[klass.id] = klass
+			self.mapping_classobjectid_id[id(klass)] = klass.id
 
 	def _detect_panels(self):
 		# this function looks through in spacetime.modules.*.panels.* for any class that
@@ -47,10 +52,7 @@ class PanelManager(object):
 		return self.mapping_id_class[id]
 
 	def get_id_by_instance(self, obj):
-		return self.mapping_classname_id[obj.__class__.__name__]
-
-	def get_class_by_label(self, label):
-		return self.mapping_label_class[label]
+		return self.mapping_classobjectid_id[id(obj.__class__)]
 
 	def get_module_by_name(self, name):
 		return self.modules[name]
