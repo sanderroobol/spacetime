@@ -305,6 +305,11 @@ class MainWindowHandler(Handler):
 		mainwindow.zoom_checked = False
 
 
+ICON_PATH = [os.path.join(os.path.dirname(__file__), 'icons')]
+def GetIcon(id):
+	return ImageResource(id, search_path=ICON_PATH)
+
+
 class FigureWindow(HasTraits):
 	mainwindow = Any
 	figure = Instance(matplotlib.figure.Figure)
@@ -323,12 +328,8 @@ class FigureWindow(HasTraits):
 		buttons=NoButtons,
 		title=MainWindowHandler.get_ui_title(),
 		statusbar='status',
+		icon=GetIcon('spacetime'),
 	)
-
-
-ICON_PATH = [os.path.join(os.path.dirname(__file__), 'icons')]
-def GetIcon(id):
-	return ImageResource(id, search_path=ICON_PATH)
 
 
 class App(HasTraits):
@@ -462,6 +463,7 @@ class App(HasTraits):
 			toolbar=main_toolbar,
 			statusbar='status',
 			handler=MainWindowHandler(),
+			icon=GetIcon('spacetime'),
 		)
 
 	presentation_view = View(
@@ -475,6 +477,7 @@ class App(HasTraits):
 		title=MainWindowHandler.get_ui_title(),
 		toolbar=main_toolbar,
 		handler=MainWindowHandler(),
+		icon=GetIcon('spacetime'),
 	)
 
 	def run(self):
