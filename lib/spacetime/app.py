@@ -167,16 +167,28 @@ class PythonWindow(HasTraits):
 	)
 
 
+ICON_PATH = [os.path.join(os.path.dirname(__file__), 'icons')]
+def GetIcon(id):
+	return ImageResource(id, search_path=ICON_PATH)
+
+
 class AboutWindow(HasTraits):
 	title = Str('Spacetime ' + version.version)
 	desc = Str('Copyright 2010-2011 Leiden University.\nWritten by Sander Roobol <roobol@physics.leidenuniv.nl>.\n\nRedistribution outside Leiden University is not permitted.')
 
 	traits_view = View(
-		Group(
-			Item('title', emphasized=True, style='readonly'),
-			Item('desc', style='readonly', editor=TextEditor(multi_line=True)),
-			show_labels=False,
-			padding=5,
+		HGroup(
+			Group(
+				Item('none', editor=ImageEditor(image=GetIcon('spacetime-logo'))),
+				show_labels=False,
+				padding=5,
+			),
+			Group(
+				Item('title', emphasized=True, style='readonly'),
+				Item('desc', style='readonly', editor=TextEditor(multi_line=True)),
+				show_labels=False,
+				padding=5,
+			),
 		),
 		title='About Spacetime',
 		buttons=[OKButton],
@@ -305,11 +317,6 @@ class MainWindowHandler(Handler):
 		mainwindow.zoom_checked = False
 
 
-ICON_PATH = [os.path.join(os.path.dirname(__file__), 'icons')]
-def GetIcon(id):
-	return ImageResource(id, search_path=ICON_PATH)
-
-
 class FigureWindow(HasTraits):
 	mainwindow = Any
 	figure = Instance(matplotlib.figure.Figure)
@@ -328,7 +335,7 @@ class FigureWindow(HasTraits):
 		buttons=NoButtons,
 		title=MainWindowHandler.get_ui_title(),
 		statusbar='status',
-		icon=GetIcon('spacetime'),
+		icon=GetIcon('spacetime-icon'),
 	)
 
 
@@ -463,7 +470,7 @@ class App(HasTraits):
 			toolbar=main_toolbar,
 			statusbar='status',
 			handler=MainWindowHandler(),
-			icon=GetIcon('spacetime'),
+			icon=GetIcon('spacetime-icon'),
 		)
 
 	presentation_view = View(
@@ -477,7 +484,7 @@ class App(HasTraits):
 		title=MainWindowHandler.get_ui_title(),
 		toolbar=main_toolbar,
 		handler=MainWindowHandler(),
-		icon=GetIcon('spacetime'),
+		icon=GetIcon('spacetime-icon'),
 	)
 
 	def run(self):
