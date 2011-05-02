@@ -169,7 +169,7 @@ class PythonWindow(HasTraits):
 	shell = PythonValue({})
 	traits_view = View(
 		Item('shell', show_label=False, editor=ShellEditor(share=False)),
-		title='Python shell',
+		title='Python console',
 		height=600,
 		width=500,
 	)
@@ -251,6 +251,9 @@ class MainWindowHandler(Handler):
 		mainwindow.drawmgr.redraw_figure()
 
 	def do_save(self, info):
+		return self.do_save_as(info) # TODO: implement
+
+	def do_save_as(self, info):
 		dlg = wx.FileDialog(info.ui.control, style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT, wildcard='Spacetime Project files (*.spacetime)|*.spacetime')
 		if dlg.ShowModal() != wx.ID_OK:
 			return False
@@ -445,6 +448,42 @@ class App(HasTraits):
 	def _figure_default(self):
 		return self.plot.figure
 
+	menubar =  MenuBar(
+		Menu(
+			Separator(),
+			Action(name='New', action='do_new', accelerator='Ctrl+N', image=GetIcon('new')),
+			Action(name='Open...', action='do_open', accelerator='Ctrl+O', image=GetIcon('open')),
+			Separator(),
+			Action(name='Save', action='do_save', accelerator='Ctrl+S', image=GetIcon('save')),
+			Action(name='Save as...', action='do_save_as', accelerator='Shift+Ctrl+S', image=GetIcon('save')),
+			Separator(),
+			Action(name='Quit', action='_on_close', accelerator='Ctrl+Q', image=GetIcon('close')),
+			name='File',
+		),
+		Menu(
+			Action(name='Add...', action='do_add', accelerator='Ctrl+A', image=GetIcon('add')),
+			name='Graphs',
+		),
+		Menu(
+			Action(name='Fit', action='do_fit', tooltip='Zoom to fit', image=GetIcon('fit')),
+			# checked items cannot have icons
+			Action(name='Zoom', action='do_zoom', tooltip='Zoom rectangle', checked_when='zoom_checked', style='toggle'),
+			Action(name='Pan', action='do_pan', tooltip='Pan', checked_when='pan_checked', style='toggle'),
+			name='View',
+		),
+		Menu(
+			'export',
+				Action(name='Export...', action='do_export', accelerator='Ctrl+E', image=GetIcon('export')),
+			'python',
+				Action(name='Python console...', action='do_python', image=GetIcon('python')),
+			name='Tools',
+		),
+		Menu(
+			Action(name='About', action='do_about', tooltip='About', image=GetIcon('about')),
+			name='Help',
+		)
+	)
+
 	main_toolbar = ToolBar(
 		'main',
 			Action(name='New', action='do_new', tooltip='New project', image=GetIcon('new')),
@@ -459,7 +498,7 @@ class App(HasTraits):
 		'export',
 			Action(name='Export', action='do_export', tooltip='Export', image=GetIcon('export')),
 		'python', 
-			Action(name='Python', action='do_python', tooltip='Python shell', image=GetIcon('python')),
+			Action(name='Python', action='do_python', tooltip='Python console', image=GetIcon('python')),
 		'about',
 			Action(name='About', action='do_about', tooltip='About', image=GetIcon('about')),
 		show_tool_names=False
@@ -475,6 +514,7 @@ class App(HasTraits):
 			height=700, width=1100,
 			buttons=NoButtons,
 			title=MainWindowHandler.get_ui_title(),
+			menubar=menubar,
 			toolbar=main_toolbar,
 			statusbar='status',
 			handler=MainWindowHandler(),
