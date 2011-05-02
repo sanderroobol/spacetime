@@ -2,10 +2,14 @@ from enthought.traits.api import *
 from enthought.traits.ui.api import *
 import wx
 
+import logging
+logger = logging.getLogger(__name__)
+
 from ... import uiutil
 
 from . import subplots
 from . import datasources
+
 
 def PanelView(*args, **kwargs):
 	if 'handler' in kwargs:
@@ -134,6 +138,7 @@ class TimeTrendPanel(SubplotPanel):
 
 	def ylim_callback(self, ax):
 		self.ymin, self.ymax = ax.get_ylim()
+		logger.info('%s.ylim_callback: %s', self.__class__.__name__, self.ylimits)
 
 	@on_trait_change('filename, reload')
 	def load_file(self):
@@ -154,6 +159,7 @@ class TimeTrendPanel(SubplotPanel):
 
 	@on_trait_change('ymin, ymax, yauto')
 	def ylim_changed(self):
+		logger.info('%s.ylim_changed: %s', self.__class__.__name__, self.ylimits)
 		self.plot.set_ylim(self.ylimits.min, self.ylimits.max, self.ylimits.auto)
 		self.update()
 
@@ -211,11 +217,14 @@ class DoubleTimeTrendPanel(TimeTrendPanel):
 	def ylim_callback(self, ax):
 		if ax is self.plot.axes:
 			self.ymin, self.ymax = ax.get_ylim()
+			logger.info('%s.ylim_callback primary: %s', self.__class__.__name__, self.ylimits)
 		elif ax is self.plot.secondaryaxes:
 			self.ymin2, self.ymax2 = ax.get_ylim()
+			logger.info('%s.ylim_callback secondary: %s', self.__class__.__name__, self.ylimits2)
 
 	@on_trait_change('ymin2, ymax2, yauto2')
 	def ylim2_changed(self):
+		logger.info('%s.ylim2_changed: %s', self.__class__.__name__, self.ylimits2)
 		self.plot.set_ylim2(self.ylimits2.min, self.ylimits2.max, self.ylimits2.auto)
 		self.update()
 
@@ -269,6 +278,7 @@ class XlimitsPanel(HasTraits):
 
 	@on_trait_change('xmin, xmax, xauto')
 	def xlim_changed(self):
+		logger.info('%s.xlim_changed: %s', self.__class__.__name__, self.xlimits)
 		self.plot.set_xlim(self.xlimits.min, self.xlimits.max, self.xlimits.auto)
 		self.update()
 
@@ -278,6 +288,7 @@ class XlimitsPanel(HasTraits):
 
 	def xlim_callback(self, ax):
 		self.xmin, self.xmax = ax.get_xlim()
+		logger.info('%s.xlim_callback: %s', self.__class__.__name__, self.xlimits)
 
 	def reset_autoscale(self):
 		self.xauto = True

@@ -13,6 +13,9 @@ import datetime
 import json
 import os
 
+import logging
+logger = logging.getLogger(__name__)
+
 
 class DateTimeSelector(HasTraits):
 	date = Date(datetime.date.today())
@@ -32,6 +35,9 @@ class DateTimeSelector(HasTraits):
 
 	def _set_mpldt(self, f):
 		self.datetime = util.datetimefrommpldt(f, tz=util.localtz)
+
+	def __str__(self):
+		return self.datetime.strftime('%Y-%m-%d %H:%M:%S.%f')
 
 	traits_view = View(
 		HGroup(
@@ -131,9 +137,11 @@ class MainTab(modules.generic.panels.SerializableTab):
 
 	def xlim_callback(self, ax):
 		self.xmin.mpldt, self.xmax.mpldt = ax.get_xlim()
+		logger.info('%s.xlim_callback: (%s, %s) %s', self.__class__.__name__, self.xmin, self.xmax, 'auto' if self.xauto else 'manual')
 
 	@on_trait_change('xmin_mpldt, xmax_mpldt, xauto')
 	def xlim_changed(self):
+		logger.info('%s.xlim_changed: (%s, %s) %s', self.__class__.__name__, self.xmin, self.xmax, 'auto' if self.xauto else 'manual')
 		self.mainwindow.plot.set_shared_xlim(self.xmin.mpldt, self.xmax.mpldt, self.xauto)
 		self.mainwindow.update_canvas()
 
@@ -486,16 +494,37 @@ class App(HasTraits):
 		handler=MainWindowHandler(),
 		icon=GetIcon('spacetime-icon'),
 	)
+	
+	def parseargs(self):
+		from optparse import OptionParser
+		parser = OptionParser()
+		parser.add_option("--presentation", dest="presentation", action='store_true', help="presentation (two window) mode")
+		parser.add_option("--debug", dest="debug", action="store_true", help="print debuggin statements")
+
+		(options, args) = parser.parse_args()
+		if len(args):
+			parser.error('invalid argument(s): %r' % args)
+
+		return options, args
 
 	def run(self):
-		import sys
+		options, args = self.parseargs()
+
+		if options.debug:
+			loglevel = logging.DEBUG
+		else:
+			loglevel = logging.WARNING
+		logging.basicConfig(level=loglevel)
+
 		app = wx.PySimpleApp()
-		if len(sys.argv) > 1 and sys.argv[1] == '--presentation':
+
+		if options.presentation:
 			figwin = FigureWindow(mainwindow=self, figure=self.figure)
 			figwin.edit_traits()
 			self.ui = self.edit_traits(view='presentation_view')
 		else:
 			self.ui = self.edit_traits()
+
 		app.MainLoop()
 
 if __name__ == '__main__':

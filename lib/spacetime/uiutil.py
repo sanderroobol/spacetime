@@ -114,6 +114,9 @@ class AxisLimits(HasTraits):
 	def _set_auto_list(self, value):
 		self.auto = bool(value)
 
+	def __str__(self):
+		return "(%e, %e) %s" % (self.min, self.max, 'auto' if self.auto else 'manual')
+
 	traits_view = View(HGroup(
 		Item('auto_list', style='custom', editor=CheckListEditor(values=['Auto'])),
 		Item('min', enabled_when='not_auto', editor=FloatEditor()),
@@ -134,6 +137,9 @@ class LogAxisLimits(AxisLimits):
 			self.scale = 'log'
 		else:
 			self.scale = 'linear'
+
+	def __str__(self):
+		return "(%e, %e) %s %s" % (self.min, self.max, self.scale, 'auto' if self.auto else 'manual')
 
 	traits_view = View(HGroup(
 		Item('auto_list', style='custom', editor=CheckListEditor(values=['Auto'])),
