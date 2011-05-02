@@ -92,14 +92,14 @@ for dirpath, dirnames, files in os.walk('spacetime'):
 print """
   ; END AUTOMATICALLY GENERATED LIST
 
-  CreateShortCut "$INSTDIR\Spacetime.lnk" "$INSTDIR\pythonw.exe" "-m spacetime.app"
-  CreateShortCut "$INSTDIR\Spacetime (presentation mode).lnk" "$INSTDIR\pythonw.exe" "-m spacetime.app --presentation"
-  CreateShortCut "$INSTDIR\Spacetime (debug mode).lnk" "$INSTDIR\debug.bat"
+  CreateShortCut "$INSTDIR\Spacetime.lnk" "$INSTDIR\pythonw.exe" "-m spacetime.app" "$INSTDIR\spacetime\icons\spacetime-icon.ico"
+  CreateShortCut "$INSTDIR\Spacetime (presentation mode).lnk" "$INSTDIR\pythonw.exe" "-m spacetime.app --presentation" "$INSTDIR\spacetime\icons\spacetime-icon.ico"
+  CreateShortCut "$INSTDIR\Spacetime (debug mode).lnk" "$INSTDIR\debug.bat" "" "$INSTDIR\spacetime\icons\spacetime-icon.ico"
 
   CreateDirectory "$SMPROGRAMS\Spacetime"
-  CreateShortCut "$SMPROGRAMS\Spacetime\Spacetime.lnk" "$INSTDIR\pythonw.exe" "-m spacetime.app"
-  CreateShortCut "$SMPROGRAMS\Spacetime\Spacetime (presentation mode).lnk" "$INSTDIR\pythonw.exe" "-m spacetime.app --presentation"
-  CreateShortCut "$SMPROGRAMS\Spacetime\Spacetime (debug mode).lnk" "$INSTDIR\debug.bat"
+  CreateShortCut "$SMPROGRAMS\Spacetime\Spacetime.lnk" "$INSTDIR\pythonw.exe" "-m spacetime.app" "$INSTDIR\spacetime\icons\spacetime-icon.ico"
+  CreateShortCut "$SMPROGRAMS\Spacetime\Spacetime (presentation mode).lnk" "$INSTDIR\pythonw.exe" "-m spacetime.app --presentation" "$INSTDIR\spacetime\icons\spacetime-icon.ico"
+  CreateShortCut "$SMPROGRAMS\Spacetime\Spacetime (debug mode).lnk" "$INSTDIR\debug.bat" "" "$INSTDIR\spacetime\icons\spacetime-icon.ico"
   CreateShortCut "$SMPROGRAMS\Spacetime\Uninstall.lnk" "$INSTDIR\Uninstall.exe"
   
   ;Store installation folder
