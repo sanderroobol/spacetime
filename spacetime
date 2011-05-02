@@ -1,0 +1,18 @@
+#!/usr/bin/python
+import sys
+
+try:
+	import spacetime.app
+except ImportError:
+	sys.path.append('lib')
+	try:
+		import spacetime.app
+	except ImportError:
+		sys.stderr.write("Unable to load Spacetime module spacetime.app\n"
+			"Please install Spacetime in your PYTHONPATH or in ./lib\n")
+		exit(1)
+	else:
+		sys.stderr.write("Loading Spacetime from ./lib\n")
+
+app = spacetime.app.App()
+app.run()
