@@ -92,6 +92,8 @@ for dirpath, dirnames, files in os.walk('spacetime'):
 print """
   ; END AUTOMATICALLY GENERATED LIST
 
+  SetOutPath "$INSTDIR"
+
   CreateShortCut "$INSTDIR\Spacetime.lnk" "$INSTDIR\pythonw.exe" "-m spacetime.app" "$INSTDIR\spacetime\icons\spacetime-icon.ico"
   CreateShortCut "$INSTDIR\Spacetime (presentation mode).lnk" "$INSTDIR\pythonw.exe" "-m spacetime.app --presentation" "$INSTDIR\spacetime\icons\spacetime-icon.ico"
   CreateShortCut "$INSTDIR\Spacetime (debug mode).lnk" "$INSTDIR\debug.bat" "" "$INSTDIR\spacetime\icons\spacetime-icon.ico"
