@@ -216,15 +216,16 @@ class MainWindowHandler(Handler):
 		info.ui.title = self.get_ui_title(filename)
 
 	def do_new(self, info):
-		if not self.close(info):
+		if not self.close_project(info):
 			return False
 		mainwindow = info.ui.context['object']
 		mainwindow.clear()
 		self.set_ui_title(info)
 		return True
 
-	def close(self, info, is_ok=None):
+	def close_project(self, info):
 		mainwindow = info.ui.context['object']
+
 		if mainwindow.has_modifications():
 			dlg = wx.MessageDialog(info.ui.control, 'Save current project?', style=wx.YES_NO | wx.CANCEL | wx.ICON_EXCLAMATION)
 			ret = dlg.ShowModal()
@@ -233,9 +234,20 @@ class MainWindowHandler(Handler):
 			elif ret == wx.ID_YES:
 				return self.do_save(info)
 		return True
+
+	def close(self, info, is_ok=None):
+		mainwindow = info.ui.context['object']
+
+		if not self.close_project(info):
+			return False
+
+		if mainwindow.figurewindowui:
+			mainwindow.figurewindowui.control.Close()
+
+		return True
 		
 	def do_open(self, info):
-		if not self.close(info):
+		if not self.close_project(info):
 			return
 		dlg = wx.FileDialog(info.ui.control, style=wx.FD_OPEN, wildcard='Spacetime Project files (*.spacetime)|*.spacetime')
 		if dlg.ShowModal() != wx.ID_OK:
@@ -327,6 +339,17 @@ class MainWindowHandler(Handler):
 		mainwindow.pan_checked = not mainwindow.pan_checked
 		mainwindow.zoom_checked = False
 
+	def do_presentation_mode(self, info):
+		mainwindow = info.ui.context['object']
+		mainwindow.toggle_presentation_mode()
+
+
+class FigureWindowHandler(Handler):
+	def close(self, info, is_ok=None):
+		figurewindow = info.ui.context['object']
+		figurewindow.mainwindow._close_presentation_mode()
+		return True
+
 
 class FigureWindow(HasTraits):
 	mainwindow = Any
@@ -347,6 +370,37 @@ class FigureWindow(HasTraits):
 		title=MainWindowHandler.get_ui_title(),
 		statusbar='status',
 		icon=GetIcon('spacetime-icon'),
+		handler=FigureWindowHandler(),
+	)
+
+
+class MainWindow(HasTraits):
+	pass
+
+
+class SplitMainWindow(MainWindow):
+	app = Instance(HasTraits)
+	figure = DelegatesTo('app')
+	tabs = DelegatesTo('app')
+
+	traits_view = View(
+		HSplit(
+			Item('figure', width=600, editor=MPLFigureEditor(status='status'), dock='vertical'),
+			Item('tabs', style='custom', editor=ListEditor(use_notebook=True, deletable=True, page_name='.label')),
+			show_labels=False,
+		)
+	)
+
+
+class SimpleMainWindow(MainWindow):
+	app = Instance(HasTraits)
+	tabs = DelegatesTo('app')
+
+	traits_view = View(
+		Group(
+			Item('tabs', style='custom', editor=ListEditor(use_notebook=True, deletable=True, page_name='.label')),
+			show_labels=False,
+		)
 	)
 
 
@@ -357,9 +411,12 @@ class App(HasTraits):
 	status = DelegatesTo('maintab')
 	drawmgr = Instance(uiutil.DrawManager)
 	panelmgr = Instance(modules.PanelManager, args=())
+	mainwindow = Instance(MainWindow)
+	figurewindowui = None
 
 	pan_checked = Bool(False)
 	zoom_checked = Bool(False)
+	presentation_mode = Bool(False)
 
 	tabs = List(Instance(modules.generic.panels.Tab))
 
@@ -368,7 +425,8 @@ class App(HasTraits):
 		self.drawmgr.update_canvas()
 
 	def update_canvas(self):
-		wx.CallAfter(self.figure.canvas.draw)
+		# make a closure on self so figure.canvas can be changed in the meantime
+		wx.CallAfter(lambda: self.figure.canvas.draw())
 
 	def add_tab(self, klass, serialized_data=None):
 		tab = klass(drawmgr=self.drawmgr, autoscale=self.plot.autoscale, parent=self.ui.control)
@@ -433,20 +491,41 @@ class App(HasTraits):
 		self.plot.draw()
 		self.plot.autoscale()
 
+	def _connect_canvas_resize_event(self):
+		self.figure.canvas.mpl_connect('resize_event', self.on_figure_resize), 
+
 	def _plot_default(self):
 		p = plot.Plot.newmatplotlibfigure()
 		p.setup()
-
-		# At this moment, the figure has not yet been initialized properly, so delay these calls.
-		# This has to be a lambda statement to make a closure on the variables 'p' and 'self'
-		wx.CallAfter(lambda: (
-						p.figure.canvas.mpl_connect('resize_event', self.on_figure_resize), 
-						p.set_xlim_callback(self.maintab.xlim_callback)
-		))
+		p.set_xlim_callback(self.maintab.xlim_callback)
+		wx.CallAfter(self._connect_canvas_resize_event)
 		return p
 
 	def _figure_default(self):
 		return self.plot.figure
+
+	def _mainwindow_default(self):
+		return SplitMainWindow(app=self)
+
+	def _close_presentation_mode(self):
+		self.presentation_mode = False
+		with self.drawmgr.hold():
+			self.mainwindow = SplitMainWindow(app=self)
+		self.figurewindowui = None
+		wx.CallAfter(self._connect_canvas_resize_event)
+
+	def _open_presentation_mode(self):
+		self.presentation_mode = True
+		with self.drawmgr.hold():
+			self.mainwindow = SimpleMainWindow(app=self)
+			self.figurewindowui = FigureWindow(mainwindow=self, figure=self.figure).edit_traits()
+		wx.CallAfter(self._connect_canvas_resize_event)
+
+	def toggle_presentation_mode(self):
+		if self.presentation_mode:
+			self.figurewindowui.control.Close()
+		else:
+			self._open_presentation_mode()
 
 	menubar =  MenuBar(
 		Menu(
@@ -465,10 +544,13 @@ class App(HasTraits):
 			name='Graphs',
 		),
 		Menu(
-			Action(name='Fit', action='do_fit', tooltip='Zoom to fit', image=GetIcon('fit')),
-			# checked items cannot have icons
-			Action(name='Zoom', action='do_zoom', tooltip='Zoom rectangle', checked_when='zoom_checked', style='toggle'),
-			Action(name='Pan', action='do_pan', tooltip='Pan', checked_when='pan_checked', style='toggle'),
+			'zoom',
+				Action(name='Zoom to fit', action='do_fit', image=GetIcon('fit')),
+				# checked items cannot have icons
+				Action(name='Zoom rectangle', action='do_zoom', checked_when='zoom_checked', style='toggle'),
+				Action(name='Pan', action='do_pan', checked_when='pan_checked', style='toggle'),
+			'presentation mode',
+				Action(name='Presentation mode', action='do_presentation_mode', checked_when='presentation_mode', style='toggle'),
 			name='View',
 		),
 		Menu(
@@ -505,9 +587,8 @@ class App(HasTraits):
 	)
 
 	traits_view = View(
-			HSplit(
-				Item('figure', width=600, editor=MPLFigureEditor(status='status'), dock='vertical'),
-				Item('tabs', style='custom', editor=ListEditor(use_notebook=True, deletable=True, page_name='.label')),
+			Group(
+				Item('mainwindow', style='custom', editor=InstanceEditor()),
 				show_labels=False,
 			),
 			resizable=True,
@@ -521,24 +602,10 @@ class App(HasTraits):
 			icon=GetIcon('spacetime-icon'),
 		)
 
-	presentation_view = View(
-		Group(
-			Item('tabs', style='custom', editor=ListEditor(use_notebook=True, deletable=True, page_name='.label')),
-			show_labels=False,
-		),
-		resizable=True,
-		height=700, width=700,
-		buttons=NoButtons,
-		title=MainWindowHandler.get_ui_title(),
-		toolbar=main_toolbar,
-		handler=MainWindowHandler(),
-		icon=GetIcon('spacetime-icon'),
-	)
-	
 	def parseargs(self):
 		from optparse import OptionParser
 		parser = OptionParser()
-		parser.add_option("--presentation", dest="presentation", action='store_true', help="presentation (two window) mode")
+		parser.add_option("--presentation", dest="presentation", action='store_true', help="start in presentation (two window) mode")
 		parser.add_option("--debug", dest="debug", action="store_true", help="print debuggin statements")
 
 		(options, args) = parser.parse_args()
@@ -559,11 +626,9 @@ class App(HasTraits):
 		app = wx.PySimpleApp()
 
 		if options.presentation:
-			figwin = FigureWindow(mainwindow=self, figure=self.figure)
-			figwin.edit_traits()
-			self.ui = self.edit_traits(view='presentation_view')
-		else:
-			self.ui = self.edit_traits()
+			self._open_presentation_mode()
+
+		self.ui = self.edit_traits()
 
 		app.MainLoop()
 
