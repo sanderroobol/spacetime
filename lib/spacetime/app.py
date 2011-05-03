@@ -606,7 +606,7 @@ class App(HasTraits):
 		from optparse import OptionParser
 		parser = OptionParser()
 		parser.add_option("--presentation", dest="presentation", action='store_true', help="start in presentation (two window) mode")
-		parser.add_option("--debug", dest="debug", action="store_true", help="print debuggin statements")
+		parser.add_option("--debug", dest="debug", action="store_true", help="print debugging statements")
 
 		(options, args) = parser.parse_args()
 		if len(args):
