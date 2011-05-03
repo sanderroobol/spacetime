@@ -181,7 +181,7 @@ def GetIcon(id):
 
 
 class AboutWindow(HasTraits):
-	title = Str('Spacetime ' + version.version)
+	title = Str("{0} {1}".format(version.name, version.version))
 	desc = Str('Copyright 2010-2011 Leiden University.\nWritten by Sander Roobol <roobol@physics.leidenuniv.nl>.\n\nRedistribution outside Leiden University is not permitted.')
 
 	traits_view = View(
@@ -198,29 +198,20 @@ class AboutWindow(HasTraits):
 				padding=5,
 			),
 		),
-		title='About Spacetime',
+		title='About {0}'.format(version.name),
 		buttons=[OKButton],
 		kind='modal',
 	)
 
 
 class MainWindowHandler(Handler):
-	@staticmethod	
-	def get_ui_title(filename = None):
-		if filename is None:
-			return 'Spacetime'
-		else:
-			return 'Spacetime - %s' % filename
-
-	def set_ui_title(self, info, filename=None):
-		info.ui.title = self.get_ui_title(filename)
 
 	def do_new(self, info):
 		if not self.close_project(info):
 			return False
 		mainwindow = info.ui.context['object']
-		mainwindow.clear()
-		self.set_ui_title(info)
+		mainwindow.new_project()
+		mainwindow.update_title()
 		return True
 
 	def close_project(self, info):
@@ -253,13 +244,12 @@ class MainWindowHandler(Handler):
 		if dlg.ShowModal() != wx.ID_OK:
 			return
 		mainwindow = info.ui.context['object']
-		mainwindow.clear()
+		mainwindow.new_project()
 		try:
 			mainwindow.open_project(dlg.Path)
 		except:
 			uiutil.Message.file_open_failed(dlg.Path, parent=info.ui.control)
-		else:
-			self.set_ui_title(info, dlg.Filename)
+		mainwindow.update_title()
 		mainwindow.drawmgr.redraw_figure()
 
 	def do_save(self, info):
@@ -276,7 +266,7 @@ class MainWindowHandler(Handler):
 			filename += '.spacetime'
 		try:
 			if mainwindow.save_project(path):
-				self.set_ui_title(info, filename)
+				mainwindow.update_title()
 				return True
 		except:
 			uiutil.Message.file_open_failed(path, parent=info.ui.control)
@@ -356,18 +346,15 @@ class FigureWindow(HasTraits):
 	figure = Instance(matplotlib.figure.Figure)
 	status = DelegatesTo('mainwindow')
 
-	def on_figure_resize(self, event):
-		self.mainwindow.on_figure_resize(event)
-
 	traits_view = View(
 		Group(
 			Item('figure', editor=MPLFigureEditor(status='status')),
 			show_labels=False,
 		),
 		resizable=True,
-		height=700, width=1100,
+		height=600, width=800,
 		buttons=NoButtons,
-		title=MainWindowHandler.get_ui_title(),
+		title=version.name,
 		statusbar='status',
 		icon=GetIcon('spacetime-icon'),
 		handler=FigureWindowHandler(),
@@ -418,9 +405,13 @@ class App(HasTraits):
 	zoom_checked = Bool(False)
 	presentation_mode = Bool(False)
 
+	project_path = Str()
+	project_filename = Property(depends_on='project_path')
+
 	tabs = List(Instance(modules.generic.panels.Tab))
 
 	def on_figure_resize(self, event):
+		logger.info('on_figure_resize called')
 		self.plot.setup_margins()
 		self.drawmgr.update_canvas()
 
@@ -452,10 +443,16 @@ class App(HasTraits):
 	def _tabs_default(self):
 		return [self.maintab]
 
-	def clear(self):
+	def _get_project_filename(self):
+		if not self.project_path:
+			return ''
+		return os.path.basename(self.project_path)
+
+	def new_project(self):
 		self.tabs = self._tabs_default()
 		for klass in self.panelmgr.list_classes():
 			klass.number = 0
+		self.project_path = ''
 
 	def open_project(self, path):
 		with open(path, 'rb') as fp:
@@ -470,6 +467,7 @@ class App(HasTraits):
 					self.add_tab(self.panelmgr.get_class_by_id(id), props)
 				except KeyError:
 					pass # silently ignore unknown class names for backward and forward compatibility
+			self.project_path = path
 
 	def save_project(self, path):
 		data = [('general', self.tabs[0].get_serialized())]
@@ -479,7 +477,17 @@ class App(HasTraits):
 		with open(path, 'wb') as fp:
 			fp.write('Spacetime\nJSON\n')
 			json.dump(data, fp)
+		self.project_path = path
 		return True
+
+	def update_title(self):
+		if self.project_filename:
+			self.ui.title = '{0} - {1}'.format(version.name, self.project_filename)
+		else:
+			self.ui.title = version.name
+
+		if self.figurewindowui:
+			self.figurewindowui.title = self.ui.title
 
 	def has_modifications(self):
 		return len(self.tabs) > 1
@@ -526,6 +534,7 @@ class App(HasTraits):
 			self.figurewindowui.control.Close()
 		else:
 			self._open_presentation_mode()
+			self.update_title()
 
 	menubar =  MenuBar(
 		Menu(
@@ -594,7 +603,7 @@ class App(HasTraits):
 			resizable=True,
 			height=700, width=1100,
 			buttons=NoButtons,
-			title=MainWindowHandler.get_ui_title(),
+			title=version.name,
 			menubar=menubar,
 			toolbar=main_toolbar,
 			statusbar='status',
