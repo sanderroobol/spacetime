@@ -106,13 +106,70 @@ class MultiTrendFormatter(object):
 LEGENDPROP = matplotlib.font_manager.FontProperties(size='medium')
 
 
-class MultiTrend(Subplot):
-	legend = True
+class YAxisHandling(object):
 	ylim_callback = None
 	ylim_min = 0.
 	ylim_max = 1.
 	ylim_auto = True
 	ylog = False
+
+	def set_ylim_callback(self, func):
+		self.ylim_callback = func
+
+	def set_ylim(self, min, max, auto):
+		self.ylim_min = min
+		self.ylim_max = max
+		self.ylim_auto = auto
+		self.ylim_rescale()
+
+	def ylim_rescale(self):
+		if not self.axes:
+			return
+		if self.ylim_auto:
+			self.autoscale_y(self.axes)
+		else:
+			self.axes.set_ylim(self.ylim_min, self.ylim_max)
+
+	def set_ylog(self, ylog):
+		self.ylog = ylog
+		if self.axes:
+			self.axes.set_yscale('log' if ylog else 'linear')
+
+
+class DoubleYAxisHandling(YAxisHandling):
+	secondaryaxes = None
+
+	ylim2_min = 0.
+	ylim2_max = 1.
+	ylim2_auto = True
+	ylog2 = False
+
+	def set_ylim2(self, min, max, auto):
+		self.ylim2_min = min
+		self.ylim2_max = max
+		self.ylim2_auto = auto
+		self.ylim_rescale()
+
+	def ylim_rescale(self):
+		super(DoubleYAxisHandling, self).ylim_rescale()
+		if not self.secondaryaxes:
+			return
+		if self.ylim2_auto:
+			self.autoscale_y(self.secondaryaxes)
+		else:
+			self.secondaryaxes.set_ylim(self.ylim2_min, self.ylim2_max)
+
+	def set_ylog2(self, ylog2):
+		self.ylog2 = ylog2
+		if self.secondaryaxes:
+			self.secondaryaxes.set_yscale('log' if ylog2 else 'linear')
+
+	def get_axes_requirements(self):
+		return [util.Struct(twinx=True)]
+
+
+class MultiTrend(YAxisHandling, Subplot):
+	legend = True
 
 	def __init__(self, data=None, formatter=None):
 		super(MultiTrend, self).__init__(data)
@@ -145,28 +202,6 @@ class MultiTrend(Subplot):
 				self.axes.relim()
 		super(MultiTrend, self).clear(quick)
 
-	def set_ylim_callback(self, func):
-		self.ylim_callback = func
-
-	def set_ylim(self, min, max, auto):
-		self.ylim_min = min
-		self.ylim_max = max
-		self.ylim_auto = auto
-		self.ylim_rescale()
-
-	def ylim_rescale(self):
-		if not self.axes:
-			return
-		if self.ylim_auto:
-			self.autoscale_y(self.axes)
-		else:
-			self.axes.set_ylim(self.ylim_min, self.ylim_max)
-
-	def set_ylog(self, ylog):
-		self.ylog = ylog
-		if self.axes:
-			self.axes.set_yscale('log' if ylog else 'linear')
-
 	def set_legend(self, legend):
 		self.legend = legend
 		if legend:
@@ -179,13 +214,7 @@ class MultiTrend(Subplot):
 			self.axes.legend(prop=LEGENDPROP)
 
 
-class DoubleMultiTrend(MultiTrend):
-	secondaryaxes = None
-	ylim2_min = 0.
-	ylim2_max = 1.
-	ylim2_auto = True
-	ylog2 = False
-
+class DoubleMultiTrend(MultiTrend, DoubleYAxisHandling):
 	def __init__(self, data=None, secondarydata=None, formatter=None):
 		self.secondarydata = secondarydata
 		super(DoubleMultiTrend, self).__init__(data, formatter)
@@ -220,33 +249,10 @@ class DoubleMultiTrend(MultiTrend):
 			if len(handles):
 				self.secondaryaxes.legend(handles, labels, prop=LEGENDPROP)
 
-	def set_ylim2(self, min, max, auto):
-		self.ylim2_min = min
-		self.ylim2_max = max
-		self.ylim2_auto = auto
-		self.ylim_rescale()
-
-	def ylim_rescale(self):
-		super(DoubleMultiTrend, self).ylim_rescale()
-		if not self.secondaryaxes:
-			return
-		if self.ylim2_auto:
-			self.autoscale_y(self.secondaryaxes)
-		else:
-			self.secondaryaxes.set_ylim(self.ylim2_min, self.ylim2_max)
-
-	def set_ylog2(self, ylog2):
-		self.ylog2 = ylog2
-		if self.secondaryaxes:
-			self.secondaryaxes.set_yscale('log' if ylog2 else 'linear')
-
 	def set_legend(self, legend):
 		if not legend and self.secondaryaxes:
 			self.secondaryaxes.legend_ = None
 		super(DoubleMultiTrend, self).set_legend(legend)
-
-	def get_axes_requirements(self):
-		return [util.Struct(twinx=True)]
 
 	def set_axes(self, axes):
 		self.axes, self.secondaryaxes = axes[0]
@@ -259,7 +265,7 @@ class DoubleMultiTrend(MultiTrend):
 		super(DoubleMultiTrend, self).clear(quick)
 
 
-class IndependentX(object):
+class XAxisHandling(object):
 	xlim_callback = None
 	xlim_min = 0.
 	xlim_max = 1.

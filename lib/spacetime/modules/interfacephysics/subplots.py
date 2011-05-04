@@ -1,6 +1,9 @@
-from ..generic.subplots import Subplot, IndependentX, DoubleMultiTrend
+import numpy
 
-class CV(Subplot, IndependentX):
+from ..generic.subplots import Subplot, XAxisHandling, YAxisHandling, DoubleMultiTrend
+
+
+class CV(XAxisHandling, YAxisHandling, Subplot):
 	x = y = None
 	markers = None, None
 	marker_points = None, None
@@ -38,6 +41,9 @@ class CV(Subplot, IndependentX):
 
 	def plot_marker(self):
 		left, right = self.markers
+
+		if left is None:
+			return
 
 		index_left = numpy.searchsorted(self.x.time, left, 'left')
 		if index_left == self.x.time.size:

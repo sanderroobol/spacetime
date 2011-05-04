@@ -97,8 +97,9 @@ class Plot(object):
 
 		if self.shared_axes:
 			self.master_axes = self.shared_axes[-1]
-			if self.xlim_callback:
-				self.master_axes.callbacks.connect('xlim_changed', self.xlim_callback)
+			print self.shared_axes
+			if self.shared_xlim_callback:
+				self.master_axes.callbacks.connect('xlim_changed', self.shared_xlim_callback)
 		else:
 			self.master_axes = None
 
@@ -140,7 +141,7 @@ class Plot(object):
 				label.set_visible(False)
 
 	def set_xlim_callback(self, func):
-		self.xlim_callback = func
+		self.shared_xlim_callback = func
 
 	def autoscale(self, subplot=None):
 		if subplot:

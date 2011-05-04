@@ -1,8 +1,8 @@
-from ..generic.subplots import DoubleMultiTrend, IndependentX
+from ..generic.subplots import DoubleMultiTrend, XAxisHandling
 
 from ... import util
 
-class CameraTrend(DoubleMultiTrend, IndependentX):
+class CameraTrend(XAxisHandling, DoubleMultiTrend):
 	fft = False
 
 	def xlim_rescale(self):

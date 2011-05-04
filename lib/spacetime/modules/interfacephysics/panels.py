@@ -3,6 +3,7 @@ from enthought.traits.ui.api import *
 
 from ..generic.panels import DoubleTimeTrendPanel, PanelView
 from ..lpmcamera.panels import CameraTrendPanel
+from ..lpmcamera.datasources import Camera as CameraDataSource
 from ..lpmgascabinet import subplots as lpmsubplots
 from ..lpmgascabinet.datasources import LabviewMultiTrend
 from ... import uiutil
@@ -28,7 +29,7 @@ class CVPanel(CameraTrendPanel):
 	def load_file(self):
 		if self.filename:
 			try:
-				self.data = datasources.Camera(self.filename)
+				self.data = CameraDataSource(self.filename)
 			except:
 				uiutil.Message.file_open_failed(self.filename, parent=self.parent)
 				self.filename = ''
