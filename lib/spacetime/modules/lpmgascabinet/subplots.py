@@ -1,4 +1,4 @@
-from ..generic.subplots import DoubleMultiTrend, MultiTrendFormatter, LEGENDPROP
+from ..generic.subplots import DoubleMultiTrend, MultiTrendFormatter
 
 class GasCabinetFormatter(MultiTrendFormatter):
 	prevcontroller = None
@@ -62,4 +62,4 @@ class GasCabinet(DoubleMultiTrend):
 
 			self.axes.legend_ = None
 			if len(handles):
-				self.secondaryaxes.legend(handles, labels, prop=LEGENDPROP)
+				self.secondaryaxes.legend(handles, labels, prop=self.legendprops)
