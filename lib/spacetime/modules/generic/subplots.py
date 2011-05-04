@@ -88,22 +88,39 @@ class Subplot(object):
 		self.time_factor = factor
 
 
-class MultiTrendFormatter(object):
-	counter = -1
-	colors = 'bgrcmyk'
+class XAxisHandling(object):
+	xlim_callback = None
+	xlim_min = 0.
+	xlim_max = 1.
+	xlim_auto = True
+	xlog = False
 
-	def __call__(self, data):
-		self.increase_counter()
-		return self.colors[self.counter] + '-'
+	def get_axes_requirements(self):
+		return [util.Struct(independent_x = True)]
 
-	def increase_counter(self):
-		self.counter = (self.counter + 1) % len(self.colors)
+	def set_xlim_callback(self, func):
+		self.xlim_callback = func
 
-	def reset(self):
-		self.counter = -1
+	def set_xlim(self, min, max, auto):
+		self.xlim_min = min
+		self.xlim_max = max
+		self.xlim_auto = auto
+		self.xlim_rescale()
 
+	def xlim_rescale(self):
+		if not self.axes:
+			return
+		if self.xlim_auto:
+			self.autoscale_x(self.axes)
+		else:
+			self.axes.set_xlim(self.xlim_min, self.xlim_max)
 
-LEGENDPROP = matplotlib.font_manager.FontProperties(size='medium')
+	def set_xlog(self, xlog):
+		self.xlog = xlog
+		if self.axes:
+			self.axes.set_xscale('log' if xlog else 'linear')
+		if self.secondaryaxes:
+			self.secondaryaxes.set_xscale('log' if xlog else 'linear')
 
 
 class YAxisHandling(object):
@@ -166,6 +183,24 @@ class DoubleYAxisHandling(YAxisHandling):
 
 	def get_axes_requirements(self):
 		return [util.Struct(twinx=True)]
+
+
+class MultiTrendFormatter(object):
+	counter = -1
+	colors = 'bgrcmyk'
+
+	def __call__(self, data):
+		self.increase_counter()
+		return self.colors[self.counter] + '-'
+
+	def increase_counter(self):
+		self.counter = (self.counter + 1) % len(self.colors)
+
+	def reset(self):
+		self.counter = -1
+
+
+LEGENDPROP = matplotlib.font_manager.FontProperties(size='medium')
 
 
 class MultiTrend(YAxisHandling, Subplot):
@@ -263,41 +298,6 @@ class DoubleMultiTrend(MultiTrend, DoubleYAxisHandling):
 				del self.secondaryaxes.lines[:]
 			self.secondaryaxes.relim()
 		super(DoubleMultiTrend, self).clear(quick)
-
-
-class XAxisHandling(object):
-	xlim_callback = None
-	xlim_min = 0.
-	xlim_max = 1.
-	xlim_auto = True
-	xlog = False
-
-	def get_axes_requirements(self):
-		return [util.Struct(independent_x = True)]
-
-	def set_xlim_callback(self, func):
-		self.xlim_callback = func
-
-	def set_xlim(self, min, max, auto):
-		self.xlim_min = min
-		self.xlim_max = max
-		self.xlim_auto = auto
-		self.xlim_rescale()
-
-	def xlim_rescale(self):
-		if not self.axes:
-			return
-		if self.xlim_auto:
-			self.autoscale_x(self.axes)
-		else:
-			self.axes.set_xlim(self.xlim_min, self.xlim_max)
-
-	def set_xlog(self, xlog):
-		self.xlog = xlog
-		if self.axes:
-			self.axes.set_xscale('log' if xlog else 'linear')
-		if self.secondaryaxes:
-			self.secondaryaxes.set_xscale('log' if xlog else 'linear')
 
 
 class Image(Subplot):
