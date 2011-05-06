@@ -50,8 +50,8 @@ class DataSourceFilter(MultiTrend):
 		return self.original.iterchannelnames()
 	
 	def apply(self, data):
-		for filter in self.filters:
-			data = filter(data)
+		for f in self.filters:
+			data = f(data)
 		return data
 
 	def apply_filter(self, *filters):

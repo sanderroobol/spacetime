@@ -2,7 +2,7 @@
 from .mplfigure import MPLFigureEditor
 
 from . import plot, util, version, uiutil
-import modules
+from . import modules
 
 from enthought.traits.api import *
 from enthought.traits.ui.api import *
