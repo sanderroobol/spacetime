@@ -97,7 +97,6 @@ class Plot(object):
 
 		if self.shared_axes:
 			self.master_axes = self.shared_axes[-1]
-			print self.shared_axes
 			if self.shared_xlim_callback:
 				self.master_axes.callbacks.connect('xlim_changed', self.shared_xlim_callback)
 		else:
