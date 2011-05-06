@@ -619,7 +619,7 @@ class App(HasTraits):
 
 		(options, args) = parser.parse_args()
 		if len(args):
-			parser.error('invalid argument(s): %r' % args)
+			parser.error('invalid argument(s): {0!r}'.format(args))
 
 		return options, args
 

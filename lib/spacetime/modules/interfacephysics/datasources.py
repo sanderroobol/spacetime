@@ -52,5 +52,5 @@ class OldGasCabinet(MultiTrend):
 		for i in range((columns - 2) // 4):
 			time = self.data[:,i*4]/86400 + self.offset
 			for j, p in enumerate(self.parameters):
-				self.channels.append(Struct(time=time, value=self.data[:,i*4+j+1], id='%s %s' % (self.controllers[i], p), parameter=p, controller=self.controllers[i]))
+				self.channels.append(Struct(time=time, value=self.data[:,i*4+j+1], id='{0} {1}'.format(self.controllers[i], p), parameter=p, controller=self.controllers[i]))
 		# NOTE: the last two columns (Leak dectector) are ignored

@@ -54,10 +54,10 @@ class GasCabinet(LabviewMultiTrend):
 		if i < len(self.controllers)*len(self.parameters):
 			c = self.controllers[i // len(self.parameters)]
 			p = self.parameters[i % len(self.parameters)]
-			return dict(id='%s %s' % (c, p), parameter=p, controller=c)
+			return dict(id='{0} {1}'.format(c, p), parameter=p, controller=c)
 		else:
 			v = self.valves[i - len(self.controllers)*len(self.parameters) - 1]
-			return dict(id='%s valve' % v, valve=v)
+			return dict(id='{0} valve'.format(v), valve=v)
 
 	def __init__(self, *args, **kwargs):
 		super(GasCabinet, self).__init__(*args, **kwargs)

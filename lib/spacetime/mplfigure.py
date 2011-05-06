@@ -34,14 +34,14 @@ class ModifiedToolbar(matplotlib.backends.backend_wx.NavigationToolbar2Wx):
 		if len(set(xs)) == 1:
 			xs = xs[0].strip()
 		else:
-			xs = '(%s)' % ', '.join(i.strip() for i in xs)
+			xs = '({0})'.format(', '.join(i.strip() for i in xs))
 
 		if len(set(ys)) == 1:
 			ys = ys[0].strip()
 		else:
-			ys = '(%s)' % ', '.join(i.strip() for i in ys)
+			ys = '({0})'.format(', '.join(i.strip() for i in ys))
 
-		return 'x=%s, y=%s' % (xs, ys)
+		return 'x={0}, y={1}'.format(xs, ys)
 
 	def mouse_move(self, event):
 		# adapted from matplotlib.backend_bases.NavigationToolbar2.mouse_move
@@ -70,7 +70,7 @@ class ModifiedToolbar(matplotlib.backends.backend_wx.NavigationToolbar2Wx):
 			except OverflowError: pass
 			else:
 				if len(self.mode):
-					self.set_message('%s, %s' % (self.mode, s))
+					self.set_message('{0}, {1}'.format(self.mode, s))
 				else:
 					self.set_message(s)
 		else: self.set_message(self.mode)

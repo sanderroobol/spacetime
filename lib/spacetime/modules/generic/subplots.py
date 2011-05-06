@@ -210,7 +210,7 @@ class MultiTrend(YAxisHandling, Subplot):
 			self.formatter = MultiTrendFormatter()
 		else:
 			if not isinstance(formatter, MultiTrendFormatter):
-				raise TypeError("formatter must be a MultiTrendFormatter object (got '%s')" % formatter.__class__.__name__)
+				raise TypeError("formatter must be a MultiTrendFormatter object (got '{0}')".format(formatter.__class__.__name__))
 			self.formatter = formatter
 
 	def setup(self):

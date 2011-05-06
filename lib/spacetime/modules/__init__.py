@@ -14,7 +14,7 @@ class PanelManager(object):
 		for klass in self._list_classes:
 			if klass.id in self.mapping_id_class:
 				old = self.mapping_id_class[klass.id]
-				raise ValueError("panel id '%s' conflict: %s.%s and %s.%s" % (klass.id, klass.__module__, klass.__name__, old.__module__, old.__name__))
+				raise ValueError("panel id '{0.id}' conflict: {0.__module__}.{0.__name__} and {1.__module__}.{1.__name__}".format(klass, old))
 			self.mapping_id_class[klass.id] = klass
 			self.mapping_classobjectid_id[id(klass)] = klass.id
 
@@ -31,12 +31,12 @@ class PanelManager(object):
 		modules = [os.path.split(os.path.split(f)[0])[1] for f in panel_files]
 		for mname in modules:
 			self.modules[mname] = getattr(__import__('spacetime.modules', globals(), locals(), [mname], -1), mname)
-			module = __import__('spacetime.modules.%s' % mname, globals(), locals(), ['panels'], -1)
+			module = __import__('spacetime.modules.{0}'.format(mname), globals(), locals(), ['panels'], -1)
 			self.panels_by_module[mname] = []
 			for i in dir(module.panels):
 				obj = getattr(module.panels, i)
 				try:
-					if issubclass(obj, SubplotPanel) and hasattr(obj, 'id') and obj.id and obj.__module__ == 'spacetime.modules.%s.panels' % mname:
+					if issubclass(obj, SubplotPanel) and hasattr(obj, 'id') and obj.id and obj.__module__ == 'spacetime.modules.{0}.panels'.format(mname):
 						self.panels_by_module[mname].append(obj)
 						self._list_classes.append(obj)
 				except TypeError: # obj is not a class

@@ -38,7 +38,7 @@ class Message(HasTraits):
 
 	@classmethod
 	def file_open_failed(klass, filename, parent=None):
-		return klass.exception(message='Failed to open file', desc='%s\nmight not be accessible or it is not in the correct format.' % filename, parent=parent)
+		return klass.exception(message='Failed to open file', desc='{0}\nmight not be accessible or it is not in the correct format.'.format(filename), parent=parent)
 
 	@classmethod
 	def file_save_failed(klass, filename, parent=None):
@@ -115,7 +115,7 @@ class AxisLimits(HasTraits):
 		self.auto = bool(value)
 
 	def __str__(self):
-		return "(%e, %e) %s" % (self.min, self.max, 'auto' if self.auto else 'manual')
+		return "({0:e}, {1:e}) {2}".format(self.min, self.max, 'auto' if self.auto else 'manual')
 
 	traits_view = View(HGroup(
 		Item('auto_list', style='custom', editor=CheckListEditor(values=['Auto'])),
@@ -139,7 +139,7 @@ class LogAxisLimits(AxisLimits):
 			self.scale = 'linear'
 
 	def __str__(self):
-		return "(%e, %e) %s %s" % (self.min, self.max, self.scale, 'auto' if self.auto else 'manual')
+		return "({0:e}, {1:e}) {2} {3}".format(self.min, self.max, self.scale, 'auto' if self.auto else 'manual')
 
 	traits_view = View(HGroup(
 		Item('auto_list', style='custom', editor=CheckListEditor(values=['Auto'])),
