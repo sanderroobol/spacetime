@@ -1,5 +1,7 @@
 import os.path, sys, traceback
 
+from . import prefs
+
 from enthought.traits.api import *
 from enthought.traits.ui.api import *
 
@@ -216,3 +218,22 @@ class DrawManager(object):
 			self.level |= 1
 		else:
 			self._update_canvas()
+
+
+class PersistantGeometry(HasTraits):
+	prefs = Instance(prefs.Storage)
+	prefs_id = None
+
+	def edit_traits(self, *args, **kwargs):
+		ui = super(PersistantGeometry, self).edit_traits(*args, **kwargs)
+		if self.prefs_id:
+			self.prefs.restore_window(self.prefs_id, ui)
+		return ui
+
+
+class PersistantGeometryHandler(Handler):
+	def close(self, info, is_ok=None):
+		window = info.ui.context['object']
+		if window.prefs_id:
+			window.prefs.save_window(window.prefs_id, info.ui)
+		return True

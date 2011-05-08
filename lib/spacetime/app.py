@@ -1,8 +1,7 @@
 # keep this import at top to ensure proper matplotlib backend selection
 from .mplfigure import MPLFigureEditor
 
-from . import plot, util, version, uiutil
-from . import modules
+from . import plot, modules, util, version, uiutil, prefs
 
 from enthought.traits.api import *
 from enthought.traits.ui.api import *
@@ -165,13 +164,16 @@ class MainTab(modules.generic.panels.SerializableTab):
 	))
 
 
-class PythonWindow(HasTraits):
+class PythonWindow(uiutil.PersistantGeometry):
+	prefs_id = 'python'
 	shell = PythonValue({})
 	traits_view = View(
 		Item('shell', show_label=False, editor=ShellEditor(share=False)),
 		title='Python console',
 		height=600,
 		width=500,
+		resizable=True,
+		handler=uiutil.PersistantGeometryHandler(),
 	)
 
 
@@ -235,22 +237,56 @@ class MainWindowHandler(Handler):
 		if mainwindow.figurewindowui:
 			mainwindow.figurewindowui.control.Close()
 
+		mainwindow.prefs.save_window('main', mainwindow.ui)
+		mainwindow.prefs.close()
+
 		return True
 		
-	def do_open(self, info):
+	def do_open(self, info, path=None):
 		if not self.close_project(info):
 			return
-		dlg = wx.FileDialog(info.ui.control, style=wx.FD_OPEN, wildcard='Spacetime Project files (*.spacetime)|*.spacetime')
-		if dlg.ShowModal() != wx.ID_OK:
-			return
+		if path is None:
+			dlg = wx.FileDialog(info.ui.control, style=wx.FD_OPEN, wildcard='Spacetime Project files (*.spacetime)|*.spacetime')
+			if dlg.ShowModal() != wx.ID_OK:
+				return
+			path = dlg.Path
+
 		mainwindow = info.ui.context['object']
 		mainwindow.new_project()
 		try:
-			mainwindow.open_project(dlg.Path)
+			mainwindow.open_project(path)
 		except:
-			uiutil.Message.file_open_failed(dlg.Path, parent=info.ui.control)
+			uiutil.Message.file_open_failed(path, parent=info.ui.control)
+		mainwindow.prefs.add_recent('project', path)
+		mainwindow.rebuild_recent_menu()
 		mainwindow.update_title()
 		mainwindow.drawmgr.redraw_figure()
+
+	# you got to be f*cking kidding me...
+	def do_open_recent_0(self, info):
+		return self.do_open_recent(info, 0)
+	def do_open_recent_1(self, info):
+		return self.do_open_recent(info, 1)
+	def do_open_recent_2(self, info):
+		return self.do_open_recent(info, 2)
+	def do_open_recent_3(self, info):
+		return self.do_open_recent(info, 3)
+	def do_open_recent_4(self, info):
+		return self.do_open_recent(info, 4)
+	def do_open_recent_5(self, info):
+		return self.do_open_recent(info, 5)
+	def do_open_recent_6(self, info):
+		return self.do_open_recent(info, 6)
+	def do_open_recent_7(self, info):
+		return self.do_open_recent(info, 7)
+	def do_open_recent_8(self, info):
+		return self.do_open_recent(info, 8)
+	def do_open_recent_9(self, info):
+		return self.do_open_recent(info, 9)
+
+	def do_open_recent(self, info, i):
+		mainwindow = info.ui.context['object']
+		return self.do_open(info, mainwindow.recent_paths[i])
 
 	def do_save(self, info):
 		return self.do_save_as(info) # TODO: implement
@@ -266,6 +302,8 @@ class MainWindowHandler(Handler):
 			filename += '.spacetime'
 		try:
 			if mainwindow.save_project(path):
+				mainwindow.prefs.add_recent('project', path)
+				mainwindow.rebuild_recent_menu()
 				mainwindow.update_title()
 				return True
 		except:
@@ -280,7 +318,8 @@ class MainWindowHandler(Handler):
 			mainwindow.add_tab(mainwindow.panelmgr.get_class_by_id(id))
 
 	def do_python(self, info):
-		PythonWindow().edit_traits(parent=info.ui.control)
+		mainwindow = info.ui.context['object']
+		PythonWindow(prefs=mainwindow.prefs).edit_traits(parent=info.ui.control)
 
 	def do_about(self, info):
 		AboutWindow().edit_traits(parent=info.ui.control)
@@ -334,14 +373,17 @@ class MainWindowHandler(Handler):
 		mainwindow.toggle_presentation_mode()
 
 
-class FigureWindowHandler(Handler):
+class FigureWindowHandler(uiutil.PersistantGeometryHandler):
 	def close(self, info, is_ok=None):
+		super(FigureWindowHandler, self).close(info, is_ok)
 		figurewindow = info.ui.context['object']
 		figurewindow.mainwindow._close_presentation_mode()
 		return True
 
 
-class FigureWindow(HasTraits):
+class FigureWindow(uiutil.PersistantGeometry):
+	prefs_id = 'figure'
+
 	mainwindow = Any
 	figure = Instance(matplotlib.figure.Figure)
 	status = DelegatesTo('mainwindow')
@@ -400,6 +442,7 @@ class App(HasTraits):
 	panelmgr = Instance(modules.PanelManager, args=())
 	mainwindow = Instance(MainWindow)
 	figurewindowui = None
+	prefs = Instance(prefs.Storage, args=())
 
 	pan_checked = Bool(False)
 	zoom_checked = Bool(False)
@@ -526,7 +569,7 @@ class App(HasTraits):
 		self.presentation_mode = True
 		with self.drawmgr.hold():
 			self.mainwindow = SimpleMainWindow(app=self)
-			self.figurewindowui = FigureWindow(mainwindow=self, figure=self.figure).edit_traits()
+			self.figurewindowui = FigureWindow(mainwindow=self, figure=self.figure, prefs=self.prefs).edit_traits()
 		wx.CallAfter(self._connect_canvas_resize_event)
 
 	def toggle_presentation_mode(self):
@@ -536,11 +579,59 @@ class App(HasTraits):
 			self._open_presentation_mode()
 			self.update_title()
 
+	def init_recent_menu(self):
+		frame = self.ui.control
+		file_menu = frame.MenuBar.Menus[0][0]
+		self.recent_menu = file_menu.MenuItems[2].SubMenu
+		self.recent_menu_items = [i for i in self.recent_menu.MenuItems] # build a python list instead of a MenuItemList
+		self.rebuild_recent_menu()
+
+	def rebuild_recent_menu(self):
+		recents = self.prefs.get_recent('project')
+		self.recent_paths = [i for i in recents] # make a copy to maintain consistency even if the menu loses sync with the prefs
+		for i, p in enumerate(self.recent_paths):
+			item = self.recent_menu_items[i]
+			item.SetItemLabel(os.path.basename(p))
+			item.Enable(True)
+		for i in range(len(self.recent_paths), 10):
+			item = self.recent_menu_items[i]
+			item.SetItemLabel('n/a')
+			item.Enable(False)
+
+	def rebuild_recent_menu_segfaulting(self):
+		# this is a much more elegant implementation that removes the items that are not in use
+		# however it segfaults when putting the items back into place (but simple test scripts work fine...)
+		recents = self.prefs.get_recent('project')
+		if recents:
+			while len(recents) < self.recent_menu.MenuItemCount:
+				self.recent_menu.RemoveItem(self.recent_menu.MenuItems[self.recent_menu.MenuItemCount - 1])
+			while len(recents) > self.recent_menu.MenuItemCount:
+				self.recent_menu.AppendItem(self.recent_menu_items[self.recent_menu.MenuItemCount])
+
+			self.recent_paths = [i for i in recents] # make a copy to maintain consistency even if the menu loses sync with the prefs
+			for i, p in enumerate(self.recent_paths):
+				item = self.recent_menu_items[i]
+				item.SetItemLabel(os.path.basename(p))
+				if i == 0:
+					item.Enable(True)
+		else:
+			while self.recent_menu.MenuItemCount > 1:
+				self.recent_menu.RemoveItem(self.recent_menu.MenuItems[self.recent_menu.MenuItemCount - 1])
+			self.recent_paths = []
+			first = self.recent_menu_items[0]
+			first.SetItemLabel('(none)')
+			first.Enable(False)
+
+
 	menubar =  MenuBar(
 		Menu(
 			Separator(),
 			Action(name='New', action='do_new', accelerator='Ctrl+N', image=GetIcon('new')),
 			Action(name='Open...', action='do_open', accelerator='Ctrl+O', image=GetIcon('open')),
+			Menu(
+				name='Open recent',
+				*[Action(name='recent {0}'.format(i), action='do_open_recent_{0}'.format(i)) for i in range(10)]
+			),
 			Separator(),
 			Action(name='Save', action='do_save', accelerator='Ctrl+S', image=GetIcon('save')),
 			Action(name='Save as...', action='do_save_as', accelerator='Shift+Ctrl+S', image=GetIcon('save')),
@@ -638,6 +729,8 @@ class App(HasTraits):
 			self._open_presentation_mode()
 
 		self.ui = self.edit_traits()
+		self.prefs.restore_window('main', self.ui)
+		self.init_recent_menu()
 
 		app.MainLoop()
 
