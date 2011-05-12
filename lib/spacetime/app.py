@@ -638,44 +638,44 @@ class App(HasTraits):
 	menubar =  MenuBar(
 		Menu(
 			Separator(),
-			Action(name='New', action='do_new', accelerator='Ctrl+N', image=GetIcon('new')),
-			Action(name='Open...', action='do_open', accelerator='Ctrl+O', image=GetIcon('open')),
+			Action(name='&New', action='do_new', accelerator='Ctrl+N', image=GetIcon('new')),
+			Action(name='&Open...', action='do_open', accelerator='Ctrl+O', image=GetIcon('open')),
 			Menu(
-				name='Open recent',
+				name='Open &recent',
 				*[Action(name='recent {0}'.format(i), action='do_open_recent_{0}'.format(i)) for i in range(10)]
 			),
 			Separator(),
-			Action(name='Save', action='do_save', accelerator='Ctrl+S', image=GetIcon('save')),
-			Action(name='Save as...', action='do_save_as', accelerator='Shift+Ctrl+S', image=GetIcon('save')),
+			Action(name='&Save', action='do_save', accelerator='Ctrl+S', image=GetIcon('save')),
+			Action(name='Save &as...', action='do_save_as', accelerator='Shift+Ctrl+S', image=GetIcon('save')),
 			Separator(),
-			Action(name='Quit', action='_on_close', accelerator='Ctrl+Q', image=GetIcon('close')),
-			name='File',
+			Action(name='&Quit', action='_on_close', accelerator='Ctrl+Q', image=GetIcon('close')),
+			name='&File',
 		),
 		Menu(
-			Action(name='Add...', action='do_add', accelerator='Ctrl+A', image=GetIcon('add')),
-			name='Graphs',
+			Action(name='&Add...', action='do_add', accelerator='Ctrl+A', image=GetIcon('add')),
+			name='&Graphs',
 		),
 		Menu(
 			'zoom',
-				Action(name='Zoom to fit', action='do_fit', image=GetIcon('fit')),
+				Action(name='Zoom to &fit', action='do_fit', image=GetIcon('fit')),
 				# checked items cannot have icons
-				Action(name='Zoom rectangle', action='do_zoom', checked_when='zoom_checked', style='toggle'),
-				Action(name='Pan', action='do_pan', checked_when='pan_checked', style='toggle'),
+				Action(name='&Zoom rectangle', action='do_zoom', checked_when='zoom_checked', style='toggle'),
+				Action(name='&Pan', action='do_pan', checked_when='pan_checked', style='toggle'),
 			'presentation mode',
-				Action(name='Presentation mode', action='do_presentation_mode', checked_when='presentation_mode', style='toggle'),
-				Action(name='Full screen', action='do_fullscreen', enabled_when='presentation_mode', style='toggle', checked_when='figure_fullscreen', accelerator='F11'),
-			name='View',
+				Action(name='Presentation &mode', action='do_presentation_mode', checked_when='presentation_mode', style='toggle'),
+				Action(name='Full &screen', action='do_fullscreen', enabled_when='presentation_mode', style='toggle', checked_when='figure_fullscreen', accelerator='F11'),
+			name='&View',
 		),
 		Menu(
 			'export',
-				Action(name='Export...', action='do_export', accelerator='Ctrl+E', image=GetIcon('export')),
+				Action(name='&Export...', action='do_export', accelerator='Ctrl+E', image=GetIcon('export')),
 			'python',
-				Action(name='Python console...', action='do_python', image=GetIcon('python')),
-			name='Tools',
+				Action(name='&Python console...', action='do_python', image=GetIcon('python')),
+			name='&Tools',
 		),
 		Menu(
-			Action(name='About', action='do_about', image=GetIcon('about')),
-			name='Help',
+			Action(name='&About...', action='do_about', image=GetIcon('about')),
+			name='&Help',
 		)
 	)
 
