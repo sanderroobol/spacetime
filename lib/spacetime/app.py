@@ -289,7 +289,13 @@ class MainWindowHandler(Handler):
 		return self.do_open(info, mainwindow.recent_paths[i])
 
 	def do_save(self, info):
-		return self.do_save_as(info) # TODO: implement
+		mainwindow = info.ui.context['object']
+		if mainwindow.project_path:
+			if mainwindow.save_project(mainwindow.project_path):
+				return True
+			return False
+		else:
+			return self.do_save_as(info)
 
 	def do_save_as(self, info):
 		dlg = wx.FileDialog(info.ui.control, style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT, wildcard='Spacetime Project files (*.spacetime)|*.spacetime')
