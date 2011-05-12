@@ -80,13 +80,19 @@ class Storage(object):
 	def restore_window(self, id, ui):
 		info = self.data.windows[id]
 		if info.size:
-			ui.control.SetSize(info.size)
+			if info.size == 'max':
+				ui.control.Maximize(True)
+			else:
+				ui.control.SetSize(info.size)
 		if info.position:
 			ui.control.SetPosition(info.position)
 
 	def save_window(self, id, ui):
 		info = self.data.windows[id]
-		info.size = ui.control.GetSizeTuple()
+		if ui.control.IsMaximized() or ui.control.IsFullScreen():
+			info.size = 'max'
+		else:
+			info.size = ui.control.GetSizeTuple()
 		info.position = ui.control.GetPositionTuple()
 
 	def add_recent(self, id, value, max=10):

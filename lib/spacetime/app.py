@@ -372,6 +372,8 @@ class MainWindowHandler(Handler):
 		mainwindow = info.ui.context['object']
 		mainwindow.toggle_presentation_mode()
 
+	def do_fullscreen(self, info):
+		info.ui.context['object'].toggle_fullscreen()
 
 class FigureWindowHandler(uiutil.PersistantGeometryHandler):
 	def close(self, info, is_ok=None):
@@ -442,6 +444,7 @@ class App(HasTraits):
 	panelmgr = Instance(modules.PanelManager, args=())
 	mainwindow = Instance(MainWindow)
 	figurewindowui = None
+	figure_fullscreen = Bool(False)
 	prefs = Instance(prefs.Storage, args=())
 
 	pan_checked = Bool(False)
@@ -571,6 +574,7 @@ class App(HasTraits):
 			self.mainwindow = SimpleMainWindow(app=self)
 			self.figurewindowui = FigureWindow(mainwindow=self, figure=self.figure, prefs=self.prefs).edit_traits()
 		wx.CallAfter(self._connect_canvas_resize_event)
+		wx.CallAfter(lambda: self.figure.canvas.Bind(wx.EVT_KEY_DOWN, self.fullscreen_keyevent))
 
 	def toggle_presentation_mode(self):
 		if self.presentation_mode:
@@ -578,6 +582,14 @@ class App(HasTraits):
 		else:
 			self._open_presentation_mode()
 			self.update_title()
+
+	def toggle_fullscreen(self):
+		self.figure_fullscreen = not self.figure_fullscreen
+		self.figurewindowui.control.ShowFullScreen(self.figure_fullscreen)
+			
+	def fullscreen_keyevent(self, event):
+		if event.KeyCode == wx.WXK_F11 or (self.figure_fullscreen and event.KeyCode == wx.WXK_ESCAPE):
+			self.toggle_fullscreen()
 
 	def init_recent_menu(self):
 		frame = self.ui.control
@@ -651,6 +663,7 @@ class App(HasTraits):
 				Action(name='Pan', action='do_pan', checked_when='pan_checked', style='toggle'),
 			'presentation mode',
 				Action(name='Presentation mode', action='do_presentation_mode', checked_when='presentation_mode', style='toggle'),
+				Action(name='Full screen', action='do_fullscreen', enabled_when='presentation_mode', style='toggle', checked_when='figure_fullscreen', accelerator='F11'),
 			name='View',
 		),
 		Menu(
@@ -661,7 +674,7 @@ class App(HasTraits):
 			name='Tools',
 		),
 		Menu(
-			Action(name='About', action='do_about', tooltip='About', image=GetIcon('about')),
+			Action(name='About', action='do_about', image=GetIcon('about')),
 			name='Help',
 		)
 	)
