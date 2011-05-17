@@ -591,7 +591,7 @@ class App(HasTraits):
 
 	def toggle_fullscreen(self):
 		self.figure_fullscreen = not self.figure_fullscreen
-		self.figurewindowui.control.ShowFullScreen(self.figure_fullscreen)
+		self.figurewindowui.control.ShowFullScreen(self.figure_fullscreen, wx.FULLSCREEN_NOBORDER | wx.FULLSCREEN_NOCAPTION)
 			
 	def fullscreen_keyevent(self, event):
 		if event.KeyCode == wx.WXK_F11 or (self.figure_fullscreen and event.KeyCode == wx.WXK_ESCAPE):
