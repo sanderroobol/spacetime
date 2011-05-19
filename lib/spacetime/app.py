@@ -317,15 +317,16 @@ class MainWindowHandler(Handler):
 		return True
 		
 	def do_open(self, info, path=None):
+		mainwindow = info.ui.context['object']
 		if not self.close_project(info):
 			return
 		if path is None:
 			dlg = wx.FileDialog(info.ui.control, style=wx.FD_OPEN, wildcard='Spacetime Project files (*.spacetime)|*.spacetime')
+			dlg.Directory = mainwindow.prefs.get_path('project')
 			if dlg.ShowModal() != wx.ID_OK:
 				return
 			path = dlg.Path
-
-		mainwindow = info.ui.context['object']
+			mainwindow.prefs.set_path('project', dlg.Directory)
 		mainwindow.new_project()
 		try:
 			mainwindow.open_project(path)
@@ -372,10 +373,12 @@ class MainWindowHandler(Handler):
 			return self.do_save_as(info)
 
 	def do_save_as(self, info):
+		mainwindow = info.ui.context['object']
 		dlg = wx.FileDialog(info.ui.control, style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT, wildcard='Spacetime Project files (*.spacetime)|*.spacetime')
+		dlg.Directory = mainwindow.prefs.get_path('project')
 		if dlg.ShowModal() != wx.ID_OK:
 			return False
-		mainwindow = info.ui.context['object']
+		mainwindow.prefs.set_path('project', dlg.Directory)
 		filename, path = dlg.Filename, dlg.Path
 		if not path.endswith('.spacetime'):
 			path += '.spacetime'

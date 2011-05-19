@@ -113,3 +113,12 @@ class Storage(object):
 			return self.data.recent[id]
 		else:
 			return []
+
+	def set_path(self, id, value):
+		self.data.paths[id] = value
+
+	def get_path(self, id):
+		value = self.data.paths[id]
+		if value:
+			return value
+		return '.'
