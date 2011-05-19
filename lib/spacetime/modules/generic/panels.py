@@ -5,7 +5,7 @@ import wx
 import logging
 logger = logging.getLogger(__name__)
 
-from ... import uiutil
+from ... import uiutil, prefs
 
 from . import subplots
 from . import datasources
@@ -68,6 +68,7 @@ class SubplotPanel(SerializableTab):
 	number = 0
 
 	autoscale = Callable
+	prefs = prefs.Storage
 	parent = Any
 
 	# Magic attribute with "class level" "extension inheritance". Does this make any sense?

@@ -551,7 +551,7 @@ class App(HasTraits):
 		wx.CallAfter(lambda: self.figure.canvas.draw())
 
 	def add_tab(self, klass, serialized_data=None):
-		tab = klass(drawmgr=self.drawmgr, autoscale=self.plot.autoscale, parent=self.ui.control)
+		tab = klass(drawmgr=self.drawmgr, autoscale=self.plot.autoscale, prefs=self.prefs, parent=self.ui.control)
 		if serialized_data is not None:
 			tab.from_serialized(serialized_data)
 		self.tabs.append(tab)

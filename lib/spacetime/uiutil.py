@@ -71,12 +71,37 @@ class FileEditorImplementation(enthought.traits.ui.wx.file_editor.SimpleEditor):
 		                     wildcard = wildcard,
 		                     style=style)
 
-		dlg.SetPath( self._get_value() ) # this was dlg.SetFilename()
+		# modifications start here
+		path = self._get_value()
+		if path:
+			dlg.Path = path
+		else:
+			dlg.Directory = self.context_object.prefs.get_path(self.context_object.id)
 
 		return dlg
 
+	def show_file_dialog ( self, event ):
+		""" Displays the pop-up file dialog.
+		"""
+		if self.history is not None:
+			self.popup = self._create_file_popup()
+		else:
+			dlg       = self._create_file_dialog()
+			rc        = (dlg.ShowModal() == wx.ID_OK)
+			file_name = os.path.abspath( dlg.GetPath() )
+			dlg.Destroy()
+			if rc:
+				self.context_object.prefs.set_path(self.context_object.id, dlg.Directory)
+				if self.factory.truncate_ext:
+					file_name = os.path.splitext( file_name )[0]
+
+				self.value = file_name
+				self.update_editor()
+
 
 class FileEditor(enthought.traits.ui.basic_editor_factory.BasicEditorFactory, FileEditor):
+	prefs = Instance(prefs.Storage)
+
 	klass = FileEditorImplementation
 
 
