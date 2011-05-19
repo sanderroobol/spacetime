@@ -99,6 +99,13 @@ class PanelSelector(HasTraits):
 			if isinstance(s, PanelTreePanel):
 				yield s.id
 
+	@staticmethod
+	def run(mainwindow):
+		ps = PanelSelector(panelmgr=mainwindow.panelmgr)
+		ps.edit_traits(parent=mainwindow.ui.control, scrollable=False)
+		for id in ps.iter_selected():
+			mainwindow.add_tab(mainwindow.panelmgr.get_class_by_id(id))
+
 	traits_view = View(
 		Group(
 			Item('root', editor=TreeEditor(editable=True, selection_mode='extended', selected='selected', hide_root=True, nodes=[
@@ -176,6 +183,73 @@ class PythonWindow(uiutil.PersistantGeometry):
 		handler=uiutil.PersistantGeometryHandler(),
 	)
 
+
+class GraphManager(HasTraits):
+	mainwindow = Instance(HasTraits)
+	tabs = DelegatesTo('mainwindow')
+	tab_labels = Property(depends_on='tabs')
+	selected = Int(-1)
+	selected_any = Property(depends_on='selected')
+	selected_not_first = Property(depends_on='selected')
+	selected_not_last = Property(depends_on='selected, tab_labels')
+	add = Event
+	remove = Event
+	move_up = Event
+	move_down = Event
+
+	def _mainwindow_default(self):
+		class DummyMainWindow(HasTraits):
+			tabs = List(Any)
+		return DummyMainWindow()
+
+	def _get_tab_labels(self):
+		return [t.label for t in self.tabs[1:]]
+
+	def _get_selected_any(self):
+		return self.selected >= 0
+
+	def _get_selected_not_first(self):
+		return self.selected > 0
+
+	def _get_selected_not_last(self):
+		return 0 <= self.selected < len(self.tab_labels) - 1
+
+	def _add_fired(self):
+		PanelSelector.run(self.mainwindow)
+		self.selected = len(self.tab_labels) - 1
+
+	def _remove_fired(self):
+		del self.tabs[self.selected + 1]
+
+	def _move_up_fired(self):
+		selected = self.selected + 1
+		self.mainwindow.tabs = self.tabs[:selected-1] + [self.tabs[selected]] + [self.tabs[selected-1]] + self.tabs[selected+1:]
+		self.selected = selected - 2
+
+	def _move_down_fired(self):	
+		selected = self.selected + 1
+		self.mainwindow.tabs = self.tabs[:selected] + [self.tabs[selected+1]] + [self.tabs[selected]] + self.tabs[selected+2:]
+		self.selected = selected
+
+	traits_view = View(
+		Group(
+			Item('tab_labels', editor=ListStrEditor(editable=False, selected_index='selected')),
+			HGroup(
+				Item('add', editor=ButtonEditor()),
+				Item('remove', editor=ButtonEditor(), enabled_when='selected_any'),
+				Item('move_up', editor=ButtonEditor(), enabled_when='selected_not_first'),
+				Item('move_down', editor=ButtonEditor(), enabled_when='selected_not_last'),
+				show_labels=False,
+			),
+			show_labels=False,
+		),
+		height=400, width=400,
+		resizable=True,
+		title='Manage graphs',
+		kind='livemodal',
+		buttons=[OKButton],
+	)
+	
 
 ICON_PATH = [os.path.join(os.path.dirname(__file__), 'icons')]
 def GetIcon(id):
@@ -317,11 +391,7 @@ class MainWindowHandler(Handler):
 		return False
 
 	def do_add(self, info):
-		mainwindow = info.ui.context['object']
-		ps = PanelSelector(panelmgr=mainwindow.panelmgr)
-		ps.edit_traits(parent=info.ui.control, scrollable=False)
-		for id in ps.iter_selected():
-			mainwindow.add_tab(mainwindow.panelmgr.get_class_by_id(id))
+		PanelSelector.run(mainwindow=info.ui.context['object'])
 
 	def do_python(self, info):
 		mainwindow = info.ui.context['object']
@@ -381,6 +451,12 @@ class MainWindowHandler(Handler):
 	def do_fullscreen(self, info):
 		info.ui.context['object'].toggle_fullscreen()
 
+	def do_graphmanager(self, info):
+		mainwindow = info.ui.context['object']
+		with mainwindow.drawmgr.hold():
+			GraphManager(mainwindow=mainwindow).edit_traits(parent=info.ui.control)
+
+
 class FigureWindowHandler(uiutil.PersistantGeometryHandler):
 	def close(self, info, is_ok=None):
 		super(FigureWindowHandler, self).close(info, is_ok)
@@ -423,7 +499,7 @@ class SplitMainWindow(MainWindow):
 	traits_view = View(
 		HSplit(
 			Item('figure', width=600, editor=MPLFigureEditor(status='status'), dock='vertical'),
-			Item('tabs', style='custom', editor=ListEditor(use_notebook=True, deletable=True, page_name='.label')),
+			Item('tabs', style='custom', editor=ListEditor(use_notebook=True, page_name='.label')),
 			show_labels=False,
 		)
 	)
@@ -435,7 +511,7 @@ class SimpleMainWindow(MainWindow):
 
 	traits_view = View(
 		Group(
-			Item('tabs', style='custom', editor=ListEditor(use_notebook=True, deletable=True, page_name='.label')),
+			Item('tabs', style='custom', editor=ListEditor(use_notebook=True, page_name='.label')),
 			show_labels=False,
 		)
 	)
@@ -659,6 +735,7 @@ class App(HasTraits):
 		),
 		Menu(
 			Action(name='&Add...', action='do_add', accelerator='Ctrl+A', image=GetIcon('add')),
+			Action(name='&Manage...', action='do_graphmanager'),
 			name='&Graphs',
 		),
 		Menu(
