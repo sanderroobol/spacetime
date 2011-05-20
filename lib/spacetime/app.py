@@ -100,11 +100,13 @@ class PanelSelector(HasTraits):
 				yield s.id
 
 	@staticmethod
-	def run(mainwindow):
+	def run(mainwindow, live=True):
 		ps = PanelSelector(panelmgr=mainwindow.panelmgr)
 		ps.edit_traits(parent=mainwindow.ui.control, scrollable=False)
-		for id in ps.iter_selected():
-			mainwindow.add_tab(mainwindow.panelmgr.get_class_by_id(id))
+		tabs = [mainwindow.get_new_tab(mainwindow.panelmgr.get_class_by_id(id)) for id in ps.iter_selected()]
+		if live:
+			mainwindow.tabs.extend(tabs)
+		return tabs
 
 	traits_view = View(
 		Group(
@@ -186,7 +188,7 @@ class PythonWindow(uiutil.PersistantGeometry):
 
 class GraphManager(HasTraits):
 	mainwindow = Instance(HasTraits)
-	tabs = DelegatesTo('mainwindow')
+	tabs = List(Instance(modules.generic.panels.Tab))
 	tab_labels = Property(depends_on='tabs')
 	selected = Int(-1)
 	selected_any = Property(depends_on='selected')
@@ -196,11 +198,6 @@ class GraphManager(HasTraits):
 	remove = Event
 	move_up = Event
 	move_down = Event
-
-	def _mainwindow_default(self):
-		class DummyMainWindow(HasTraits):
-			tabs = List(Any)
-		return DummyMainWindow()
 
 	def _get_tab_labels(self):
 		return [t.label for t in self.tabs[1:]]
@@ -215,7 +212,7 @@ class GraphManager(HasTraits):
 		return 0 <= self.selected < len(self.tab_labels) - 1
 
 	def _add_fired(self):
-		PanelSelector.run(self.mainwindow)
+		self.tabs.extend(PanelSelector.run(self.mainwindow, live=False))
 		self.selected = len(self.tab_labels) - 1
 
 	def _remove_fired(self):
@@ -231,15 +228,29 @@ class GraphManager(HasTraits):
 		self.tabs[selected], self.tabs[selected+1] = self.tabs[selected+1], self.tabs[selected]
 		self.selected = selected
 
+	@staticmethod
+	def run(mainwindow, parent=None):
+		# get non-live behaviour by maintaining our own copy of mainwindow.tabs
+		gm = GraphManager(mainwindow=mainwindow)
+		gm.tabs = [t for t in mainwindow.tabs]
+		with mainwindow.drawmgr.hold():
+			if gm.edit_traits(parent=parent).result:
+				mainwindow.tabs = gm.tabs
+
 	traits_view = View(
-		Group(
+		HGroup(
 			Item('tab_labels', editor=ListStrEditor(editable=False, selected_index='selected')),
-			HGroup(
-				Item('add', editor=ButtonEditor()),
-				Item('remove', editor=ButtonEditor(), enabled_when='selected_any'),
-				Item('move_up', editor=ButtonEditor(), enabled_when='selected_not_first'),
-				Item('move_down', editor=ButtonEditor(), enabled_when='selected_not_last'),
-				show_labels=False,
+			VGroup(
+				Group(
+					Item('add', editor=ButtonEditor()),
+					Item('remove', editor=ButtonEditor(), enabled_when='selected_any'),
+					show_labels=False,
+				),
+				Group(
+					Item('move_up', editor=ButtonEditor(), enabled_when='selected_not_first'),
+					Item('move_down', editor=ButtonEditor(), enabled_when='selected_not_last'),
+					show_labels=False,
+				),
 			),
 			show_labels=False,
 		),
@@ -247,7 +258,7 @@ class GraphManager(HasTraits):
 		resizable=True,
 		title='Manage graphs',
 		kind='livemodal',
-		buttons=[OKButton],
+		buttons=OKCancelButtons,
 	)
 	
 
@@ -457,9 +468,7 @@ class MainWindowHandler(Handler):
 		info.ui.context['object'].toggle_fullscreen()
 
 	def do_graphmanager(self, info):
-		mainwindow = info.ui.context['object']
-		with mainwindow.drawmgr.hold():
-			GraphManager(mainwindow=mainwindow).edit_traits(parent=info.ui.control)
+		GraphManager.run(mainwindow=info.ui.context['object'], parent=info.ui.control)
 
 
 class FigureWindowHandler(uiutil.PersistantGeometryHandler):
@@ -552,8 +561,11 @@ class App(HasTraits):
 		# make a closure on self so figure.canvas can be changed in the meantime
 		wx.CallAfter(lambda: self.figure.canvas.draw())
 
+	def get_new_tab(self, klass):
+		return klass(drawmgr=self.drawmgr, autoscale=self.plot.autoscale, prefs=self.prefs, parent=self.ui.control)
+
 	def add_tab(self, klass, serialized_data=None):
-		tab = klass(drawmgr=self.drawmgr, autoscale=self.plot.autoscale, prefs=self.prefs, parent=self.ui.control)
+		tab = self.get_new_tab(klass)
 		if serialized_data is not None:
 			tab.from_serialized(serialized_data)
 		self.tabs.append(tab)
@@ -740,7 +752,7 @@ class App(HasTraits):
 		),
 		Menu(
 			Action(name='&Add...', action='do_add', accelerator='Ctrl+A', image=GetIcon('add')),
-			Action(name='&Manage...', action='do_graphmanager'),
+			Action(name='&Manage...', action='do_graphmanager', image=GetIcon('manage')),
 			name='&Graphs',
 		),
 		Menu(
@@ -772,9 +784,10 @@ class App(HasTraits):
 			Action(name='New', action='do_new', tooltip='New project', image=GetIcon('new')),
 			Action(name='Open', action='do_open', tooltip='Open project', image=GetIcon('open')),
 			Action(name='Save', action='do_save', tooltip='Save project', image=GetIcon('save')),
-		'add',
+		'graphs',
 			Action(name='Add', action='do_add', tooltip='Add graph', image=GetIcon('add')),
-		'graph',
+			Action(name='Manage', action='do_graphmanager', tooltip='Graph manager', image=GetIcon('manage')),
+		'view',
 			Action(name='Fit', action='do_fit', tooltip='Zoom to fit', image=GetIcon('fit')),
 			Action(name='Zoom', action='do_zoom', tooltip='Zoom rectangle', image=GetIcon('zoom'), checked_when='zoom_checked', style='toggle'),
 			Action(name='Pan', action='do_pan', tooltip='Pan', image=GetIcon('pan'), checked_when='pan_checked', style='toggle'),
