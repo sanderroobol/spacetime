@@ -412,8 +412,10 @@ class MainWindowHandler(Handler):
 		default_file = "image." + canvas.get_default_filetype()
 		dlg = wx.FileDialog(info.ui.control, "Save to file", "", default_file, filetypes, wx.SAVE|wx.OVERWRITE_PROMPT)
 		dlg.SetFilterIndex(filter_index)
+		dlg.Directory = mainwindow.prefs.get_path('export')
 		if dlg.ShowModal() == wx.ID_OK:
 			dirname  = dlg.GetDirectory()
+			mainwindow.prefs.set_path('export', dirname)
 			filename = dlg.GetFilename()
 			format = exts[dlg.GetFilterIndex()]
 			basename, ext = os.path.splitext(filename)
