@@ -100,8 +100,6 @@ class FileEditorImplementation(enthought.traits.ui.wx.file_editor.SimpleEditor):
 
 
 class FileEditor(enthought.traits.ui.basic_editor_factory.BasicEditorFactory, FileEditor):
-	prefs = Instance(prefs.Storage)
-
 	klass = FileEditorImplementation
 
 

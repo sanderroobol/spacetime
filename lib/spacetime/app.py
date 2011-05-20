@@ -223,12 +223,12 @@ class GraphManager(HasTraits):
 
 	def _move_up_fired(self):
 		selected = self.selected + 1
-		self.mainwindow.tabs = self.tabs[:selected-1] + [self.tabs[selected]] + [self.tabs[selected-1]] + self.tabs[selected+1:]
+		self.tabs[selected-1], self.tabs[selected] = self.tabs[selected], self.tabs[selected-1]
 		self.selected = selected - 2
 
 	def _move_down_fired(self):	
 		selected = self.selected + 1
-		self.mainwindow.tabs = self.tabs[:selected] + [self.tabs[selected+1]] + [self.tabs[selected]] + self.tabs[selected+2:]
+		self.tabs[selected], self.tabs[selected+1] = self.tabs[selected+1], self.tabs[selected]
 		self.selected = selected
 
 	traits_view = View(
