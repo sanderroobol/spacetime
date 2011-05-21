@@ -201,7 +201,7 @@ class MultiTrendFormatter(object):
 
 
 class MultiTrend(YAxisHandling, Subplot):
-	legend = True
+	legend = 'best'
 	legendprops = matplotlib.font_manager.FontProperties(size='medium')
 
 	def __init__(self, data=None, formatter=None):
@@ -244,7 +244,7 @@ class MultiTrend(YAxisHandling, Subplot):
 
 	def draw_legend(self):
 		if self.legend and self.axes and self.axes.get_legend_handles_labels()[0]:
-			self.axes.legend(prop=self.legendprops)
+			self.axes.legend(loc=self.legend, prop=self.legendprops)
 
 
 class DoubleMultiTrend(MultiTrend, DoubleYAxisHandling):

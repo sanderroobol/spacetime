@@ -120,7 +120,7 @@ class SubplotPanel(SerializableTab):
 
 class TimeTrendPanel(SubplotPanel):
 	plotfactory = subplots.MultiTrend
-	legend = Bool(True)
+	legend = Enum('auto', 'off', 'upper right', 'upper left', 'lower left', 'lower right', 'center left', 'center right', 'lower center', 'upper center', 'center')
 	ylimits = Instance(uiutil.LogAxisLimits, args=())
 	yauto = DelegatesTo('ylimits', 'auto')
 	ymin = DelegatesTo('ylimits', 'min')
@@ -173,7 +173,13 @@ class TimeTrendPanel(SubplotPanel):
 		self.yauto = True
 
 	def _legend_changed(self):
-		self.plot.set_legend(self.legend)
+		if self.legend == 'off':
+			legend = False
+		elif self.legend == 'auto':
+			legend = 'best'
+		else:
+			legend = self.legend
+		self.plot.set_legend(legend)
 		self.update()
 
 	left_yaxis_group = Group(
