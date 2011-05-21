@@ -105,7 +105,11 @@ class XAxisHandling(object):
 		self.xlim_min = min
 		self.xlim_max = max
 		self.xlim_auto = auto
-		self.xlim_rescale()
+		try:
+			self.xlim_rescale()
+		except util.SharedXError:
+			# this is needed for graphs that can enable/disable the shared x axis
+			pass
 
 	def xlim_rescale(self):
 		if not self.axes:

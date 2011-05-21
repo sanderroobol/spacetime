@@ -182,19 +182,27 @@ class CameraTrendPanel(DoubleTimeTrendPanel, CameraPanel, XlimitsPanel):
 
 	averaging = Bool(True)
 	direction = Enum(1, 2, 3)
-	fft = Bool(False)
-	not_fft = Property(depends_on='fft')
 
-	traits_saved = 'averaging', 'fft'
+	xaxis = Property(depends_on='channels')
+	xaxis_selected = List(['time'])
+	prev_xaxis_selected = None
+	fft = Property(depends_on='xaxis_selected')
+	not_fft = Property(depends_on='fft')
+	independent_x = Property(depends_on='xaxis_selected')
+
+	traits_saved = 'averaging', 'xaxis_selected'
+
+	def _get_fft(self):
+		return self.xaxis_selected[0] == 'fft'
 
 	def _get_not_fft(self):
 		return not self.fft
 
-	def _fft_changed(self):
-		self.plot.fft = self.fft
-		with self.drawmgr.hold():
-			self.settings_changed()
-			self.redraw_figure()
+	def _get_independent_x(self):
+		return self.xaxis_selected[0] != 'time'
+
+	def _get_xaxis(self):
+		return [('time', 'Time'), ('fft', 'Frequency (FFT)')] + [(i, 'Channel {0}'.format(i)) for i in self.channels]
 
 	def reset_autoscale(self):
 		DoubleTimeTrendPanel.reset_autoscale(self)
@@ -219,7 +227,25 @@ class CameraTrendPanel(DoubleTimeTrendPanel, CameraPanel, XlimitsPanel):
 			self.lastframe = min(self.framecount, 25)
 			self.settings_changed()
 
-	@on_trait_change('averaging, firstframe, lastframe, stepframe, selected_primary_channels, selected_secondary_channels')
+	def _xaxis_selected_changed(self):
+		with self.drawmgr.hold():
+			self._firstframe_changed() # this makes sure that firstframe <= lastframe and calls settings_changed()
+			new = self.xaxis_selected[0]
+			if self.prev_xaxis_selected is None or (
+					self.prev_xaxis_selected != new
+					and 'time' in (self.prev_xaxis_selected, new)
+				):
+				self.redraw_figure()
+			self.prev_xaxis_selected = new
+
+	def _firstframe_changed(self):
+		if (self.fft and self.firstframe != self.lastframe) or self.firstframe > self.lastframe:
+			self.lastframe = self.firstframe
+			# settings_changed() will be triggered because lastframe changes
+		else:
+			self.settings_changed()
+
+	@on_trait_change('averaging, lastframe, stepframe, selected_primary_channels, selected_secondary_channels')
 	def settings_changed(self):
 		if not self.data:
 			return
@@ -229,11 +255,14 @@ class CameraTrendPanel(DoubleTimeTrendPanel, CameraPanel, XlimitsPanel):
 		else:
 			data = self.data.selectframes(self.firstframe, self.lastframe, self.stepframe)
 		self.data.averaging = self.averaging
-		self.data.fft = self.fft
-		self.plot.set_data(
-			data.selectchannels(lambda chan: chan.id in self.selected_primary_channels),
-			data.selectchannels(lambda chan: chan.id in self.selected_secondary_channels),
-		)
+		self.plot.fft = self.data.fft = self.fft
+
+		y1 = data.selectchannels(lambda chan: chan.id in self.selected_primary_channels)
+		y2 = data.selectchannels(lambda chan: chan.id in self.selected_secondary_channels)
+		if self.xaxis_selected[0] in self.channels:
+			self.plot.set_data(y1, y2, data.selectchannels(lambda chan: chan.id == self.xaxis_selected[0]))
+		else:
+			self.plot.set_data(y1, y2)
 		self.redraw()
 
 	traits_view = PanelView(
@@ -245,17 +274,18 @@ class CameraTrendPanel(DoubleTimeTrendPanel, CameraPanel, XlimitsPanel):
 			Item('stepframe', label='Key frame mode', enabled_when='not_fft'),
 			Item('direction', editor=EnumEditor(values={1:'1:L2R', 2:'2:R2L', 3:'3:both'})),
 			Item('averaging', tooltip='Per-line averaging', enabled_when='not_fft'),
-			Item('fft', label='FFT', tooltip='Perform Fast Fourier Transform'),
 			Item('legend'),
 			show_border=True,
 			label='General',
 		),
-		Include('left_yaxis_group'),
-		Include('right_yaxis_group'),
 		Group(
-			Item('xlimits', style='custom', label='Limits', enabled_when='fft'),
+			Item('xaxis_selected', label='Data', editor=CheckListEditor(name='xaxis')),
+			Item('xlimits', style='custom', label='Limits', enabled_when='independent_x'),
 			show_border=True,
 			label='X-axis',
 		),
+		Include('left_yaxis_group'),
+		Include('right_yaxis_group'),
+
 		Include('relativistic_group'),
 	)
