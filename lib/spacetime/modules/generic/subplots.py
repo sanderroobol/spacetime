@@ -276,7 +276,7 @@ class DoubleMultiTrend(MultiTrend, DoubleYAxisHandling):
 			labels.extend(labels2)
 			self.axes.legend_ = None
 			if len(handles):
-				self.secondaryaxes.legend(handles, labels, prop=self.legendprops)
+				self.secondaryaxes.legend(handles, labels, loc=self.legend, prop=self.legendprops)
 
 	def set_legend(self, legend):
 		if not legend and self.secondaryaxes:
