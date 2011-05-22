@@ -7,13 +7,11 @@ from ... import util
 
 class Subplot(object):
 	axes = None
-	marker_callbacks = None
 	time_offset = 0.
 	time_factor = 1.
 
 	def __init__(self, data=None):
 		self.data = data
-		self.marker_callbacks = []
 
 	def set_data(self, data):
 		self.data = data
@@ -36,7 +34,7 @@ class Subplot(object):
 		# The quick parameter is set when the entire figure is being cleared;
 		# in this case it is sufficient to only clear the internal state of the
 		# Subplot and leave the axes untouched
-		self.clear_other_markers(quick=quick)
+		pass
 
 	@staticmethod
 	def autoscale_x(axes):
@@ -58,30 +56,12 @@ class Subplot(object):
 		YL = axes.yaxis.get_major_locator().view_limits(y0, y1)
 		axes.set_ybound(YL)
 
-	def clear_other_markers(self, quick=False):
-		if not quick:
-			for m in self.marker_callbacks:
-				if m is not None:
-					m()
-		self.marker_callbacks = []
+	def draw_markers(self):
+		for marker in self.parent.markers:
+			self.draw_marker(marker)
 
-	def set_other_markers(self, left, right=None):
-		for sp in self.parent.subplots:
-			if sp is self:
-				continue
-			self.marker_callbacks.append(sp.set_marker(left, right))
-
-	def set_marker(self, left, right=None):
-		return self.set_axes_marker(self.axes, left, right)
-	
-	@staticmethod
-	def set_axes_marker(ax, left, right):
-		if right is not None:
-			vspan = ax.axvspan(left, right, color='silver', zorder=-1e9)
-			return lambda: ax.patches.remove(vspan)
-		else:
-			line = ax.axvline(left, color='silver', zorder=-1e9)
-			return lambda: ax.lines.remove(line)
+	def draw_marker(self, marker):
+		raise NotImplementedError
 
 	def adjust_time(self, offset, factor=1.):
 		self.time_offset = offset
@@ -253,6 +233,15 @@ class MultiTrend(YAxisHandling, Subplot):
 		if self.legend and self.axes and self.axes.get_legend_handles_labels()[0]:
 			self.axes.legend(loc=self.legend, prop=self.legendprops)
 
+	def draw_marker(self, marker):
+		ax = self.axes
+		if marker.interval():
+			vspan = ax.axvspan(marker.left, marker.right, color='silver', zorder=-1e9)
+			marker.add_callback(lambda: ax.patches.remove(vspan))
+		else:
+			line = ax.axvline(marker.left, color='silver', zorder=-1e9)
+			marker.add_callback(lambda: ax.lines.remove(line))
+
 
 class DoubleMultiTrend(MultiTrend, DoubleYAxisHandling):
 	def __init__(self, data=None, secondarydata=None, formatter=None):
@@ -311,6 +300,7 @@ class Image(Subplot):
 	tzoom = 1
 	mode = 'film strip'
 	rotate = True
+	marker = None
 
 	def __init__(self, *args, **kwargs):
 		self.vspans = []
@@ -347,7 +337,7 @@ class Image(Subplot):
 					image = numpy.rot90(image, 3)
 				self.axes.imshow(image, aspect='equal', cmap=self.colormap, interpolation=self.interpolation)
 
-				self.set_other_markers(tstart, tend)
+				self.marker = self.parent.markers.add(tstart, tend)
 			else:
 				tendzoom = tstart + (tend - tstart) * self.tzoom
 				self.axes.imshow(numpy.rot90(d.image), extent=(tstart, tendzoom, 0, 1), aspect='auto', cmap=self.colormap, interpolation=self.interpolation)
@@ -376,6 +366,9 @@ class Image(Subplot):
 			if self.axes:
 				del self.axes.lines[:], self.axes.images[:], self.axes.patches[:]
 			self.axes.relim()
+			if self.marker:
+				self.parent.markers.remove(self.marker)
+		self.marker = None
 		super(Image, self).clear(quick)
 
 	def set_colormap(self, colormap):
@@ -402,6 +395,5 @@ class Image(Subplot):
 		else:
 			im.set_data(numpy.rot90(im._A))
 
-	def set_marker(self, left, right=None):
-		# don't allow markers on this kind of plot, doesn't play nice with clear()
-		return None
+	def draw_marker(self, left, right=None):
+		pass

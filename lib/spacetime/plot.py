@@ -3,6 +3,58 @@ import matplotlib, matplotlib.figure, matplotlib.dates
 
 from . import util
 
+class Marker(object):
+	def __init__(self, left, right=None):
+		self.callbacks = []
+		self._set_params(left, right)
+
+	def add_callback(self, callback):
+		self.callbacks.append(callback)
+
+	def clear(self):
+		for callback in self.callbacks:
+			callback()
+
+	def draw(self):
+		for s in self.plot.subplots:
+			s.draw_marker(self)
+
+	def _set_params(self, left, right=None):
+		self.clear()
+		self.left = left
+		self.right = right
+
+	def move(self, left, right=None):
+		self._set_params(left, right)
+		self.draw()
+
+	def interval(self):
+		return self.right is not None
+
+
+class Markers(object):
+	def __init__(self, parent):
+		self.parent = parent
+		self.clear()
+
+	def add(self, *args, **kwargs):
+		marker = Marker(*args, **kwargs)
+		marker.plot = self.parent
+		self.markers.append(marker)
+		marker.draw()
+		return marker
+
+	def clear(self):
+		self.markers = []
+
+	def remove(self, marker):
+		self.markers.remove(marker)
+		marker.clear()
+
+	def __iter__(self):
+		return iter(self.markers)
+	
+
 class Plot(object):
 	left = .75
 	right = .75
@@ -21,6 +73,7 @@ class Plot(object):
 
 	def __init__(self, figure):
 		self.figure = figure
+		self.markers = Markers(self)
 		self.clear()
 
 	@classmethod
@@ -49,6 +102,7 @@ class Plot(object):
 		for p in self.subplots:
 			p.clear(quick=True)
 		self.figure.clear()
+		self.markers.clear()
 		self.subplots = []
 		self.independent_axes = []
 		self.shared_axes = []
