@@ -1,3 +1,4 @@
+import itertools
 import numpy
 
 from ..generic.subplots import DoubleMultiTrend, XAxisHandling
@@ -7,8 +8,6 @@ from ... import util
 class CameraTrend(XAxisHandling, DoubleMultiTrend):
 	xdata = None
 	fft = False
-
-	marker_points = None, None
 
 	def set_data(self, y1, y2, x=None):
 		super(CameraTrend, self).set_data(y1, y2)
@@ -28,7 +27,7 @@ class CameraTrend(XAxisHandling, DoubleMultiTrend):
 
 	def setup(self):
 		super(CameraTrend, self).setup()
-		if (self.xdata or self.fft)and self.xlim_callback:
+		if (self.xdata or self.fft) and self.xlim_callback:
 			self.axes.callbacks.connect('xlim_changed', self.xlim_callback)
 
 	def get_xdata(self, chandata):
@@ -37,51 +36,30 @@ class CameraTrend(XAxisHandling, DoubleMultiTrend):
 		else:
 			return super(CameraTrend, self).get_xdata(chandata)
 
-	# this needs some more work to get properly working again, disable for now if it's not a simple multitrend
-	def set_marker(self, left, right=None):
-		if not self.fft and not self.xdata:
-			return super(CameraTrend, self).set_marker(left, right)
+	def draw(self):
+		super(CameraTrend, self).draw()
+		if self.xdata:
+			self.parent.markers.redraw()
 
-"""
-	def clear(self, quick=False):
-		if not quick:
-			self.clear_marker()
-			#self.axes.relim()
-		super(CameraTrend, self).clear(quick)
-
-	def clear_marker(self):
-		left, right = self.marker_points
-		if left:
-			self.axes.lines.remove(left)
-		if right:
-			self.axes.lines.remove(right)
-		self.marker_points = None, None
-
-	def set_marker(self, left, right=None):
-
+	def draw_marker(self, marker):
 		if self.fft:
 			return
 		elif not self.xdata:
-			return super(CameraTrend, self).set_marker(left, right)
+			return super(CameraTrend, self).draw_marker(marker)
 
-		self.clear_marker()
+		points = []
 
-		if left is None:
-			return
-
-		index_left = numpy.searchsorted(self.x.time, left, 'left')
-		if index_left == self.x.time.size:
+		index_left = numpy.searchsorted(self.xdata.time, marker.left, 'left')
+		if index_left == self.xdata.time.size:
 			index_left -= 1
+		for ydata in itertools.chain(self.data.iterchannels(), self.secondarydata.iterchannels()):
+			points.append(self.axes.plot([self.xdata.value[index_left]], [ydata.value[index_left]], 'go', zorder=1e9)[0])
 
-		left_point = self.axes.plot([self.xdata.value[index_left]], [self.data.value[index_left]], 'go')[0]
-		if right is None:
-			self.marker_points = left_point, None
-		else:
-			index_right = numpy.searchsorted(self.x.time, right, 'right')
-			if index_right == self.x.time.size:
+		if marker.interval():
+			index_right = numpy.searchsorted(self.xdata.time, marker.right, 'right')
+			if index_right == self.xdata.time.size:
 				index_right -= 1
-			right_point = self.axes.plot([self.xdata.value[index_right]], [self.data.value[index_right]], 'ro')[0]
-			self.marker_points = left_point, right_point
+			for ydata in itertools.chain(self.data.iterchannels(), self.secondarydata.iterchannels()):
+				points.append(self.axes.plot([self.xdata.value[index_right]], [ydata.value[index_right]], 'ro', zorder=1e9)[0])
 
-		return self.clear_marker
-"""
+		marker.add_callback(lambda:	[self.axes.lines.remove(point) for point in points if point in self.axes.lines])

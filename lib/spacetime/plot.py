@@ -44,6 +44,11 @@ class Markers(object):
 		marker.draw()
 		return marker
 
+	def redraw(self):
+		for marker in self.markers:
+			marker.clear()
+			marker.draw()
+
 	def clear(self):
 		self.markers = []
 
