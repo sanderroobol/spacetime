@@ -45,21 +45,15 @@ class GasCabinet(DoubleMultiTrend):
 			elif all(chan.startswith('BPC') for chan in self.secondarydata.iterchannelnames()):
 				self.secondaryaxes.set_ylabel('Pressure (bar)')
 
-	def draw_legend(self):
-		if self.legend:
-			handles1, labels1 = self.axes.get_legend_handles_labels()
-			handles2, labels2 = self.secondaryaxes.get_legend_handles_labels()
-
-			handles = []
-			labels = []
-			previd = None
-			for (h, l) in zip(handles1 + handles2, labels1 + labels2):
-				id = l.split()[0]
-				if id != previd:
-					handles.append(h)
-					labels.append(id)
-					previd = id
-
-			self.axes.legend_ = None
-			if len(handles):
-				self.secondaryaxes.legend(handles, labels, loc=self.legend, prop=self.legendprops)
+	def get_legend_items(self):
+		handles, labels = super(GasCabinet, self).get_legend_items()
+		newhandles = []
+		newlabels = []
+		previd = None
+		for (h, l) in zip(handles, labels):
+			id = l.split()[0]
+			if id != previd:
+				newhandles.append(h)
+				newlabels.append(id)
+				previd = id
+		return newhandles, newlabels

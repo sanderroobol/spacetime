@@ -227,11 +227,19 @@ class MultiTrend(YAxisHandling, Subplot):
 		if legend:
 			self.draw_legend()
 		elif self.axes:
-			self.axes.legend_ = None
+			self.get_legend_axes().legend_ = None
+
+	def get_legend_items(self):
+		return self.axes.get_legend_handles_labels()
+
+	def get_legend_axes(self):
+		return self.axes
 
 	def draw_legend(self):
-		if self.legend and self.axes and self.axes.get_legend_handles_labels()[0]:
-			self.axes.legend(loc=self.legend, prop=self.legendprops)
+		if self.legend and self.axes:
+			handles, labels = self.get_legend_items()
+			if handles:
+				self.get_legend_axes().legend(handles, labels, loc=self.legend, prop=self.legendprops)
 
 	def draw_marker(self, marker):
 		ax = self.axes
@@ -267,21 +275,14 @@ class DoubleMultiTrend(MultiTrend, DoubleYAxisHandling):
 			if self.ylog2:
 				self.secondaryaxes.set_yscale('log')
 
-	def draw_legend(self):
-		if self.legend:
-			# manually join the legends for both y-axes
-			handles, labels = self.axes.get_legend_handles_labels()
-			handles2, labels2 = self.secondaryaxes.get_legend_handles_labels()
-			handles.extend(handles2)
-			labels.extend(labels2)
-			self.axes.legend_ = None
-			if len(handles):
-				self.secondaryaxes.legend(handles, labels, loc=self.legend, prop=self.legendprops)
+	def get_legend_items(self):
+		# manually join the legends for both y-axes
+		handles1, labels1 = self.axes.get_legend_handles_labels()
+		handles2, labels2 = self.secondaryaxes.get_legend_handles_labels()
+		return handles1 + handles2, labels1 + labels2
 
-	def set_legend(self, legend):
-		if not legend and self.secondaryaxes:
-			self.secondaryaxes.legend_ = None
-		super(DoubleMultiTrend, self).set_legend(legend)
+	def get_legend_axes(self):
+		return self.secondaryaxes
 
 	def set_axes(self, axes):
 		self.axes, self.secondaryaxes = axes[0]
