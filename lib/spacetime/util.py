@@ -39,3 +39,16 @@ def easyfft(data, sample_frequency):
 	z = z[freq > 0]       # FIXME: this could be simplified
 	freq = freq[freq > 0] # idem
 	return (freq, z * z.conj())
+
+
+class ContextManager(object):
+	def __init__(self, context, enter, exit):
+		self.context = context
+		self.enter = enter
+		self.exit = exit
+
+	def __enter__(self):
+		self.enter()
+
+	def __exit__(self, exc_type, exc_value, traceback):
+		self.exit(exc_type, exc_value, traceback)

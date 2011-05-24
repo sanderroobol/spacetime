@@ -1,4 +1,4 @@
 @echo off
-python -m spacetime.app --debug
+python -m spacetime.gui.main --debug
 echo.
 set /p=(press enter to quit)

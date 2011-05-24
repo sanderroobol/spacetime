@@ -6,11 +6,11 @@ TODO for 1.0
          - Subplot size hinting
          - X-axis labels and vertical spacing when using non-shared axes
 4. New: Relative / rezero'ed time axis
-5. Enh: Reorder app.py, uiutil.py and friends
 6. New: Axes labels (mostly y-axis, but also others)
 7. Enh: Interface redesign: decide what to do with the Main tab
 8. New: API docs and examples
 9. New: General text importer (tab/csv with flexible time parsing)
+10. Enh: relative paths in project files
 
 Unprioritized
 =============

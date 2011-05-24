@@ -6,7 +6,7 @@ from ..lpmcamera.panels import CameraTrendPanel
 from ..lpmcamera.datasources import Camera as CameraDataSource
 from ..lpmgascabinet import subplots as lpmsubplots
 from ..lpmgascabinet.datasources import LabviewMultiTrend
-from ... import uiutil
+from ...gui import support
 
 from . import subplots
 from . import datasources
@@ -31,7 +31,7 @@ class TPDirkPanel(DoubleTimeTrendPanel):
 			try:
 				self.data = self.datafactory(self.filename)
 			except:
-				uiutil.Message.file_open_failed(self.filename, parent=self.parent)
+				support.Message.file_open_failed(self.filename, parent=self.parent)
 				self.filename = ''
 				return
 			self.plot.set_data(self.data)
@@ -41,7 +41,7 @@ class TPDirkPanel(DoubleTimeTrendPanel):
 		return PanelView(
 			Group(
 				Item('visible'),
-				Item('filename', editor=uiutil.FileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),
+				Item('filename', editor=support.FileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),
 				Item('reload', show_label=False),
 				Item('legend'),
 				show_border=True,

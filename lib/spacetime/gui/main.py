@@ -1,14 +1,13 @@
 # keep this import at top to ensure proper matplotlib backend selection
-from .mplfigure import MPLFigureEditor
+from .figure import MPLFigureEditor, DrawManager
 
-from . import plot, modules, util, version, uiutil, prefs
+from .. import plot, modules, version, prefs
+from . import support, windows
 
 from enthought.traits.api import *
 from enthought.traits.ui.api import *
-from enthought.pyface.api import ImageResource
-import matplotlib.figure, matplotlib.transforms
+import matplotlib.figure
 import wx
-import datetime
 import json
 import os
 
@@ -16,121 +15,11 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class DateTimeSelector(HasTraits):
-	date = Date(datetime.date.today())
-	time = Time(datetime.time())
-	datetime = Property(depends_on='date, time')
-	mpldt = Property(depends_on='datetime')
-
-	def _get_datetime(self):
-		return util.localtz.localize(datetime.datetime.combine(self.date, self.time))
-
-	def _set_datetime(self, dt):
-		self.date = dt.date()
-		self.time = dt.time()
-
-	def _get_mpldt(self):
-		return util.mpldtfromdatetime(self.datetime)
-
-	def _set_mpldt(self, f):
-		self.datetime = util.datetimefrommpldt(f, tz=util.localtz)
-
-	def __str__(self):
-		return self.datetime.strftime('%Y-%m-%d %H:%M:%S.%f')
-
-	traits_view = View(
-		HGroup(
-			Item('time', editor=uiutil.TimeEditor()),
-			Item('date'),
-			show_labels=False,
-	))
-
-
-class PanelTreePanel(HasTraits):
-	id = Str
-	label = Str
-	desc = Str
-
-	traits_view = View(VGroup(
-			Item('label', style='readonly', emphasized=True),
-			Item('desc', style='readonly', resizable=True, editor=TextEditor(multi_line=True)),
-			show_labels=False,
-			scrollable=False,
-		),
-		width=100,
-	)
-
-
-class PanelTreeModule(HasTraits):
-	label = Str
-	desc = Str
-	panels = List(PanelTreePanel)
-
-	traits_view = View(VGroup(
-			Item('label', style='readonly', emphasized=True),
-			Item('desc', style='readonly', resizable=True, editor=TextEditor(multi_line=True)),
-			show_labels=False,
-		),
-		width=100,
-	)
-
-
-class PanelTreeRoot(HasTraits):
-	modules = List(PanelTreeModule)
-	traits_view = View()
-
-
-class PanelSelector(HasTraits):
-	panelmgr = Instance(modules.PanelManager)
-	selected = List()
-	root = Instance(PanelTreeRoot)
-
-	def _root_default(self):
-		modules = []
-		for name, panels in self.panelmgr.panels_by_module.iteritems():
-			treepanels = [PanelTreePanel(id=panel.id, label=panel.label, desc=panel.desc) for panel in panels]
-			if treepanels:
-				module = self.panelmgr.get_module_by_name(name)
-				modules.append(PanelTreeModule(label=module.label, desc=module.desc, panels=treepanels))
-		return PanelTreeRoot(modules=modules)
-
-	def iter_selected(self):
-		for s in self.selected:
-			if isinstance(s, PanelTreePanel):
-				yield s.id
-
-	@staticmethod
-	def run(mainwindow, live=True):
-		ps = PanelSelector(panelmgr=mainwindow.panelmgr)
-		ps.edit_traits(parent=mainwindow.ui.control, scrollable=False)
-		tabs = [mainwindow.get_new_tab(mainwindow.panelmgr.get_class_by_id(id)) for id in ps.iter_selected()]
-		if live:
-			mainwindow.tabs.extend(tabs)
-		return tabs
-
-	traits_view = View(
-		Group(
-			Item('root', editor=TreeEditor(editable=True, selection_mode='extended', selected='selected', hide_root=True, nodes=[
-				TreeNode(node_for=[PanelTreeRoot], auto_open=True, children='modules', label='label'),
-				TreeNode(node_for=[PanelTreeModule], auto_open=True, children='panels', label='label'),
-				TreeNode(node_for=[PanelTreePanel], label='label'),
-			])),
-			show_labels=False,
-			padding=5,
-		),
-		title='Select subgraph type',
-		height=400,
-		width=600,
-		buttons=OKCancelButtons,
-		kind='modal',
-	)
-
-
 class MainTab(modules.generic.panels.SerializableTab):
 	xauto = Bool(True)
 	not_xauto = Property(depends_on='xauto')
-	xmin = Instance(DateTimeSelector, args=())
-	xmax = Instance(DateTimeSelector, args=())
+	xmin = Instance(support.DateTimeSelector, args=())
+	xmax = Instance(support.DateTimeSelector, args=())
 	xmin_mpldt = DelegatesTo('xmin', 'mpldt')
 	xmax_mpldt = DelegatesTo('xmax', 'mpldt')
 	label = 'Main'
@@ -173,126 +62,7 @@ class MainTab(modules.generic.panels.SerializableTab):
 	))
 
 
-class PythonWindow(uiutil.PersistantGeometry):
-	prefs_id = 'python'
-	shell = PythonValue({})
-	traits_view = View(
-		Item('shell', show_label=False, editor=ShellEditor(share=False)),
-		title='Python console',
-		height=600,
-		width=500,
-		resizable=True,
-		handler=uiutil.PersistantGeometryHandler(),
-	)
-
-
-class GraphManager(HasTraits):
-	mainwindow = Instance(HasTraits)
-	tabs = List(Instance(modules.generic.panels.Tab))
-	tab_labels = Property(depends_on='tabs')
-	selected = Int(-1)
-	selected_any = Property(depends_on='selected')
-	selected_not_first = Property(depends_on='selected')
-	selected_not_last = Property(depends_on='selected, tab_labels')
-	add = Event
-	remove = Event
-	move_up = Event
-	move_down = Event
-
-	def _get_tab_labels(self):
-		return [t.label for t in self.tabs[1:]]
-
-	def _get_selected_any(self):
-		return self.selected >= 0
-
-	def _get_selected_not_first(self):
-		return self.selected > 0
-
-	def _get_selected_not_last(self):
-		return 0 <= self.selected < len(self.tab_labels) - 1
-
-	def _add_fired(self):
-		self.tabs.extend(PanelSelector.run(self.mainwindow, live=False))
-		self.selected = len(self.tab_labels) - 1
-
-	def _remove_fired(self):
-		del self.tabs[self.selected + 1]
-
-	def _move_up_fired(self):
-		selected = self.selected + 1
-		self.tabs[selected-1], self.tabs[selected] = self.tabs[selected], self.tabs[selected-1]
-		self.selected = selected - 2
-
-	def _move_down_fired(self):	
-		selected = self.selected + 1
-		self.tabs[selected], self.tabs[selected+1] = self.tabs[selected+1], self.tabs[selected]
-		self.selected = selected
-
-	@staticmethod
-	def run(mainwindow, parent=None):
-		# get non-live behaviour by maintaining our own copy of mainwindow.tabs
-		gm = GraphManager(mainwindow=mainwindow)
-		gm.tabs = [t for t in mainwindow.tabs]
-		with mainwindow.drawmgr.hold():
-			if gm.edit_traits(parent=parent).result:
-				mainwindow.tabs = gm.tabs
-
-	traits_view = View(
-		HGroup(
-			Item('tab_labels', editor=ListStrEditor(editable=False, selected_index='selected')),
-			VGroup(
-				Group(
-					Item('add', editor=ButtonEditor()),
-					Item('remove', editor=ButtonEditor(), enabled_when='selected_any'),
-					show_labels=False,
-				),
-				Group(
-					Item('move_up', editor=ButtonEditor(), enabled_when='selected_not_first'),
-					Item('move_down', editor=ButtonEditor(), enabled_when='selected_not_last'),
-					show_labels=False,
-				),
-			),
-			show_labels=False,
-		),
-		height=400, width=400,
-		resizable=True,
-		title='Manage graphs',
-		kind='livemodal',
-		buttons=OKCancelButtons,
-	)
-	
-
-ICON_PATH = [os.path.join(os.path.dirname(__file__), 'icons')]
-def GetIcon(id):
-	return ImageResource(id, search_path=ICON_PATH)
-
-
-class AboutWindow(HasTraits):
-	title = Str("{0} {1}".format(version.name, version.version))
-	desc = Str('Copyright 2010-2011 Leiden University.\nWritten by Sander Roobol <roobol@physics.leidenuniv.nl>.\n\nRedistribution outside Leiden University is not permitted.')
-
-	traits_view = View(
-		HGroup(
-			Group(
-				Item('none', editor=ImageEditor(image=GetIcon('spacetime-logo'))),
-				show_labels=False,
-				padding=5,
-			),
-			Group(
-				Item('title', emphasized=True, style='readonly'),
-				Item('desc', style='readonly', editor=TextEditor(multi_line=True)),
-				show_labels=False,
-				padding=5,
-			),
-		),
-		title='About {0}'.format(version.name),
-		buttons=[OKButton],
-		kind='modal',
-	)
-
-
 class MainWindowHandler(Handler):
-
 	def do_new(self, info):
 		if not self.close_project(info):
 			return False
@@ -342,7 +112,7 @@ class MainWindowHandler(Handler):
 		try:
 			mainwindow.open_project(path)
 		except:
-			uiutil.Message.file_open_failed(path, parent=info.ui.control)
+			gui.support.Message.file_open_failed(path, parent=info.ui.control)
 		mainwindow.prefs.add_recent('project', path)
 		mainwindow.rebuild_recent_menu()
 		mainwindow.update_title()
@@ -401,18 +171,18 @@ class MainWindowHandler(Handler):
 				mainwindow.update_title()
 				return True
 		except:
-			uiutil.Message.file_open_failed(path, parent=info.ui.control)
+			gui.support.Message.file_open_failed(path, parent=info.ui.control)
 		return False
 
 	def do_add(self, info):
-		PanelSelector.run(mainwindow=info.ui.context['object'])
+		windows.PanelSelector.run(mainwindow=info.ui.context['object'])
 
 	def do_python(self, info):
 		mainwindow = info.ui.context['object']
-		PythonWindow(prefs=mainwindow.prefs).edit_traits(parent=info.ui.control)
+		windows.PythonWindow(prefs=mainwindow.prefs).edit_traits(parent=info.ui.control)
 
 	def do_about(self, info):
-		AboutWindow().edit_traits(parent=info.ui.control)
+		windows.AboutWindow().edit_traits(parent=info.ui.control)
 
 	def do_export(self, info):
 		# mostly borrowed from Matplotlib's NavigationToolbar2Wx.save()
@@ -440,7 +210,7 @@ class MainWindowHandler(Handler):
 			try:
 				canvas.print_figure(path, format=format)
 			except:
-				uiutil.Message.file_save_failed(path, parent=info.ui.control)
+				gui.support.Message.file_save_failed(path, parent=info.ui.control)
 
 	def do_fit(self, info):
 		mainwindow = info.ui.context['object']
@@ -468,37 +238,8 @@ class MainWindowHandler(Handler):
 		info.ui.context['object'].toggle_fullscreen()
 
 	def do_graphmanager(self, info):
-		GraphManager.run(mainwindow=info.ui.context['object'], parent=info.ui.control)
+		windows.GraphManager.run(mainwindow=info.ui.context['object'], parent=info.ui.control)
 
-
-class FigureWindowHandler(uiutil.PersistantGeometryHandler):
-	def close(self, info, is_ok=None):
-		super(FigureWindowHandler, self).close(info, is_ok)
-		figurewindow = info.ui.context['object']
-		figurewindow.mainwindow._close_presentation_mode()
-		return True
-
-
-class FigureWindow(uiutil.PersistantGeometry):
-	prefs_id = 'figure'
-
-	mainwindow = Any
-	figure = Instance(matplotlib.figure.Figure)
-	status = DelegatesTo('mainwindow')
-
-	traits_view = View(
-		Group(
-			Item('figure', editor=MPLFigureEditor(status='status')),
-			show_labels=False,
-		),
-		resizable=True,
-		height=600, width=800,
-		buttons=NoButtons,
-		title=version.name,
-		statusbar='status',
-		icon=GetIcon('spacetime-icon'),
-		handler=FigureWindowHandler(),
-	)
 
 
 class MainWindow(HasTraits):
@@ -536,7 +277,7 @@ class App(HasTraits):
 	figure = Instance(matplotlib.figure.Figure)
 	maintab = Instance(MainTab)
 	status = DelegatesTo('maintab')
-	drawmgr = Instance(uiutil.DrawManager)
+	drawmgr = Instance(DrawManager)
 	panelmgr = Instance(modules.PanelManager, args=())
 	mainwindow = Instance(MainWindow)
 	figurewindowui = None
@@ -574,7 +315,7 @@ class App(HasTraits):
 		return MainTab(mainwindow=self, drawmgr=self.drawmgr)
 
 	def _drawmgr_default(self):
-		return uiutil.DrawManager(self.redraw_figure, self.update_canvas)
+		return DrawManager(self.redraw_figure, self.update_canvas)
 
 	def _tabs_changed(self):
 		self.drawmgr.redraw_figure()
@@ -671,7 +412,7 @@ class App(HasTraits):
 		self.presentation_mode = True
 		with self.drawmgr.hold():
 			self.mainwindow = SimpleMainWindow(app=self)
-			self.figurewindowui = FigureWindow(mainwindow=self, figure=self.figure, prefs=self.prefs).edit_traits()
+			self.figurewindowui = windows.FigureWindow(mainwindow=self, figure=self.figure, prefs=self.prefs).edit_traits()
 		wx.CallAfter(self._connect_canvas_resize_event)
 		wx.CallAfter(lambda: self.figure.canvas.Bind(wx.EVT_KEY_DOWN, self.fullscreen_keyevent))
 
@@ -737,27 +478,27 @@ class App(HasTraits):
 	menubar =  MenuBar(
 		Menu(
 			Separator(),
-			Action(name='&New', action='do_new', accelerator='Ctrl+N', image=GetIcon('new')),
-			Action(name='&Open...', action='do_open', accelerator='Ctrl+O', image=GetIcon('open')),
+			Action(name='&New', action='do_new', accelerator='Ctrl+N', image=support.GetIcon('new')),
+			Action(name='&Open...', action='do_open', accelerator='Ctrl+O', image=support.GetIcon('open')),
 			Menu(
 				name='Open &recent',
 				*[Action(name='recent {0}'.format(i), action='do_open_recent_{0}'.format(i)) for i in range(10)]
 			),
 			Separator(),
-			Action(name='&Save', action='do_save', accelerator='Ctrl+S', image=GetIcon('save')),
-			Action(name='Save &as...', action='do_save_as', accelerator='Shift+Ctrl+S', image=GetIcon('save')),
+			Action(name='&Save', action='do_save', accelerator='Ctrl+S', image=support.GetIcon('save')),
+			Action(name='Save &as...', action='do_save_as', accelerator='Shift+Ctrl+S', image=support.GetIcon('save')),
 			Separator(),
-			Action(name='&Quit', action='_on_close', accelerator='Ctrl+Q', image=GetIcon('close')),
+			Action(name='&Quit', action='_on_close', accelerator='Ctrl+Q', image=support.GetIcon('close')),
 			name='&File',
 		),
 		Menu(
-			Action(name='&Add...', action='do_add', accelerator='Ctrl+A', image=GetIcon('add')),
-			Action(name='&Manage...', action='do_graphmanager', image=GetIcon('manage')),
+			Action(name='&Add...', action='do_add', accelerator='Ctrl+A', image=support.GetIcon('add')),
+			Action(name='&Manage...', action='do_graphmanager', image=support.GetIcon('manage')),
 			name='&Graphs',
 		),
 		Menu(
 			'zoom',
-				Action(name='Zoom to &fit', action='do_fit', image=GetIcon('fit')),
+				Action(name='Zoom to &fit', action='do_fit', image=support.GetIcon('fit')),
 				# checked items cannot have icons
 				Action(name='&Zoom rectangle', action='do_zoom', checked_when='zoom_checked', style='toggle'),
 				Action(name='&Pan', action='do_pan', checked_when='pan_checked', style='toggle'),
@@ -768,35 +509,35 @@ class App(HasTraits):
 		),
 		Menu(
 			'export',
-				Action(name='&Export...', action='do_export', accelerator='Ctrl+E', image=GetIcon('export')),
+				Action(name='&Export...', action='do_export', accelerator='Ctrl+E', image=support.GetIcon('export')),
 			'python',
-				Action(name='&Python console...', action='do_python', image=GetIcon('python')),
+				Action(name='&Python console...', action='do_python', image=support.GetIcon('python')),
 			name='&Tools',
 		),
 		Menu(
-			Action(name='&About...', action='do_about', image=GetIcon('about')),
+			Action(name='&About...', action='do_about', image=support.GetIcon('about')),
 			name='&Help',
 		)
 	)
 
 	main_toolbar = ToolBar(
 		'main',
-			Action(name='New', action='do_new', tooltip='New project', image=GetIcon('new')),
-			Action(name='Open', action='do_open', tooltip='Open project', image=GetIcon('open')),
-			Action(name='Save', action='do_save', tooltip='Save project', image=GetIcon('save')),
+			Action(name='New', action='do_new', tooltip='New project', image=support.GetIcon('new')),
+			Action(name='Open', action='do_open', tooltip='Open project', image=support.GetIcon('open')),
+			Action(name='Save', action='do_save', tooltip='Save project', image=support.GetIcon('save')),
 		'graphs',
-			Action(name='Add', action='do_add', tooltip='Add graph', image=GetIcon('add')),
-			Action(name='Manage', action='do_graphmanager', tooltip='Graph manager', image=GetIcon('manage')),
+			Action(name='Add', action='do_add', tooltip='Add graph', image=support.GetIcon('add')),
+			Action(name='Manage', action='do_graphmanager', tooltip='Graph manager', image=support.GetIcon('manage')),
 		'view',
-			Action(name='Fit', action='do_fit', tooltip='Zoom to fit', image=GetIcon('fit')),
-			Action(name='Zoom', action='do_zoom', tooltip='Zoom rectangle', image=GetIcon('zoom'), checked_when='zoom_checked', style='toggle'),
-			Action(name='Pan', action='do_pan', tooltip='Pan', image=GetIcon('pan'), checked_when='pan_checked', style='toggle'),
+			Action(name='Fit', action='do_fit', tooltip='Zoom to fit', image=support.GetIcon('fit')),
+			Action(name='Zoom', action='do_zoom', tooltip='Zoom rectangle', image=support.GetIcon('zoom'), checked_when='zoom_checked', style='toggle'),
+			Action(name='Pan', action='do_pan', tooltip='Pan', image=support.GetIcon('pan'), checked_when='pan_checked', style='toggle'),
 		'export',
-			Action(name='Export', action='do_export', tooltip='Export', image=GetIcon('export')),
+			Action(name='Export', action='do_export', tooltip='Export', image=support.GetIcon('export')),
 		'python', 
-			Action(name='Python', action='do_python', tooltip='Python console', image=GetIcon('python')),
+			Action(name='Python', action='do_python', tooltip='Python console', image=support.GetIcon('python')),
 		'about',
-			Action(name='About', action='do_about', tooltip='About', image=GetIcon('about')),
+			Action(name='About', action='do_about', tooltip='About', image=support.GetIcon('about')),
 		show_tool_names=False
 	)
 
@@ -813,7 +554,7 @@ class App(HasTraits):
 			toolbar=main_toolbar,
 			statusbar='status',
 			handler=MainWindowHandler(),
-			icon=GetIcon('spacetime-icon'),
+			icon=support.GetIcon('spacetime-icon'),
 		)
 
 	def parseargs(self):

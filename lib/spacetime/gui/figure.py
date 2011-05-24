@@ -9,6 +9,8 @@ from enthought.traits.api import Str
 from enthought.traits.ui.wx.editor import Editor
 from enthought.traits.ui.basic_editor_factory import BasicEditorFactory
 
+from .. import util
+
 
 class ModifiedToolbar(matplotlib.backends.backend_wx.NavigationToolbar2Wx):
 	def __init__(self, canvas, statuscallback):
@@ -116,3 +118,58 @@ class MPLFigureEditor(BasicEditorFactory):
 	klass = _MPLFigureEditor
 
 	status = Str
+
+
+class DrawManager(object):
+	_hold = 0
+	level = 0
+
+	def __init__(self, redraw_figure, update_canvas):
+		self._redraw_figure = redraw_figure
+		self._update_canvas = update_canvas
+		self.subgraphs = []
+
+	def hold(self):
+		return util.ContextManager(self, self.hold_manual, lambda x,y,z: self.release_manual())
+
+	def hold_delayed(self):
+		return util.ContextManager(self, self.hold_manual, lambda x,y,z: wx.CallAfter(self.release_manual))
+
+	def hold_manual(self):
+		self._hold += 1
+
+	def release_manual(self):
+		if self._hold == 1:
+			if self.level & 5 == 5:
+				self._redraw_figure()
+				del self.subgraphs[:]
+				self._update_canvas()
+			elif self.level & 3 == 3:
+				for cb in self.subgraphs:
+					cb()
+				self._update_canvas()
+			elif self.level & 1:
+				self._update_canvas()
+			self.level = 0
+		self._hold -= 1
+
+	def redraw_figure(self):
+		if self._hold:
+			self.level |= 5
+		else:
+			self._redraw_figure()
+			self._update_canvas()
+		
+	def redraw_subgraph(self, cb):
+		if self._hold:
+			self.level |= 3
+			self.subgraphs.append(cb)
+		else:
+			cb()
+			self._update_canvas()
+	
+	def update_canvas(self):
+		if self._hold:
+			self.level |= 1
+		else:
+			self._update_canvas()

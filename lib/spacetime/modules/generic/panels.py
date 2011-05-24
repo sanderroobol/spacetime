@@ -5,7 +5,7 @@ import wx
 import logging
 logger = logging.getLogger(__name__)
 
-from ... import uiutil, prefs
+from ... import prefs, gui
 
 from . import subplots
 from . import datasources
@@ -35,7 +35,7 @@ class TraitsSavedMeta(HasTraits.__metaclass__):
 
 class SerializableTab(Tab):
 	__metaclass__ = TraitsSavedMeta
-	drawmgr = Instance(uiutil.DrawManager)
+	drawmgr = Instance(gui.figure.DrawManager)
 
 	def _delayed_from_serialized(self, src):
 		with self.drawmgr.hold():
@@ -81,7 +81,7 @@ class SubplotPanel(SerializableTab):
 	# traits_not_saved = ... can be used to specify parameters that should not be copied in a derived classes
 
 	relativistic_group = Group(
-		Item('simultaneity_offset', label='Simultaneity offset (s)', editor=uiutil.FloatEditor()),
+		Item('simultaneity_offset', label='Simultaneity offset (s)', editor=gui.support.FloatEditor()),
 		Item('time_dilation_factor', editor=RangeEditor(low=.999, high=1.001)),
 		show_border=True,
 		label='Relativistic corrections',
@@ -121,7 +121,7 @@ class SubplotPanel(SerializableTab):
 class TimeTrendPanel(SubplotPanel):
 	plotfactory = subplots.MultiTrend
 	legend = Enum('auto', 'off', 'upper right', 'upper left', 'lower left', 'lower right', 'center left', 'center right', 'lower center', 'upper center', 'center')
-	ylimits = Instance(uiutil.LogAxisLimits, args=())
+	ylimits = Instance(gui.support.LogAxisLimits, args=())
 	yauto = DelegatesTo('ylimits', 'auto')
 	ymin = DelegatesTo('ylimits', 'min')
 	ymax = DelegatesTo('ylimits', 'max')
@@ -147,7 +147,7 @@ class TimeTrendPanel(SubplotPanel):
 			try:
 				self.data = self.datafactory(self.filename)
 			except:
-				uiutil.Message.file_open_failed(self.filename, parent=self.parent)
+				gui.support.Message.file_open_failed(self.filename, parent=self.parent)
 				self.filename = ''
 				return
 			self.channels = list(self.data.iterchannelnames())
@@ -193,7 +193,7 @@ class TimeTrendPanel(SubplotPanel):
 		return PanelView(
 			Group(
 				Item('visible'),
-				Item('filename', editor=uiutil.FileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),
+				Item('filename', editor=gui.support.FileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),
 				Item('reload', show_label=False),
 				Item('legend'),
 				show_border=True,
@@ -208,7 +208,7 @@ class DoubleTimeTrendPanel(TimeTrendPanel):
 	plotfactory = subplots.DoubleMultiTrend
 	selected_secondary_channels = List(Str)
 
-	ylimits2 = Instance(uiutil.LogAxisLimits, args=())
+	ylimits2 = Instance(gui.support.LogAxisLimits, args=())
 	yauto2 = DelegatesTo('ylimits2', 'auto')
 	ymin2 = DelegatesTo('ylimits2', 'min')
 	ymax2 = DelegatesTo('ylimits2', 'max')
@@ -262,7 +262,7 @@ class DoubleTimeTrendPanel(TimeTrendPanel):
 		return PanelView(
 			Group(
 				Item('visible'),
-				Item('filename', editor=uiutil.FileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),
+				Item('filename', editor=gui.support.FileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),
 				Item('reload', show_label=False),
 				Item('legend'),
 				show_border=True,
@@ -275,7 +275,7 @@ class DoubleTimeTrendPanel(TimeTrendPanel):
 
 
 class XlimitsPanel(HasTraits):
-	xlimits = Instance(uiutil.LogAxisLimits, args=())
+	xlimits = Instance(gui.support.LogAxisLimits, args=())
 	xauto = DelegatesTo('xlimits', 'auto')
 	xmin = DelegatesTo('xlimits', 'min')
 	xmax = DelegatesTo('xlimits', 'max')

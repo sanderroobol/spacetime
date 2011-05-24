@@ -7,7 +7,7 @@ import matplotlib.cm
 
 from ..generic.panels import SubplotPanel, PanelView, DoubleTimeTrendPanel, XlimitsPanel
 from ..generic.subplots import Image
-from ... import uiutil
+from ...gui import support
 
 from . import datasources, subplots, filters
 
@@ -135,7 +135,7 @@ class CameraFramePanel(CameraPanel):
 	traits_view = PanelView(
 		Group(
 			Item('visible'),
-			Item('filename', editor=uiutil.FileEditor(filter=['Camera RAW files (*.raw)', '*.raw', 'All files', '*'], entries=0)),
+			Item('filename', editor=support.FileEditor(filter=['Camera RAW files (*.raw)', '*.raw', 'All files', '*'], entries=0)),
 			Item('channel', editor=RangeEditor(low=0, high_name='channelcount', mode='spinner')),
 			Item('mode', style='custom'),
 			Item('firstframe', label='First frame', editor=RangeEditor(low=0, high_name='framecount', mode='spinner')),
@@ -219,7 +219,7 @@ class CameraTrendPanel(DoubleTimeTrendPanel, CameraPanel, XlimitsPanel):
 			try:
 				self.data = datasources.Camera(self.filename)
 			except:
-				uiutil.Message.file_open_failed(self.filename, parent=self.parent)
+				support.Message.file_open_failed(self.filename, parent=self.parent)
 				self.filename = ''
 				return
 			self.channels = list(self.data.iterchannelnames())
@@ -268,7 +268,7 @@ class CameraTrendPanel(DoubleTimeTrendPanel, CameraPanel, XlimitsPanel):
 	traits_view = PanelView(
 		Group(
 			Item('visible'),
-			Item('filename', editor=uiutil.FileEditor(filter=['Camera RAW files (*.raw)', '*.raw', 'All files', '*'], entries=0)),
+			Item('filename', editor=support.FileEditor(filter=['Camera RAW files (*.raw)', '*.raw', 'All files', '*'], entries=0)),
 			Item('firstframe', label='First frame', editor=RangeEditor(low=0, high_name='framecount', mode='spinner')),
 			Item('lastframe', label='Last frame', editor=RangeEditor(low=0, high_name='framecount', mode='spinner'), enabled_when='not_fft'),
 			Item('stepframe', label='Key frame mode', enabled_when='not_fft'),
