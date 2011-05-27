@@ -404,16 +404,17 @@ class App(HasTraits):
 
 	def _close_presentation_mode(self):
 		self.presentation_mode = False
+		self.figurewindowui = None
 		with self.drawmgr.hold():
 			self.mainwindow = SplitMainWindow(app=self)
-		self.figurewindowui = None
+			self.on_figure_resize(None)
 		wx.CallAfter(self._connect_canvas_resize_event)
 
 	def _open_presentation_mode(self):
 		self.presentation_mode = True
 		with self.drawmgr.hold():
 			self.mainwindow = SimpleMainWindow(app=self)
-			self.figurewindowui = windows.FigureWindow(mainwindow=self, figure=self.figure, prefs=self.prefs).edit_traits()
+			self.figurewindowui = windows.FigureWindow(mainwindow=self, prefs=self.prefs).edit_traits()
 		wx.CallAfter(self._connect_canvas_resize_event)
 		wx.CallAfter(lambda: self.figure.canvas.Bind(wx.EVT_KEY_DOWN, self.fullscreen_keyevent))
 

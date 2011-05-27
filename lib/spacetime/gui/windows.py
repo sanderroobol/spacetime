@@ -213,7 +213,7 @@ class FigureWindow(support.PersistantGeometry):
 	prefs_id = 'figure'
 
 	mainwindow = Any
-	figure = Instance(matplotlib.figure.Figure)
+	figure = DelegatesTo('mainwindow')
 	status = DelegatesTo('mainwindow')
 
 	traits_view = View(
