@@ -1,16 +1,18 @@
 TODO for 1.0
 ============
-1. Enh: Smooth zoom and panning (delayed redraw / redraw on idle?)
-2. Enh: Timezone detection or configuration
-3. Enh: rework subplot management:
-         - Subplot size hinting
-         - X-axis labels and vertical spacing when using non-shared axes
-4. New: Relative / rezero'ed time axis
-6. New: Axes labels (mostly y-axis, but also others)
-7. Enh: Interface redesign: decide what to do with the Main tab
-8. New: API docs and examples
-9. New: General text importer (tab/csv with flexible time parsing)
-10. Enh: relative paths in project files
+* Enh: Smooth zoom and panning (delayed redraw / redraw on idle?)
+* Enh: Timezone detection or configuration
+* Enh: rework subplot management:
+        - Subplot size hinting
+        - X-axis labels and vertical spacing when using non-shared axes
+* New: Relative / rezero'ed time axis
+* New: Axes labels (mostly y-axis, but also others)
+* Enh: Interface redesign: decide what to do with the Main tab
+* New: API docs and examples
+* New: General text importer (tab/csv with flexible time parsing)
+* Enh: relative paths in project files
+* Enh: explicit but smooth handling of incompatible project files
+* Bug: canvas not resized when leaving presentation mode
 
 Unprioritized
 =============
