@@ -41,8 +41,14 @@ class SerializableTab(Tab):
 		with self.drawmgr.hold():
 			# trait_set has to be called separately for each trait to respect the ordering of traits_saved
 			for id in self.traits_saved:
-				if id in src: # silently ignore unknown settings for backward and forward compatibility
-					 self.trait_set(**dict(((id, src[id]),)))
+				if id in src:
+					try: 
+						self.trait_set(**dict(((id, src[id]),)))
+					except:
+						gui.support.Message.exception(title='Warning', message='Warning: incompatible project file', desc='Could not restore property "{0}" for graph "{1}". This graph might not be completely functional.'.format(id, self.label))
+				else:
+					gui.support.Message(title='Warning', message='Warning: incompatible project file', desc='Ignoring unknown property "{0}" for graph "{1}". This graph might not be completely functional.'.format(id, self.label))
+  
 
 	def from_serialized(self, src):
 		if hasattr(self, 'traits_saved'):

@@ -353,7 +353,7 @@ class App(HasTraits):
 				try:
 					self.add_tab(self.panelmgr.get_class_by_id(id), props)
 				except KeyError:
-					pass # silently ignore unknown class names for backward and forward compatibility
+					support.Message(title='Warning', message='Warning: incompatible project file', desc='Ignoring unknown graph id "{0}". Project might not be completely functional.'.format(id))
 			self.project_path = path
 
 	def save_project(self, path):

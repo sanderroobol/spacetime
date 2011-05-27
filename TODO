@@ -11,7 +11,6 @@ TODO for 1.0
 * New: API docs and examples
 * New: General text importer (tab/csv with flexible time parsing)
 * Enh: relative paths in project files
-* Enh: explicit but smooth handling of incompatible project files
 * Bug: canvas not resized when leaving presentation mode
 
 Unprioritized
