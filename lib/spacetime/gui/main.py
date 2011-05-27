@@ -250,6 +250,7 @@ class SplitMainWindow(MainWindow):
 	app = Instance(HasTraits)
 	figure = DelegatesTo('app')
 	tabs = DelegatesTo('app')
+	status = DelegatesTo('app')
 
 	traits_view = View(
 		HSplit(
