@@ -47,7 +47,7 @@ class SerializableTab(Tab):
 					except:
 						gui.support.Message.exception(title='Warning', message='Warning: incompatible project file', desc='Could not restore property "{0}" for graph "{1}". This graph might not be completely functional.'.format(id, self.label))
 				else:
-					gui.support.Message(title='Warning', message='Warning: incompatible project file', desc='Ignoring unknown property "{0}" for graph "{1}". This graph might not be completely functional.'.format(id, self.label))
+					gui.support.Message.show(title='Warning', message='Warning: incompatible project file', desc='Ignoring unknown property "{0}" for graph "{1}". This graph might not be completely functional.'.format(id, self.label))
   
 
 	def from_serialized(self, src):
