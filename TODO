@@ -1,6 +1,6 @@
 TODO for 1.0
 ============
-* Enh: Smooth zoom and panning (delayed redraw / redraw on idle?)
+* Bug: markers can cause autoscaled axes to include [0, 1]
 * Enh: Timezone detection or configuration
 * Enh: rework subplot management:
         - Subplot size hinting
@@ -12,6 +12,7 @@ TODO for 1.0
 * New: General text importer (tab/csv with flexible time parsing)
 * Enh: relative paths in project files
 * Bug: canvas not resized when leaving presentation mode
+* Enh: custom canvas size for export 
 
 Unprioritized
 =============
@@ -31,6 +32,7 @@ Unprioritized
 * CameraTrend: option to not link datapoints of different frames
 * Generalize DoubleMultiTrend to an arbitrary number of subplots (with or without twinx'ed graphs).
 * Native Mac OS X package
+* QMS: correct for fragmentation factors and ionization probabilities
 
 KNOWN BUGS (not my fault! :)
 * when selecting items in a ListStrEditor using SHIFT instead of CONTROL, the 'selected' trait isn't updated properly

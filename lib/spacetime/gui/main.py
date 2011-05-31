@@ -16,12 +16,10 @@ logger = logging.getLogger(__name__)
 
 
 class MainTab(modules.generic.panels.SerializableTab):
-	xauto = Bool(True)
-	not_xauto = Property(depends_on='xauto')
-	xmin = Instance(support.DateTimeSelector, args=())
-	xmax = Instance(support.DateTimeSelector, args=())
-	xmin_mpldt = DelegatesTo('xmin', 'mpldt')
-	xmax_mpldt = DelegatesTo('xmax', 'mpldt')
+	xlimits = Instance(support.DateTimeLimits, args=())
+	xauto = DelegatesTo('xlimits', 'auto')
+	xmin_mpldt = DelegatesTo('xlimits', 'min_mpldt')
+	xmax_mpldt = DelegatesTo('xlimits', 'max_mpldt')
 	label = 'Main'
 	status = Str('')
 
@@ -29,17 +27,16 @@ class MainTab(modules.generic.panels.SerializableTab):
 
 	mainwindow = Any
 
-	def _get_not_xauto(self):
-		return not self.xauto
-
 	def xlim_callback(self, ax):
-		self.xmin.mpldt, self.xmax.mpldt = ax.get_xlim()
-		logger.info('%s.xlim_callback: (%s, %s) %s', self.__class__.__name__, self.xmin, self.xmax, 'auto' if self.xauto else 'manual')
+		xmin, xmax = ax.get_xlim()
+		self.trait_set(trait_change_notify=False, xmin_mpldt=xmin, xmax_mpldt=xmax, xauto=False)
+		logger.info('%s.xlim_callback: (%s, %s) %s', self.__class__.__name__, self.xlimits.min, self.xlimits.max, 'auto' if self.xauto else 'manual')
 
 	@on_trait_change('xmin_mpldt, xmax_mpldt, xauto')
 	def xlim_changed(self):
-		logger.info('%s.xlim_changed: (%s, %s) %s', self.__class__.__name__, self.xmin, self.xmax, 'auto' if self.xauto else 'manual')
-		self.mainwindow.plot.set_shared_xlim(self.xmin.mpldt, self.xmax.mpldt, self.xauto)
+		logger.info('%s.xlim_changed: (%s, %s) %s', self.__class__.__name__, self.xlimits.min, self.xlimits.max, 'auto' if self.xauto else 'manual')
+		xmin, xmax = self.mainwindow.plot.set_shared_xlim(self.xmin_mpldt, self.xmax_mpldt, self.xauto)
+		self.trait_set(trait_change_notify=False, xmin_mpldt=xmin, xmax_mpldt=xmax)
 		self.mainwindow.update_canvas()
 
 	def reset_autoscale(self):
@@ -52,9 +49,8 @@ class MainTab(modules.generic.panels.SerializableTab):
 
 	traits_view = View(Group(
 		Group(
-			Item('xauto', label='Auto'),
-			Item('xmin', label='Min', style='custom', enabled_when='not_xauto'),
-			Item('xmax', label='Max', style='custom', enabled_when='not_xauto'),
+			Item('xlimits', style='custom'),
+			show_labels=False,
 			label='Time axis limits',
 			show_border=True,
 		),

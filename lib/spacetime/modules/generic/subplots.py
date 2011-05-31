@@ -48,13 +48,13 @@ class Subplot(object):
 		else:
 			x0, x1 = 0, 1
 		XL = axes.xaxis.get_major_locator().view_limits(x0, x1)
-		axes.set_xbound(XL)
+		axes.set_xlim(XL, emit=False)
 
 	@staticmethod
 	def autoscale_y(axes):
 		y0, y1 = axes.dataLim.intervaly
 		YL = axes.yaxis.get_major_locator().view_limits(y0, y1)
-		axes.set_ybound(YL)
+		axes.set_ylim(YL, emit=False)
 
 	def draw_markers(self):
 		for marker in self.parent.markers:
@@ -90,6 +90,10 @@ class XAxisHandling(object):
 		except util.SharedXError:
 			# this is needed for graphs that can enable/disable the shared x axis
 			pass
+		if self.axes:
+			return self.axes.get_xlim()
+		else:
+			return self.xlim_min, self.xlim_max
 
 	def xlim_rescale(self):
 		if not self.axes:
@@ -97,7 +101,7 @@ class XAxisHandling(object):
 		if self.xlim_auto:
 			self.autoscale_x(self.axes)
 		else:
-			self.axes.set_xlim(self.xlim_min, self.xlim_max)
+			self.axes.set_xlim(self.xlim_min, self.xlim_max, emit=False)
 
 	def set_xlog(self, xlog):
 		self.xlog = xlog
@@ -122,6 +126,10 @@ class YAxisHandling(object):
 		self.ylim_max = max
 		self.ylim_auto = auto
 		self.ylim_rescale()
+		if self.axes:
+			return self.axes.get_ylim()
+		else:
+			return self.ylim_min, self.ylim_max
 
 	def ylim_rescale(self):
 		if not self.axes:
@@ -129,7 +137,7 @@ class YAxisHandling(object):
 		if self.ylim_auto:
 			self.autoscale_y(self.axes)
 		else:
-			self.axes.set_ylim(self.ylim_min, self.ylim_max)
+			self.axes.set_ylim(self.ylim_min, self.ylim_max, emit=False)
 
 	def set_ylog(self, ylog):
 		self.ylog = ylog
@@ -150,6 +158,10 @@ class DoubleYAxisHandling(YAxisHandling):
 		self.ylim2_max = max
 		self.ylim2_auto = auto
 		self.ylim_rescale()
+		if self.secondaryaxes:
+			return self.secondaryaxes.get_ylim()
+		else:
+			return self.ylim2_min, self.ylim2_max
 
 	def ylim_rescale(self):
 		super(DoubleYAxisHandling, self).ylim_rescale()
@@ -158,7 +170,7 @@ class DoubleYAxisHandling(YAxisHandling):
 		if self.ylim2_auto:
 			self.autoscale_y(self.secondaryaxes)
 		else:
-			self.secondaryaxes.set_ylim(self.ylim2_min, self.ylim2_max)
+			self.secondaryaxes.set_ylim(self.ylim2_min, self.ylim2_max, emit=False)
 
 	def set_ylog2(self, ylog2):
 		self.ylog2 = ylog2

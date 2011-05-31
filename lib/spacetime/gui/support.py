@@ -217,6 +217,24 @@ class DateTimeSelector(HasTraits):
 	))
 
 
+class DateTimeLimits(HasTraits):
+	min = Instance(DateTimeSelector, args=())
+	max = Instance(DateTimeSelector, args=())	
+	min_mpldt = DelegatesTo('min', 'mpldt')
+	max_mpldt = DelegatesTo('max', 'mpldt')
+	auto = Bool(True)
+	not_auto = Property(depends_on='auto')
+
+	def _get_not_auto(self):
+		return not self.auto
+
+	traits_view = View(
+		Item('auto', label='Auto'),
+		Item('min', label='Min', style='custom', enabled_when='not_auto'),
+		Item('max', label='Max', style='custom', enabled_when='not_auto'),
+	)
+
+
 class PersistantGeometry(HasTraits):
 	prefs = Instance(prefs.Storage)
 	prefs_id = None

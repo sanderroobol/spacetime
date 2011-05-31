@@ -136,7 +136,8 @@ class TimeTrendPanel(SubplotPanel):
 		return plot
 
 	def ylim_callback(self, ax):
-		self.ymin, self.ymax = ax.get_ylim()
+		ymin, ymax = ax.get_ylim()
+		self.trait_set(trait_change_notify=False, ymin=ymin, ymax=ymax, yauto=False)
 		logger.info('%s.ylim_callback: %s', self.__class__.__name__, self.ylimits)
 
 	@on_trait_change('filename, reload')
@@ -159,7 +160,8 @@ class TimeTrendPanel(SubplotPanel):
 	@on_trait_change('ymin, ymax, yauto')
 	def ylim_changed(self):
 		logger.info('%s.ylim_changed: %s', self.__class__.__name__, self.ylimits)
-		self.plot.set_ylim(self.ylimits.min, self.ylimits.max, self.ylimits.auto)
+		ymin, ymax = self.plot.set_ylim(self.ylimits.min, self.ylimits.max, self.ylimits.auto)
+		self.trait_set(trait_change_notify=False, ymin=ymin, ymax=ymax)
 		self.update()
 
 	def _ylog_changed(self):
@@ -224,16 +226,19 @@ class DoubleTimeTrendPanel(TimeTrendPanel):
 
 	def ylim_callback(self, ax):
 		if ax is self.plot.axes:
-			self.ymin, self.ymax = ax.get_ylim()
+			ymin, ymax = ax.get_ylim()
+			self.trait_set(trait_change_notify=False, ymin=ymin, ymax=ymax, yauto=False)
 			logger.info('%s.ylim_callback primary: %s', self.__class__.__name__, self.ylimits)
 		elif ax is self.plot.secondaryaxes:
-			self.ymin2, self.ymax2 = ax.get_ylim()
+			ymin2, ymax2 = ax.get_ylim()
+			self.trait_set(trait_change_notify=False, ymin2=ymin2, ymax2=ymax2, yauto2=False)
 			logger.info('%s.ylim_callback secondary: %s', self.__class__.__name__, self.ylimits2)
 
 	@on_trait_change('ymin2, ymax2, yauto2')
 	def ylim2_changed(self):
 		logger.info('%s.ylim2_changed: %s', self.__class__.__name__, self.ylimits2)
-		self.plot.set_ylim2(self.ylimits2.min, self.ylimits2.max, self.ylimits2.auto)
+		ymin2, ymax2 = self.plot.set_ylim2(self.ylimits2.min, self.ylimits2.max, self.ylimits2.auto)
+		self.trait_set(trait_change_notify=False, ymin2=ymin2, ymax2=ymax2)
 		self.update()
 
 	def _ylog2_changed(self):
@@ -280,7 +285,8 @@ class XlimitsPanel(HasTraits):
 	@on_trait_change('xmin, xmax, xauto')
 	def xlim_changed(self):
 		logger.info('%s.xlim_changed: %s', self.__class__.__name__, self.xlimits)
-		self.plot.set_xlim(self.xlimits.min, self.xlimits.max, self.xlimits.auto)
+		xmin, xmax = self.plot.set_xlim(self.xlimits.min, self.xlimits.max, self.xlimits.auto)
+		self.trait_set(trait_change_notify=False, xmin=xmin, xmax=xmax)
 		self.update()
 
 	def _xlog_changed(self):
@@ -289,6 +295,7 @@ class XlimitsPanel(HasTraits):
 
 	def xlim_callback(self, ax):
 		self.xmin, self.xmax = ax.get_xlim()
+		self.trait_set(trait_change_notify=False, xmin=xmin, xmax=xmax, xauto=False)
 		logger.info('%s.xlim_callback: %s', self.__class__.__name__, self.xlimits)
 
 	def reset_autoscale(self):
