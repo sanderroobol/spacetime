@@ -20,6 +20,8 @@ class QMSPanel(TimeTrendPanel):
 	plotfactory = subplots.QMS
 	filter = 'Quadera ASCII files (*.asc)', '*.asc'
 
+	traits_saved = 'normalize_channel_selected', 'normalize_factor'
+
 	def __init__(self, *args, **kwargs):
 		super(QMSPanel, self).__init__(*args, **kwargs)
 		self.ylog = True
