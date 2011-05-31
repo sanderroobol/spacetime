@@ -16,6 +16,8 @@ logger = logging.getLogger(__name__)
 
 
 class MainTab(modules.generic.panels.SerializableTab):
+	# the combination of an InstanceEditor with DelegatedTo traits and trait_set(trait_change_notify=False)
+	# seems to be special: the GUI will be updated but no event handlers will be called
 	xlimits = Instance(support.DateTimeLimits, args=())
 	xauto = DelegatesTo('xlimits', 'auto')
 	xmin_mpldt = DelegatesTo('xlimits', 'min_mpldt')
