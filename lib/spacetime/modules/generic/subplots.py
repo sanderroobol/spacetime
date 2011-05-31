@@ -205,12 +205,15 @@ class MultiTrend(YAxisHandling, Subplot):
 	def get_xdata(self, chandata):
 		return self.time_factor*chandata.time + self.time_offset/86400.
 
+	def get_ydata(self, chandata):
+		return chandata.value
+
 	def draw(self):
 		if not self.data:
 			return
 		self.formatter.reset()
 		for d in self.data.iterchannels():
-			self.axes.plot(self.get_xdata(d), d.value, self.formatter(d), label=d.id)
+			self.axes.plot(self.get_xdata(d), self.get_ydata(d), self.formatter(d), label=d.id)
 		self.draw_legend()
 		if self.ylog:
 			self.axes.set_yscale('log')
@@ -270,7 +273,7 @@ class DoubleMultiTrend(MultiTrend, DoubleYAxisHandling):
 		super(DoubleMultiTrend, self).draw()
 		if self.secondarydata:
 			for d in self.secondarydata.iterchannels():
-				self.secondaryaxes.plot(self.get_xdata(d), d.value, self.formatter(d), label=d.id)
+				self.secondaryaxes.plot(self.get_xdata(d), self.get_ydata(d), self.formatter(d), label=d.id)
 			self.draw_legend()
 			if self.ylog2:
 				self.secondaryaxes.set_yscale('log')

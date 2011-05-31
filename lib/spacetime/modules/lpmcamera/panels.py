@@ -5,7 +5,7 @@ from enthought.traits.ui.api import *
 
 import matplotlib.cm
 
-from ..generic.panels import SubplotPanel, PanelView, DoubleTimeTrendPanel, XlimitsPanel
+from ..generic.panels import SubplotPanel, DoubleTimeTrendPanel, XlimitsPanel
 from ..generic.subplots import Image
 from ...gui import support
 
@@ -132,7 +132,7 @@ class CameraFramePanel(CameraPanel):
 		self.select_data()
 		self.redraw()
 
-	traits_view = PanelView(
+	traits_view = support.PanelView(
 		Group(
 			Item('visible'),
 			Item('filename', editor=support.FileEditor(filter=['Camera RAW files (*.raw)', '*.raw', 'All files', '*'], entries=0)),
@@ -175,7 +175,7 @@ class CameraFramePanel(CameraPanel):
 class CameraTrendPanel(DoubleTimeTrendPanel, CameraPanel, XlimitsPanel):
 	id = 'cameratrend'
 	label = 'Camera Trend'
-	desc = 'Reads Camera RAW files and makes graphs of one or more channels as a function of time.'
+	desc = 'Reads Camera RAW files and makes graphs of one or more channels as a function of time, frequency (performing FFT) or versus another channel.'
 
 	filter = 'Camera RAW files (*.raw)', '*.raw'
 	plotfactory = subplots.CameraTrend
@@ -265,7 +265,7 @@ class CameraTrendPanel(DoubleTimeTrendPanel, CameraPanel, XlimitsPanel):
 			self.plot.set_data(y1, y2)
 		self.redraw()
 
-	traits_view = PanelView(
+	traits_view = support.PanelView(
 		Group(
 			Item('visible'),
 			Item('filename', editor=support.FileEditor(filter=['Camera RAW files (*.raw)', '*.raw', 'All files', '*'], entries=0)),
@@ -286,6 +286,5 @@ class CameraTrendPanel(DoubleTimeTrendPanel, CameraPanel, XlimitsPanel):
 		),
 		Include('left_yaxis_group'),
 		Include('right_yaxis_group'),
-
 		Include('relativistic_group'),
 	)

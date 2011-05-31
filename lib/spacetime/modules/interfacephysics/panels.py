@@ -1,7 +1,7 @@
 from enthought.traits.api import *
 from enthought.traits.ui.api import *
 
-from ..generic.panels import DoubleTimeTrendPanel, PanelView
+from ..generic.panels import DoubleTimeTrendPanel
 from ..lpmcamera.panels import CameraTrendPanel
 from ..lpmcamera.datasources import Camera as CameraDataSource
 from ..lpmgascabinet import subplots as lpmsubplots
@@ -38,7 +38,7 @@ class TPDirkPanel(DoubleTimeTrendPanel):
 			self.redraw()
 
 	def traits_view(self):
-		return PanelView(
+		return support.PanelView(
 			Group(
 				Item('visible'),
 				Item('filename', editor=support.FileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),

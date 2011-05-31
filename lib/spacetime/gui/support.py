@@ -234,3 +234,11 @@ class PersistantGeometryHandler(Handler):
 		if window.prefs_id:
 			window.prefs.save_window(window.prefs_id, info.ui)
 		return True
+
+
+def PanelView(*args, **kwargs):
+	if 'handler' in kwargs:
+		newkwargs = kwargs.copy()
+		del newkwargs['handler']
+		return View(Group(*args, layout='normal', scrollable=True, **newkwargs), handler=kwargs['handler'])
+	return View(Group(*args, layout='normal', scrollable=True, **kwargs))

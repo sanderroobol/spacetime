@@ -11,14 +11,6 @@ from . import subplots
 from . import datasources
 
 
-def PanelView(*args, **kwargs):
-	if 'handler' in kwargs:
-		newkwargs = kwargs.copy()
-		del newkwargs['handler']
-		return View(Group(*args, layout='normal', scrollable=True, **newkwargs), handler=kwargs['handler'])
-	return View(Group(*args, layout='normal', scrollable=True, **kwargs))
-
-
 class Tab(HasTraits):
 	pass
 
@@ -188,6 +180,16 @@ class TimeTrendPanel(SubplotPanel):
 		self.plot.set_legend(legend)
 		self.update()
 
+	def get_general_view_group(self):
+		return Group(
+			Item('visible'),
+			Item('filename', editor=gui.support.FileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),
+			Item('reload', show_label=False),
+			Item('legend'),
+			show_border=True,
+			label='General',
+		)
+
 	left_yaxis_group = Group(
 		Item('channels', editor=ListStrEditor(editable=False, multi_select=True, selected='selected_primary_channels')),
 		Item('ylimits', style='custom', label='Limits'),
@@ -196,15 +198,8 @@ class TimeTrendPanel(SubplotPanel):
 	)
 
 	def traits_view(self):
-		return PanelView(
-			Group(
-				Item('visible'),
-				Item('filename', editor=gui.support.FileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),
-				Item('reload', show_label=False),
-				Item('legend'),
-				show_border=True,
-				label='General',
-			),
+		return gui.support.PanelView(
+			self.get_general_view_group(),
 			Include('left_yaxis_group'),
 			Include('relativistic_group'),
 		)
@@ -265,15 +260,8 @@ class DoubleTimeTrendPanel(TimeTrendPanel):
 	)
 
 	def traits_view(self):
-		return PanelView(
-			Group(
-				Item('visible'),
-				Item('filename', editor=gui.support.FileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),
-				Item('reload', show_label=False),
-				Item('legend'),
-				show_border=True,
-				label='General',
-			),
+		return gui.support.PanelView(
+			self.get_general_view_group(),
 			Include('left_yaxis_group'),
 			Include('right_yaxis_group'),
 			Include('relativistic_group'),
