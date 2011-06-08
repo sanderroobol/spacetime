@@ -163,7 +163,7 @@ class CameraFramePanel(CameraPanel):
 		),
 		Group(
 			Item('bgsubtract', label='Backgr. subtr.', tooltip='Line-by-line linear background subtraction'),
-			Item('clip', label='Color clipping', tooltip='Clip colorscale at <number> standard deviations away from the average (0 to disable)'),
+			Item('clip', label='Color clipping', tooltip='Clip colorscale at <number> standard deviations away from the average (0 to disable)', editor=support.FloatEditor()),
 			show_border=True,
 			label='Filters',
 		),
