@@ -110,7 +110,7 @@ class MainWindowHandler(Handler):
 		try:
 			mainwindow.open_project(path)
 		except:
-			gui.support.Message.file_open_failed(path, parent=info.ui.control)
+			support.Message.file_open_failed(path, parent=info.ui.control)
 		mainwindow.prefs.add_recent('project', path)
 		mainwindow.rebuild_recent_menu()
 		mainwindow.update_title()
@@ -169,7 +169,7 @@ class MainWindowHandler(Handler):
 				mainwindow.update_title()
 				return True
 		except:
-			gui.support.Message.file_open_failed(path, parent=info.ui.control)
+			support.Message.file_open_failed(path, parent=info.ui.control)
 		return False
 
 	def do_add(self, info):
@@ -208,7 +208,7 @@ class MainWindowHandler(Handler):
 			try:
 				canvas.print_figure(path, format=format)
 			except:
-				gui.support.Message.file_save_failed(path, parent=info.ui.control)
+				support.Message.file_save_failed(path, parent=info.ui.control)
 
 	def do_fit(self, info):
 		mainwindow = info.ui.context['object']
