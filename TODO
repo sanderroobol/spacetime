@@ -1,5 +1,6 @@
 TODO for 1.0
 ============
+* Bug: xlimits GUI/matplotlib communication (plot.py, event emission)
 * Bug: markers can cause autoscaled axes to include [0, 1]
 * Enh: Timezone detection or configuration
 * Enh: rework subplot management:

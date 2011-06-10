@@ -237,7 +237,7 @@ class Plot(object):
 		if self.shared_xauto:
 			self.autoscale_shared_x()
 		else:
-			self.master_axes.set_xlim(self.shared_xmin, self.shared_xmax, emit=False)
+			self.master_axes.set_xlim(self.shared_xmin, self.shared_xmax)#, emit=False) # FIXME this breaks twinx()ed graphs!
 			
 	def autoscale_shared_x(self):
 		# NOTE: this is a workaround for matplotlib's internal autoscaling routines. 
@@ -249,4 +249,4 @@ class Plot(object):
 			bb = matplotlib.transforms.BboxBase.union(dl)
 			x0, x1 = bb.intervalx
 			XL = self.master_axes.xaxis.get_major_locator().view_limits(x0, x1)
-			self.master_axes.set_xlim(XL, emit=False)
+			self.master_axes.set_xlim(XL)#, emit=False) FIXME this breaks twinx()ed graphs!
