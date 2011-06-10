@@ -9,10 +9,10 @@ TODO for 1.0
 * New: Axes labels (mostly y-axis, but also others)
 * Enh: Interface redesign: decide what to do with the Main tab
 * New: API docs and examples
-* New: General text importer (tab/csv with flexible time parsing)
 * Enh: relative paths in project files
 * Bug: canvas not resized when leaving presentation mode
 * Enh: custom canvas size for export 
+* Bug: Camera film strip Zoom-to-fit doesn't work anymore (just remove it?)
 
 Unprioritized
 =============

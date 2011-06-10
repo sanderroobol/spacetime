@@ -125,6 +125,7 @@ class TimeTrendPanel(SubplotPanel):
 	ymax = DelegatesTo('ylimits', 'max')
 	ylog = DelegatesTo('ylimits', 'log')
 	channels = List(Str)
+	primary_channels = Property(depends_on='channels')
 	selected_primary_channels = List(Str)
 	data = Instance(datasources.DataSource)
 
@@ -134,6 +135,9 @@ class TimeTrendPanel(SubplotPanel):
 		plot = self.plotfactory()
 		plot.set_ylim_callback(self.ylim_callback)
 		return plot
+
+	def _get_primary_channels(self):
+		return self.channels
 
 	def ylim_callback(self, ax):
 		ymin, ymax = ax.get_ylim()
@@ -193,7 +197,7 @@ class TimeTrendPanel(SubplotPanel):
 		)
 
 	left_yaxis_group = Group(
-		Item('channels', editor=ListStrEditor(editable=False, multi_select=True, selected='selected_primary_channels')),
+		Item('primary_channels', editor=ListStrEditor(editable=False, multi_select=True, selected='selected_primary_channels')),
 		Item('ylimits', style='custom', label='Limits'),
 		show_border=True,
 		label='Left y-axis'
@@ -209,6 +213,7 @@ class TimeTrendPanel(SubplotPanel):
 
 class DoubleTimeTrendPanel(TimeTrendPanel):
 	plotfactory = subplots.DoubleMultiTrend
+	secondary_channels = Property(depends_on='channels')
 	selected_secondary_channels = List(Str)
 
 	ylimits2 = Instance(gui.support.LogAxisLimits, args=())
@@ -223,6 +228,9 @@ class DoubleTimeTrendPanel(TimeTrendPanel):
 		plot = self.plotfactory()
 		plot.set_ylim_callback(self.ylim_callback)
 		return plot
+
+	def _get_secondary_channels(self):
+		return self.channels
 
 	def ylim_callback(self, ax):
 		if ax is self.plot.axes:
@@ -258,7 +266,7 @@ class DoubleTimeTrendPanel(TimeTrendPanel):
 		self.redraw()
 
 	right_yaxis_group = Group(
-		Item('channels', editor=ListStrEditor(editable=False, multi_select=True, selected='selected_secondary_channels')),
+		Item('secondary_channels', editor=ListStrEditor(editable=False, multi_select=True, selected='selected_secondary_channels')),
 		Item('ylimits2', style='custom', label='Limits'),
 		show_border=True,
 		label='Right y-axis'
@@ -300,3 +308,73 @@ class XlimitsPanel(HasTraits):
 
 	def reset_autoscale(self):
 		self.xauto = True
+
+
+class CSVPanel(DoubleTimeTrendPanel):
+	id = 'csv'
+	label = 'Plain text'
+	desc = 'Flexible reader for CSV / tab separated / ASCII files.\n\nAccepts times as unix timestamp (seconds sinds 1970-1-1 00:00:00 UTC), Labview timestamp (seconds since since 1904-1-1 00:00:00 UTC), Matplotlib timestamps (days since 0001-01-01 UTC, plus 1) or arbitrary strings (strptime format).'
+
+	datafactory = datasources.CSV
+	filter = 'ASCII text files (*.txt, *.csv, *.tab)', '*.txt|*.csv|*.tab',
+
+	time_type = Enum('unix', 'labview', 'matplotlib', 'custom')
+	time_custom = Property(depends_on='time_type')
+	time_format = Str('%Y-%m-%d %H:%M:%S')
+	time_column = Property(depends_on='channels')
+	time_column_selected = List(['(auto)'])
+
+	primary_channels = Property(depends_on='channels, time_column_selected')
+	secondary_channels = Property(depends_on='channels, time_column_selected')
+
+	traits_saved = 'time_type', 'time_format', 'time_column_selected'
+
+	def _get_time_custom(self):
+		return self.time_type == 'custom'
+
+	def _get_primary_channels(self):
+		return self._filter_channels()
+
+	def _get_secondary_channels(self):
+		return self._filter_channels()
+
+	def _filter_channels(self):
+		if self.time_column_selected == ['(auto)']:
+			if self.data:
+				check = self.data.time_channel_headers
+			else:
+				check = []
+		else:
+			check = self.time_column_selected
+		return [i for i in self.channels if i not in check]
+
+	def _get_time_column(self):
+		return ['(auto)'] + self.channels
+
+	@on_trait_change('selected_primary_channels, selected_secondary_channels, time_type, time_format, time_column_selected')
+	def settings_changed(self):
+		if self.time_column_selected == ['(auto)']:
+			self.data.time_column = 'auto'
+		else:
+			self.data.time_column = self.channels.index(self.time_column_selected[0])
+		if self.time_custom:
+			self.data.time_type = 'strptime'
+			self.data.time_strptime = self.time_format
+		else:
+			self.data.time_type = self.time_type
+		super(CSVPanel, self).settings_changed()
+
+	def traits_view(self):
+		return gui.support.PanelView(
+			self.get_general_view_group(),
+			Group(
+				Item('time_type', label='Type'),
+				Item('time_format', label='Format string', enabled_when='time_custom'),
+				Item('time_column_selected', label='Column', editor=CheckListEditor(name='time_column')),
+				label='Time data',
+				show_border=True,
+			),
+			Include('left_yaxis_group'),
+			Include('right_yaxis_group'),
+			Include('relativistic_group'),
+		)	
