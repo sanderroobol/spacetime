@@ -11,6 +11,9 @@ from enthought.traits.ui.basic_editor_factory import BasicEditorFactory
 
 from .. import util
 
+import logging
+logger = logging.getLogger(__name__)
+
 
 class ModifiedToolbar(matplotlib.backends.backend_wx.NavigationToolbar2Wx):
 	def __init__(self, canvas, statuscallback):
@@ -175,28 +178,22 @@ class DrawManager(object):
 		else:
 			self._update_canvas()
 
-	def _avoid_callback_loop_enter(self, objs):
-		self._callback_loops |= objs
-		return True
-
-	def _avoid_callback_loop_exit(self, objs):
-		self._callback_loops -= objs
-	
-	def _avoid_callback_loop_contextmanager(self, objs):
-		objs = set(objs)
-		if objs & self._callback_loops:
-			return util.ContextManager(lambda: False, lambda x,y,z: None)
-		else:
-			return util.ContextManager(lambda: self._avoid_callback_loop_enter(objs), lambda x,y,z: self._avoid_callback_loop_exit(objs))
-
 	# decorator function
 	@staticmethod
-	def avoid_callback_loop(*objs):
+	def avoid_callback_loop(*names):
 		def decorator(func):
 			def decorated(self, *args, **kwargs):
-				with self.drawmgr._avoid_callback_loop_contextmanager(getattr(self, obj) for obj in objs) as first_call:
-					if first_call:
-						func(self, *args, **kwargs)
+				objs = set(getattr(self, i) for i in names)
+				if objs & self.drawmgr._callback_loops:
+					logger.info("avoid_callback_loop: deny (%r + %r)", self.drawmgr._callback_loops, objs)
+					return
+				logger.info("avoid_callback_loop: enter (%r + %r)", self.drawmgr._callback_loops, objs)
+				self.drawmgr._callback_loops |= objs
+				try:
+					return func(self, *args, **kwargs)
+				finally:
+					self.drawmgr._callback_loops -= objs
+					logger.info("avoid_callback_loop: end (%r)", self.drawmgr._callback_loops)
 			decorated.func_name = func.func_name
 			return decorated
 		return decorator
