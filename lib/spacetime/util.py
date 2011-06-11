@@ -42,13 +42,12 @@ def easyfft(data, sample_frequency):
 
 
 class ContextManager(object):
-	def __init__(self, context, enter, exit):
-		self.context = context
+	def __init__(self, enter, exit):
 		self.enter = enter
 		self.exit = exit
 
 	def __enter__(self):
-		self.enter()
+		return self.enter()
 
 	def __exit__(self, exc_type, exc_value, traceback):
-		self.exit(exc_type, exc_value, traceback)
+		return self.exit(exc_type, exc_value, traceback)

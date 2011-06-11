@@ -29,16 +29,17 @@ class MainTab(modules.generic.panels.SerializableTab):
 
 	mainwindow = Any
 
+	@DrawManager.avoid_callback_loop('xlimits')
 	def xlim_callback(self, ax):
-		xmin, xmax = ax.get_xlim()
-		self.trait_set(trait_change_notify=False, xmin_mpldt=xmin, xmax_mpldt=xmax, xauto=False)
+		self.xmin_mpldt, self.xmax_mpldt = ax.get_xlim()
+		self.xauto = False
 		logger.info('%s.xlim_callback: (%s, %s) %s', self.__class__.__name__, self.xlimits.min, self.xlimits.max, 'auto' if self.xauto else 'manual')
 
 	@on_trait_change('xmin_mpldt, xmax_mpldt, xauto')
+	@DrawManager.avoid_callback_loop('xlimits')
 	def xlim_changed(self):
 		logger.info('%s.xlim_changed: (%s, %s) %s', self.__class__.__name__, self.xlimits.min, self.xlimits.max, 'auto' if self.xauto else 'manual')
-		xmin, xmax = self.mainwindow.plot.set_shared_xlim(self.xmin_mpldt, self.xmax_mpldt, self.xauto)
-		self.trait_set(trait_change_notify=False, xmin_mpldt=xmin, xmax_mpldt=xmax)
+		self.xmin_mpldt, self.xmax_mpldt = self.mainwindow.plot.set_shared_xlim(self.xmin_mpldt, self.xmax_mpldt, self.xauto)
 		self.mainwindow.update_canvas()
 
 	def reset_autoscale(self):

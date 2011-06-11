@@ -48,13 +48,13 @@ class Subplot(object):
 		else:
 			x0, x1 = 0, 1
 		XL = axes.xaxis.get_major_locator().view_limits(x0, x1)
-		axes.set_xlim(XL, emit=False)
+		axes.set_xlim(XL)
 
 	@staticmethod
 	def autoscale_y(axes):
 		y0, y1 = axes.dataLim.intervaly
 		YL = axes.yaxis.get_major_locator().view_limits(y0, y1)
-		axes.set_ylim(YL, emit=False)
+		axes.set_ylim(YL)
 
 	def draw_markers(self):
 		for marker in self.parent.markers:
@@ -101,7 +101,7 @@ class XAxisHandling(object):
 		if self.xlim_auto:
 			self.autoscale_x(self.axes)
 		else:
-			self.axes.set_xlim(self.xlim_min, self.xlim_max, emit=False)
+			self.axes.set_xlim(self.xlim_min, self.xlim_max)
 
 	def set_xlog(self, xlog):
 		self.xlog = xlog
@@ -137,7 +137,7 @@ class YAxisHandling(object):
 		if self.ylim_auto:
 			self.autoscale_y(self.axes)
 		else:
-			self.axes.set_ylim(self.ylim_min, self.ylim_max, emit=False)
+			self.axes.set_ylim(self.ylim_min, self.ylim_max)
 
 	def set_ylog(self, ylog):
 		self.ylog = ylog
@@ -170,7 +170,7 @@ class DoubleYAxisHandling(YAxisHandling):
 		if self.ylim2_auto:
 			self.autoscale_y(self.secondaryaxes)
 		else:
-			self.secondaryaxes.set_ylim(self.ylim2_min, self.ylim2_max, emit=False)
+			self.secondaryaxes.set_ylim(self.ylim2_min, self.ylim2_max)
 
 	def set_ylog2(self, ylog2):
 		self.ylog2 = ylog2

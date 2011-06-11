@@ -139,9 +139,10 @@ class TimeTrendPanel(SubplotPanel):
 	def _get_primary_channels(self):
 		return self.channels
 
+	@gui.figure.DrawManager.avoid_callback_loop('ylimits')
 	def ylim_callback(self, ax):
-		ymin, ymax = ax.get_ylim()
-		self.trait_set(trait_change_notify=False, ymin=ymin, ymax=ymax, yauto=False)
+		self.ymin, self.ymax = ax.get_ylim()
+		self.yauto = False
 		logger.info('%s.ylim_callback: %s', self.__class__.__name__, self.ylimits)
 
 	@on_trait_change('filename, reload')
@@ -162,12 +163,13 @@ class TimeTrendPanel(SubplotPanel):
 		self.redraw()
 
 	@on_trait_change('ymin, ymax, yauto')
+	@gui.figure.DrawManager.avoid_callback_loop('ylimits')
 	def ylim_changed(self):
 		logger.info('%s.ylim_changed: %s', self.__class__.__name__, self.ylimits)
-		ymin, ymax = self.plot.set_ylim(self.ylimits.min, self.ylimits.max, self.ylimits.auto)
-		self.trait_set(trait_change_notify=False, ymin=ymin, ymax=ymax)
+		self.ymin, self.ymax = self.plot.set_ylim(self.ylimits.min, self.ylimits.max, self.ylimits.auto)
 		self.update()
 
+	@gui.figure.DrawManager.avoid_callback_loop('ylimits')
 	def _ylog_changed(self):
 		self.plot.set_ylog(self.ylog)
 		self.update()
@@ -232,23 +234,25 @@ class DoubleTimeTrendPanel(TimeTrendPanel):
 	def _get_secondary_channels(self):
 		return self.channels
 
+	@gui.figure.DrawManager.avoid_callback_loop('ylimits', 'ylimits2')
 	def ylim_callback(self, ax):
 		if ax is self.plot.axes:
-			ymin, ymax = ax.get_ylim()
-			self.trait_set(trait_change_notify=False, ymin=ymin, ymax=ymax, yauto=False)
+			self.ymin, self.ymax = ax.get_ylim()
+			self.yauto = False
 			logger.info('%s.ylim_callback primary: %s', self.__class__.__name__, self.ylimits)
 		elif ax is self.plot.secondaryaxes:
-			ymin2, ymax2 = ax.get_ylim()
-			self.trait_set(trait_change_notify=False, ymin2=ymin2, ymax2=ymax2, yauto2=False)
+			self.ymin2, self.ymax2 = ax.get_ylim()
+			self.yauto2 = False
 			logger.info('%s.ylim_callback secondary: %s', self.__class__.__name__, self.ylimits2)
 
 	@on_trait_change('ymin2, ymax2, yauto2')
+	@gui.figure.DrawManager.avoid_callback_loop('ylimits2')
 	def ylim2_changed(self):
 		logger.info('%s.ylim2_changed: %s', self.__class__.__name__, self.ylimits2)
-		ymin2, ymax2 = self.plot.set_ylim2(self.ylimits2.min, self.ylimits2.max, self.ylimits2.auto)
-		self.trait_set(trait_change_notify=False, ymin2=ymin2, ymax2=ymax2)
+		self.ymin2, self.ymax2 = self.plot.set_ylim2(self.ylimits2.min, self.ylimits2.max, self.ylimits2.auto)
 		self.update()
 
+	@gui.figure.DrawManager.avoid_callback_loop('ylimits2')
 	def _ylog2_changed(self):
 		self.plot.set_ylog2(self.ylog2)
 		self.update()
@@ -291,22 +295,25 @@ class XlimitsPanel(HasTraits):
 	traits_saved = 'xauto', 'xmin', 'xmax', 'xlog'
 
 	@on_trait_change('xmin, xmax, xauto')
+	@gui.figure.DrawManager.avoid_callback_loop('xlimits')
 	def xlim_changed(self):
 		logger.info('%s.xlim_changed: %s', self.__class__.__name__, self.xlimits)
-		xmin, xmax = self.plot.set_xlim(self.xlimits.min, self.xlimits.max, self.xlimits.auto)
-		self.trait_set(trait_change_notify=False, xmin=xmin, xmax=xmax)
+		self.xmin, self.xmax = self.plot.set_xlim(self.xlimits.min, self.xlimits.max, self.xlimits.auto)
 		self.update()
 
+	@gui.figure.DrawManager.avoid_callback_loop('xlimits')
 	def _xlog_changed(self):
 		self.plot.set_xlog(self.xlog)
 		self.update()
 
+	@gui.figure.DrawManager.avoid_callback_loop('xlimits')
 	def xlim_callback(self, ax):
 		self.xmin, self.xmax = ax.get_xlim()
-		self.trait_set(trait_change_notify=False, xmin=xmin, xmax=xmax, xauto=False)
+		self.xauto = False
 		logger.info('%s.xlim_callback: %s', self.__class__.__name__, self.xlimits)
 
 	def reset_autoscale(self):
+		super(XLimitsPanel, self).reset_autoscale()
 		self.xauto = True
 
 

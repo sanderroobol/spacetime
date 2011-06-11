@@ -128,12 +128,13 @@ class DrawManager(object):
 		self._redraw_figure = redraw_figure
 		self._update_canvas = update_canvas
 		self.subgraphs = []
+		self._callback_loops = set()
 
 	def hold(self):
-		return util.ContextManager(self, self.hold_manual, lambda x,y,z: self.release_manual())
+		return util.ContextManager(self.hold_manual, lambda x,y,z: self.release_manual())
 
 	def hold_delayed(self):
-		return util.ContextManager(self, self.hold_manual, lambda x,y,z: wx.CallAfter(self.release_manual))
+		return util.ContextManager(self.hold_manual, lambda x,y,z: wx.CallAfter(self.release_manual))
 
 	def hold_manual(self):
 		self._hold += 1
@@ -173,3 +174,29 @@ class DrawManager(object):
 			self.level |= 1
 		else:
 			self._update_canvas()
+
+	def _avoid_callback_loop_enter(self, objs):
+		self._callback_loops |= objs
+		return True
+
+	def _avoid_callback_loop_exit(self, objs):
+		self._callback_loops -= objs
+	
+	def _avoid_callback_loop_contextmanager(self, objs):
+		objs = set(objs)
+		if objs & self._callback_loops:
+			return util.ContextManager(lambda: False, lambda x,y,z: None)
+		else:
+			return util.ContextManager(lambda: self._avoid_callback_loop_enter(objs), lambda x,y,z: self._avoid_callback_loop_exit(objs))
+
+	# decorator function
+	@staticmethod
+	def avoid_callback_loop(*objs):
+		def decorator(func):
+			def decorated(self, *args, **kwargs):
+				with self.drawmgr._avoid_callback_loop_contextmanager(getattr(self, obj) for obj in objs) as first_call:
+					if first_call:
+						func(self, *args, **kwargs)
+			decorated.func_name = func.func_name
+			return decorated
+		return decorator
