@@ -2,7 +2,7 @@ from enthought.traits.api import *
 from enthought.traits.ui.api import *
 
 from ..generic.panels import DoubleTimeTrendPanel
-from ..generic.datasources import CSV
+from ..generic.datasources import CSVFactory
 from ..lpmcamera.panels import CameraTrendPanel
 from ..lpmcamera.datasources import Camera as CameraDataSource
 from ..lpmgascabinet import subplots as lpmsubplots
@@ -72,5 +72,8 @@ class ReactorEnvironmentPanel(DoubleTimeTrendPanel):
 	label = 'Reactor Environment logger'
 	desc = 'Reads the log of the pressure, temperature and heater control for the ReactorAFM.'
 
-	datafactory = CSV.factory(time_type='labview', time_column='auto')
+	datafactory = CSVFactory(time_type='labview', time_column='auto')
 	filter = 'ASCII text files (*.txt)', '*.txt',
+
+	def _get_primary_channels(self):
+		return [i for i in self.channels if i != 'Time']

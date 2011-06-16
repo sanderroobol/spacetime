@@ -62,19 +62,22 @@ class DataSourceFilter(MultiTrend):
 		self.filters.extend(filters)
 		return self
 
+
+class CSVFactory(object):
+	def __init__(self, **props):
+		self.props = props
+
+	def __call__(self, *args, **kwargs):
+		obj = CSV(*args, **kwargs)
+		obj.__dict__.update(self.props)
+		return obj
+
+
 class CSV(MultiTrend):
 	time_column = 0
 	time_type = 'unix'
 	time_strptime = '%Y-%m-%d %H:%M:%S'
 	time_channel_headers = set('Time')
-
-	@classmethod
-	def factory(klass, **props):
-		def _factory(*args, **kwargs):
-			obj = klass(*args, **kwargs)
-			obj.__dict__.update(props)
-			return obj
-		return _factory
 
 	def set_header(self, line):
 		self.channel_labels = line.strip().split('\t')

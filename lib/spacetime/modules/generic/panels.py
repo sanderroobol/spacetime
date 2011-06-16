@@ -232,7 +232,7 @@ class DoubleTimeTrendPanel(TimeTrendPanel):
 		return plot
 
 	def _get_secondary_channels(self):
-		return self.channels
+		return self._get_primary_channels()
 
 	@gui.figure.DrawManager.avoid_callback_loop('ylimits', 'ylimits2')
 	def ylim_callback(self, ax):
@@ -384,4 +384,4 @@ class CSVPanel(DoubleTimeTrendPanel):
 			Include('left_yaxis_group'),
 			Include('right_yaxis_group'),
 			Include('relativistic_group'),
-		)	
+		)

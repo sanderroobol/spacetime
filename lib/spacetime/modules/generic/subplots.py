@@ -404,12 +404,13 @@ class Image(Subplot):
 			return
 		self.rotate = rotate
 
-		im = self.axes.images[0]
-		# NOTE this uses a feature that is not officially in the matplotlib API
-		if rotate:
-			im.set_data(numpy.rot90(im._A, 3))
-		else:
-			im.set_data(numpy.rot90(im._A))
+		if self.axes and self.mode == 'single frame':
+			im = self.axes.images[0]
+			# NOTE this uses a feature that is not officially in the matplotlib API
+			if rotate:
+				im.set_data(numpy.rot90(im._A, 3))
+			else:
+				im.set_data(numpy.rot90(im._A))
 
 	def draw_marker(self, left, right=None):
 		pass
