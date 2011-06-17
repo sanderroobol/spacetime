@@ -16,16 +16,18 @@ logger = logging.getLogger(__name__)
 
 
 class MainTab(modules.generic.panels.SerializableTab):
+	version = Str(version.version)
 	# the combination of an InstanceEditor with DelegatedTo traits and trait_set(trait_change_notify=False)
 	# seems to be special: the GUI will be updated but no event handlers will be called
 	xlimits = Instance(support.DateTimeLimits, args=())
 	xauto = DelegatesTo('xlimits', 'auto')
 	xmin_mpldt = DelegatesTo('xlimits', 'min_mpldt')
 	xmax_mpldt = DelegatesTo('xlimits', 'max_mpldt')
+
 	label = 'Main'
 	status = Str('')
 
-	traits_saved = 'xmin_mpldt', 'xmax_mpldt', 'xauto'
+	traits_saved = 'version', 'xmin_mpldt', 'xmax_mpldt', 'xauto'
 
 	mainwindow = Any
 
@@ -44,11 +46,6 @@ class MainTab(modules.generic.panels.SerializableTab):
 
 	def reset_autoscale(self):
 		self.xauto = True
-
-	def get_serialized(self):
-		d = super(MainTab, self).get_serialized()
-		d['version'] = version.version
-		return d
 
 	traits_view = View(Group(
 		Group(

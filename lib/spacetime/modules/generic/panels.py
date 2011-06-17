@@ -32,8 +32,8 @@ class SerializableTab(Tab):
 	def _delayed_from_serialized(self, src):
 		with self.drawmgr.hold():
 			# trait_set has to be called separately for each trait to respect the ordering of traits_saved
-			for id in self.traits_saved:
-				if id in src:
+			for id in src:
+				if id in self.traits_saved:
 					try: 
 						self.trait_set(**dict(((id, src[id]),)))
 					except:
@@ -159,6 +159,8 @@ class TimeTrendPanel(SubplotPanel):
 
 	@on_trait_change('selected_primary_channels')
 	def settings_changed(self):
+		if not self.data:
+			return
 		self.plot.set_data(self.data.selectchannels(lambda chan: chan.id in self.selected_primary_channels))
 		self.redraw()
 
@@ -263,6 +265,8 @@ class DoubleTimeTrendPanel(TimeTrendPanel):
 
 	@on_trait_change('selected_primary_channels, selected_secondary_channels')
 	def settings_changed(self):
+		if not self.data:
+			return
 		self.plot.set_data(
 			self.data.selectchannels(lambda chan: chan.id in self.selected_primary_channels),
 			self.data.selectchannels(lambda chan: chan.id in self.selected_secondary_channels),
@@ -360,6 +364,8 @@ class CSVPanel(DoubleTimeTrendPanel):
 
 	@on_trait_change('selected_primary_channels, selected_secondary_channels, time_type, time_format, time_column_selected')
 	def settings_changed(self):
+		if not self.data:
+			return
 		if self.time_column_selected == ['(auto)']:
 			self.data.time_column = 'auto'
 		else:
