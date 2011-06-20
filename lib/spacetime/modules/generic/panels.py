@@ -317,7 +317,6 @@ class XlimitsPanel(HasTraits):
 		logger.info('%s.xlim_callback: %s', self.__class__.__name__, self.xlimits)
 
 	def reset_autoscale(self):
-		super(XLimitsPanel, self).reset_autoscale()
 		self.xauto = True
 
 
