@@ -3,13 +3,14 @@ import time, datetime, pytz
 import scipy.fftpack, numpy
 
 from .superstruct import Struct
+from .detect_timezone import detect_timezone
 
 
 class SharedXError(Exception):
 	pass
 
 
-localtz = pytz.timezone('Europe/Amsterdam') # FIXME: should be detected
+localtz = pytz.timezone(detect_timezone())
 utctz = pytz.utc
 
 def mpldtfromtimestamp(ts, tz=localtz):
