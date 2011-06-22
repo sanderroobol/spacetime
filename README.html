@@ -1,0 +1,68 @@
+ <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<title>Spacetime README</title>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<style type="text/css">
+body {
+	font-size: 12pt;
+}
+p {
+	margin-top: 0pt;
+	margin-bottom: 12pt;
+}
+blockquote, q {
+	font-family: monospace;
+}
+q:before, q:after {
+	content: "";
+}
+h1 {
+	font-size: 22pt;
+	margin-top: 0pt;
+}
+h2 {
+	margin-top: 20pt;
+	margin-bottom: 10pt;
+	font-size: 16pt;
+}
+h3 {
+	margin-top: 10pt;
+	margin-bottom: 0pt;
+	font-size: 12pt;
+}
+</style>
+</head>
+<body>
+<h1>Spacetime</h1>
+
+<p>Spacetime is a program that allows you to easily correlate SPM images with some time-dependent external parameter like pressure, temperature, deposition rate, etc. It can directly show you what happened during a specific frame or even scan line. Since this program basically unifies space and time, what name could be more appropriate than Spacetime?</p>
+
+<p>Spacetime can work with quite a few different data files, the most important type being LPM Camera .raw files. You can of course plot images from such a file, but you can also plot one or more channels as function of time, frequency (performing FFT) or versus another channel.</p>
+
+<p>In addition, a couple of other data sources are implemented, mainly focussing on the gas control and analysis systems of the ReactorSTM and -AFM of the Interface Physics group at Leiden Univeristy. There is some support for plain text files as well.</p>
+
+<p>The software is written in a very modular way and it's easy to add support for different data types. It's written in Python and runs on all common operating systems. Spacetime is still beta quality, but it's quite useful already.</p>
+
+<h2>Requirements</h2>
+<ul>
+<li>Python 2.6 or later but not 3.x.</li>
+<li>numpy and scipy (probably any version will do)</li>
+<li>Matplotlib (1.0 or later)</li>
+<li>Enthought Tools Suite, with the WX backend for TraitsUI</li>
+<li>pytz and dateutil</li>
+</ul>
+
+<h2>Installation</h2>
+
+<h3>Windows installer</h3>
+<p>There is a fully self-contained Windows installer for Spacetime. The only external dependecy is the <a href="http://www.microsoft.com/downloads/en/details.aspx?familyid=A5C84275-3B97-4AB7-A40D-3802B2AF5FC2&amp;displaylang=en">Microsoft Visual C++ 2008 SP1 Redistributable Package (x86)</a>.</p>
+
+<h3>Linux, Mac OS X, other unix...</h3>
+<p>There are no packages yet. Make sure the spacetime module is in your PYTHONPATH and run the included <q>spacetime</q> executable/script.</p>
+
+<h2>About</h2>
+<p>Copyright 2010-2011 Leiden University. Written by Sander Roobol <a href="roobol@physics.leidenuniv.nl">roobol@physics.leidenuniv.nl</a>.<br />Redistribution outside Leiden University is not permitted.</p>
+
+</body>
+</html>

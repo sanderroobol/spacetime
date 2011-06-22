@@ -1,0 +1,58 @@
+This package was debianized by José Fonseca <j_r_fonseca@yahooc.co.uk> on
+Sat, 12 Jul 2003 15:43:46 +0100.
+
+It was downloaded from http://www.scipy.org/
+
+Upstream Authors: see THANKS.txt file
+
+Copyright:
+
+    Copyright © 1997-2001 Todd Veldhuizen
+    Copyright © 1999 McMillan Enterprises, Inc.
+    Copyright © 1999-2005 Travis Oliphant
+    Copyright © 2001-2002 Enthought, Inc.
+    Copyright © 2002 Eric Jones
+    Copyright © 2002 Patrick J. Miller
+    Copyright © 2002-2003 Jochen Kuepper
+    Copyright © 2002-2004 Pearu Peterson
+    Copyright © 2002-2005 Jean-Sebastien Roy
+    Copyright © 2003-2005 Peter J. Verveer
+    Copyright © 2003-2006 Ed Schofield
+    Copyright © 2003-2009 SciPy Developers.
+    Copyright © 2004 David M. Cooke
+    Copyright © 2006 Bart Vandereycken
+    Copyright © 2006 BasSw
+    Copyright © 2006 Johannes Loehnert
+    Copyright © 2007 Andrew D Straw
+    Copyright © 2007 John Travers, Robert Hetland
+    Copyright © 2007-2008 Damian Eads
+    Copyright © 2008 Tiziano Zito
+    Copyright © Gary Strangman
+
+License:
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+  a. Redistributions of source code must retain the above copyright notice,
+     this list of conditions and the following disclaimer.
+  b. Redistributions in binary form must reproduce the above copyright
+     notice, this list of conditions and the following disclaimer in the
+     documentation and/or other materials provided with the distribution.
+  c. Neither the name of the Enthought nor the names of its contributors
+     may be used to endorse or promote products derived from this software
+     without specific prior written permission.
+
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
+DAMAGE.
+
