@@ -43,7 +43,7 @@ class CameraFramePanel(CameraPanel):
 
 	channel = Int(0)
 	channelcount = Int(0)
-	bgsubtract = Bool(True)
+	filter = Enum('none', 'line-by-line background subtraction', 'plane background subtraction')
 	clip = Float(4.)
 	colormap = Enum(sorted((m for m in matplotlib.cm.datad if not m.endswith("_r")), key=string.lower))
 	interpolation = Enum('nearest', 'bilinear', 'bicubic')
@@ -55,7 +55,7 @@ class CameraFramePanel(CameraPanel):
 	is_singleframe = Property(depends_on='mode')
 	is_filmstrip = Property(depends_on='mode')
 
-	traits_saved = 'channel', 'bgsubtract', 'clip', 'colormap', 'interpolation', 'zoom', 'rotate', 'mode'
+	traits_saved = 'channel', 'filter', 'clip', 'colormap', 'interpolation', 'zoom', 'rotate', 'mode'
 	
 	def __init__(self, *args, **kwargs):
 		super(CameraFramePanel, self).__init__(*args, **kwargs)
@@ -120,14 +120,16 @@ class CameraFramePanel(CameraPanel):
 		else:
 			# FIXME: implement a smarter first/last frame selection, don't redraw everything
 			data = self.data.selectchannel(self.channel).selectframes(self.firstframe, self.lastframe, self.stepframe)
-		if self.bgsubtract:
-			data = data.apply_filter(filters.BGSubtractLineByLine)
+		if self.filter == 'line-by-line background subtraction':
+			data = data.apply_filter(filters.array(filters.bgs_line_by_line))
+		elif self.filter == 'plane background subtraction':
+			data = data.apply_filter(filters.array(filters.bgs_plane))
 		if self.clip > 0:
 			data = data.apply_filter(filters.ClipStdDev(self.clip))
 		self.plot.set_data(data)
 		self.plot.tzoom = self.stepframe
 
-	@on_trait_change('channel, bgsubtract, clip, lastframe, stepframe')
+	@on_trait_change('channel, filter, clip, lastframe, stepframe')
 	def settings_changed(self):
 		self.select_data()
 		self.redraw()
@@ -162,7 +164,7 @@ class CameraFramePanel(CameraPanel):
 			label='Display',
 		),
 		Group(
-			Item('bgsubtract', label='Backgr. subtr.', tooltip='Line-by-line linear background subtraction'),
+			Item('filter', label='Filtering'),
 			Item('clip', label='Color clipping', tooltip='Clip colorscale at <number> standard deviations away from the average (0 to disable)', editor=support.FloatEditor()),
 			show_border=True,
 			label='Filters',
