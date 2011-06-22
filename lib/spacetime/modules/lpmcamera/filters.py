@@ -5,7 +5,6 @@ import scipy.stats
 
 
 def bgs_line_by_line(data):
-	print "lain"
 	new = numpy.zeros(data.shape)
 	pixels = numpy.arange(data.shape[1])
 	#params = []
@@ -17,7 +16,6 @@ def bgs_line_by_line(data):
 
 
 def bgs_plane(data):
-	print "pleen"
 	# this code is based on Gwyddion's gwy_data_field_fit_plane
 	ny, nx = data.shape
 	xgrid, ygrid = numpy.meshgrid(numpy.arange(nx), numpy.arange(ny))
