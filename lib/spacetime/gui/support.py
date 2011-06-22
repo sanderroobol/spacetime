@@ -1,6 +1,8 @@
 import os.path, sys, traceback
 import datetime
 
+import numpy
+
 from .. import prefs, util
 
 from enthought.traits.api import *
@@ -260,3 +262,19 @@ def PanelView(*args, **kwargs):
 		del newkwargs['handler']
 		return View(Group(*args, layout='normal', scrollable=True, **newkwargs), handler=kwargs['handler'])
 	return View(Group(*args, layout='normal', scrollable=True, **kwargs))
+
+
+def EnumMapping(items):
+	pad = int(numpy.ceil(numpy.log10(len(items))))
+	out = {}
+	for n, item in enumerate(items):
+		try:
+			iter(item)
+			if isinstance(item, basestring):
+				raise TypeError
+		except TypeError:
+			key = value = item
+		else:
+			key, value = item
+		out[key] = "{0:0{pad}}:{1}".format(n, value, pad=pad)
+	return out

@@ -143,13 +143,13 @@ class CameraFramePanel(CameraPanel):
 			Item('firstframe', label='First frame', editor=RangeEditor(low=0, high_name='framecount', mode='spinner')),
 			Item('lastframe', label='Last frame', enabled_when='is_filmstrip', editor=RangeEditor(low=0, high_name='framecount', mode='spinner')),
 			Item('stepframe', label='Key frame mode', enabled_when='is_filmstrip'),
-			Item('direction', editor=EnumEditor(values={1:'1:L2R', 2:'2:R2L'})),
+			Item('direction', editor=EnumEditor(values=support.EnumMapping([(1, 'L2R'), (2, 'R2L')]))),
 			show_border=True,
 			label='General',
 		),
 		Group(
 			Item('colormap'),
-			Item('interpolation', editor=EnumEditor(values={'nearest':'1:none', 'bilinear':'2:bilinear', 'bicubic':'3:bicubic'})),
+			Item('interpolation', editor=EnumEditor(values=support.EnumMapping([('nearest', 'none'), 'bilinear', 'bicubic']))),
 			Group(
 				Item('rotate', label='Rotate image', tooltip='Plot scanlines vertically', enabled_when='is_singleframe'),
 				show_border=True,
@@ -185,26 +185,26 @@ class CameraTrendPanel(DoubleTimeTrendPanel, CameraPanel, XlimitsPanel):
 	averaging = Bool(True)
 	direction = Enum(1, 2, 3)
 
-	xaxis = Property(depends_on='channels')
-	xaxis_selected = List(['time'])
-	prev_xaxis_selected = None
-	fft = Property(depends_on='xaxis_selected')
+	xaxis_type = Str('time')
+	xaxis_type_options = Property(depends_on='channels')
+	prev_xaxis_type = None
+	fft = Property(depends_on='xaxis_type')
 	not_fft = Property(depends_on='fft')
-	independent_x = Property(depends_on='xaxis_selected')
+	independent_x = Property(depends_on='xaxis_type')
 
-	traits_saved = 'averaging', 'xaxis_selected'
+	traits_saved = 'averaging', 'xaxis_type'
 
 	def _get_fft(self):
-		return self.xaxis_selected[0] == 'fft'
+		return self.xaxis_type == 'fft'
 
 	def _get_not_fft(self):
 		return not self.fft
 
 	def _get_independent_x(self):
-		return self.xaxis_selected[0] != 'time'
+		return self.xaxis_type != 'time'
 
-	def _get_xaxis(self):
-		return [('time', 'Time'), ('fft', 'Frequency (FFT)')] + [(i, 'Channel {0}'.format(i)) for i in self.channels]
+	def _get_xaxis_type_options(self):
+		return support.EnumMapping([('time', 'Time'), ('fft', 'Frequency (FFT)')] + [(i, 'Channel {0}'.format(i)) for i in self.channels])
 
 	def reset_autoscale(self):
 		DoubleTimeTrendPanel.reset_autoscale(self)
@@ -229,16 +229,15 @@ class CameraTrendPanel(DoubleTimeTrendPanel, CameraPanel, XlimitsPanel):
 			self.lastframe = min(self.framecount, 25)
 			self.settings_changed()
 
-	def _xaxis_selected_changed(self):
+	def _xaxis_type_changed(self):
 		with self.drawmgr.hold():
 			self._firstframe_changed() # this makes sure that firstframe <= lastframe and calls settings_changed()
-			new = self.xaxis_selected[0]
-			if self.prev_xaxis_selected is None or (
-					self.prev_xaxis_selected != new
-					and 'time' in (self.prev_xaxis_selected, new)
+			if self.prev_xaxis_type is None or (
+					self.prev_xaxis_type != self.xaxis_type
+					and 'time' in (self.prev_xaxis_type, self.xaxis_type)
 				):
 				self.redraw_figure()
-			self.prev_xaxis_selected = new
+			self.prev_xaxis_type = self.xaxis_type
 
 	def _firstframe_changed(self):
 		if (self.fft and self.firstframe != self.lastframe) or self.firstframe > self.lastframe:
@@ -261,8 +260,8 @@ class CameraTrendPanel(DoubleTimeTrendPanel, CameraPanel, XlimitsPanel):
 
 		y1 = data.selectchannels(lambda chan: chan.id in self.selected_primary_channels)
 		y2 = data.selectchannels(lambda chan: chan.id in self.selected_secondary_channels)
-		if self.xaxis_selected[0] in self.channels:
-			self.plot.set_data(y1, y2, data.selectchannels(lambda chan: chan.id == self.xaxis_selected[0]))
+		if self.xaxis_type in self.channels:
+			self.plot.set_data(y1, y2, data.selectchannels(lambda chan: chan.id == self.xaxis_type))
 		else:
 			self.plot.set_data(y1, y2)
 		self.redraw()
@@ -274,14 +273,14 @@ class CameraTrendPanel(DoubleTimeTrendPanel, CameraPanel, XlimitsPanel):
 			Item('firstframe', label='First frame', editor=RangeEditor(low=0, high_name='framecount', mode='spinner')),
 			Item('lastframe', label='Last frame', editor=RangeEditor(low=0, high_name='framecount', mode='spinner'), enabled_when='not_fft'),
 			Item('stepframe', label='Key frame mode', enabled_when='not_fft'),
-			Item('direction', editor=EnumEditor(values={1:'1:L2R', 2:'2:R2L', 3:'3:both'})),
+			Item('direction', editor=EnumEditor(values=support.EnumMapping([(1, 'L2R'), (2, 'R2L'), (3, 'both')]))),
 			Item('averaging', tooltip='Per-line averaging', enabled_when='not_fft'),
 			Item('legend'),
 			show_border=True,
 			label='General',
 		),
 		Group(
-			Item('xaxis_selected', label='Data', editor=CheckListEditor(name='xaxis')),
+			Item('xaxis_type', label='Data', editor=EnumEditor(name='xaxis_type_options')),
 			Item('xlimits', style='custom', label='Limits', enabled_when='independent_x'),
 			show_border=True,
 			label='X-axis',

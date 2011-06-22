@@ -331,13 +331,13 @@ class CSVPanel(DoubleTimeTrendPanel):
 	time_type = Enum('unix', 'labview', 'matplotlib', 'custom')
 	time_custom = Property(depends_on='time_type')
 	time_format = Str('%Y-%m-%d %H:%M:%S')
-	time_column = Property(depends_on='channels')
-	time_column_selected = List(['(auto)'])
+	time_column = Str('auto')
+	time_column_options = Property(depends_on='channels')
 
-	primary_channels = Property(depends_on='channels, time_column_selected')
-	secondary_channels = Property(depends_on='channels, time_column_selected')
+	primary_channels = Property(depends_on='channels, time_column')
+	secondary_channels = Property(depends_on='channels, time_column')
 
-	traits_saved = 'time_type', 'time_format', 'time_column_selected'
+	traits_saved = 'time_type', 'time_format', 'time_column'
 
 	def _get_time_custom(self):
 		return self.time_type == 'custom'
@@ -349,26 +349,26 @@ class CSVPanel(DoubleTimeTrendPanel):
 		return self._filter_channels()
 
 	def _filter_channels(self):
-		if self.time_column_selected == ['(auto)']:
+		if self.time_column == 'auto':
 			if self.data:
 				check = self.data.time_channel_headers
 			else:
 				check = []
 		else:
-			check = self.time_column_selected
+			check = self.time_column
 		return [i for i in self.channels if i not in check]
 
-	def _get_time_column(self):
-		return ['(auto)'] + self.channels
+	def _get_time_column_options(self):
+		return gui.support.EnumMapping([('auto', '(auto)')] + self.channels)
 
-	@on_trait_change('selected_primary_channels, selected_secondary_channels, time_type, time_format, time_column_selected')
+	@on_trait_change('selected_primary_channels, selected_secondary_channels, time_type, time_format, time_column')
 	def settings_changed(self):
 		if not self.data:
 			return
-		if self.time_column_selected == ['(auto)']:
+		if self.time_column == 'auto':
 			self.data.time_column = 'auto'
 		else:
-			self.data.time_column = self.channels.index(self.time_column_selected[0])
+			self.data.time_column = self.channels.index(self.time_column)
 		if self.time_custom:
 			self.data.time_type = 'strptime'
 			self.data.time_strptime = self.time_format
@@ -382,7 +382,7 @@ class CSVPanel(DoubleTimeTrendPanel):
 			Group(
 				Item('time_type', label='Type'),
 				Item('time_format', label='Format string', enabled_when='time_custom'),
-				Item('time_column_selected', label='Column', editor=CheckListEditor(name='time_column')),
+				Item('time_column', label='Column', editor=EnumEditor(name='time_column_options')),
 				label='Time data',
 				show_border=True,
 			),
