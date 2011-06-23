@@ -2,7 +2,6 @@ TODO for 1.0
 ============
 * Bug: twinx()ed autoscale applies to both y-axes
 * Bug: markers can cause autoscaled axes to include [0, 1]
-* Enh: Timezone detection or configuration
 * Enh: rework subplot management:
         - Subplot size hinting
         - X-axis labels and vertical spacing when using non-shared axes
@@ -14,10 +13,10 @@ TODO for 1.0
 * Bug: canvas not resized when leaving presentation mode
 * Enh: custom canvas size for export 
 * Bug: Camera film strip Zoom-to-fit doesn't work anymore (just remove it?)
+* Enh: reduce number of digits in FloatEditors
 
 Unprioritized
 =============
-* New: More filters for Camera images (differential)
 * New: Camera multi-image-mode for a single frame
 * Portable project files. Possibly 'Bloated project' containing all data files.
 * Flexible legend positioning: outside graphs, multicolumn, ... 

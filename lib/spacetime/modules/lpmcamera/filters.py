@@ -36,6 +36,15 @@ def bgs_plane(data):
 	return data - a - bx*xgrid - by*ygrid
 
 
+def diff_line(data):
+	# central differences for interior and first differences for endpoints
+	out = numpy.zeros_like(data)
+	out[:, 1:-1] = (data[:, 2:] - data[:, :-2])/2.
+	out[:, 0] = data[:, 1] - data[:, 0]
+	out[:, -1] = data[:, -1] - data[:, -2]
+	return out
+
+
 # for use with the bgs_* functions
 def array(func):
 	def filter(frame):

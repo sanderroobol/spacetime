@@ -43,7 +43,15 @@ class CameraFramePanel(CameraPanel):
 
 	channel = Int(0)
 	channelcount = Int(0)
-	filter = Enum('none', 'line-by-line background subtraction', 'plane background subtraction')
+
+	filter_list = (
+		('bgs_line-by-line', 'line-by-line background subtraction', filters.array(filters.bgs_line_by_line)),
+		('bgs_plane',        'plane background subtraction',        filters.array(filters.bgs_plane)),
+		('diff_line',        'line-by-line differential',           filters.array(filters.diff_line)),
+	)
+	filter_map = dict((i, f) for (i, s, f) in filter_list)
+	filter = Enum('none', *[i for (i, s, f) in filter_list])
+
 	clip = Float(4.)
 	colormap = Enum(sorted((m for m in matplotlib.cm.datad if not m.endswith("_r")), key=string.lower))
 	interpolation = Enum('nearest', 'bilinear', 'bicubic')
@@ -120,10 +128,8 @@ class CameraFramePanel(CameraPanel):
 		else:
 			# FIXME: implement a smarter first/last frame selection, don't redraw everything
 			data = self.data.selectchannel(self.channel).selectframes(self.firstframe, self.lastframe, self.stepframe)
-		if self.filter == 'line-by-line background subtraction':
-			data = data.apply_filter(filters.array(filters.bgs_line_by_line))
-		elif self.filter == 'plane background subtraction':
-			data = data.apply_filter(filters.array(filters.bgs_plane))
+		if self.filter in self.filter_map:
+			data = data.apply_filter(self.filter_map[self.filter])
 		if self.clip > 0:
 			data = data.apply_filter(filters.ClipStdDev(self.clip))
 		self.plot.set_data(data)
@@ -164,7 +170,7 @@ class CameraFramePanel(CameraPanel):
 			label='Display',
 		),
 		Group(
-			Item('filter', label='Filtering'),
+			Item('filter', label='Filtering', editor=EnumEditor(values=support.EnumMapping([(i, s) for (i, s, f) in filter_list]))),
 			Item('clip', label='Color clipping', tooltip='Clip colorscale at <number> standard deviations away from the average (0 to disable)', editor=support.FloatEditor()),
 			show_border=True,
 			label='Filters',
