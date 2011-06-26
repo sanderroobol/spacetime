@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 class MainTab(modules.generic.panels.SerializableTab):
-	version = Str(version.version)
+	version = Property()
 	# the combination of an InstanceEditor with DelegatedTo traits and trait_set(trait_change_notify=False)
 	# seems to be special: the GUI will be updated but no event handlers will be called
 	xlimits = Instance(support.DateTimeLimits, args=())
@@ -30,6 +30,12 @@ class MainTab(modules.generic.panels.SerializableTab):
 	traits_saved = 'version', 'xmin_mpldt', 'xmax_mpldt', 'xauto'
 
 	mainwindow = Any
+
+	def _get_version(self):
+		return version.version
+
+	def _set_version(self, version):
+		pass
 
 	@DrawManager.avoid_callback_loop('xlimits')
 	def xlim_callback(self, ax):
