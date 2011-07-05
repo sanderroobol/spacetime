@@ -138,8 +138,8 @@ class AxisLimits(HasTraits):
 	max = Float(1)
 	auto = Bool(True)
 
-	not_auto = Property(depends_on='auto')
-	auto_list = Property(depends_on='auto')
+	not_auto = Property()
+	auto_list = Property()
 
 	def _get_not_auto(self):
 		return not self.auto
@@ -166,7 +166,7 @@ class AxisLimits(HasTraits):
 
 class LogAxisLimits(AxisLimits):
 	scale = Enum('linear', 'log')
-	log = Property(depends_on='scale')
+	log = Property()
 
 	def _get_log(self):
 		return self.scale == 'log'
@@ -195,6 +195,7 @@ class DateTimeSelector(HasTraits):
 	datetime = Property(depends_on='date, time')
 	mpldt = Property(depends_on='datetime')
 
+	@cached_property
 	def _get_datetime(self):
 		return util.localtz.localize(datetime.datetime.combine(self.date, self.time))
 
@@ -202,6 +203,7 @@ class DateTimeSelector(HasTraits):
 		self.date = dt.date()
 		self.time = dt.time()
 
+	@cached_property
 	def _get_mpldt(self):
 		return util.mpldtfromdatetime(self.datetime)
 
@@ -225,7 +227,7 @@ class DateTimeLimits(HasTraits):
 	min_mpldt = DelegatesTo('min', 'mpldt')
 	max_mpldt = DelegatesTo('max', 'mpldt')
 	auto = Bool(True)
-	not_auto = Property(depends_on='auto')
+	not_auto = Property()
 
 	def _get_not_auto(self):
 		return not self.auto

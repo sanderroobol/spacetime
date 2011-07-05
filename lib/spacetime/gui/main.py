@@ -332,6 +332,7 @@ class App(HasTraits):
 	def _tabs_default(self):
 		return [self.maintab]
 
+	@cached_property
 	def _get_project_filename(self):
 		if not self.project_path:
 			return ''

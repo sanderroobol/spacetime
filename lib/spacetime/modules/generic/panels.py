@@ -136,6 +136,7 @@ class TimeTrendPanel(SubplotPanel):
 		plot.set_ylim_callback(self.ylim_callback)
 		return plot
 
+	@cached_property
 	def _get_primary_channels(self):
 		return self.channels
 
@@ -233,6 +234,7 @@ class DoubleTimeTrendPanel(TimeTrendPanel):
 		plot.set_ylim_callback(self.ylim_callback)
 		return plot
 
+	@cached_property
 	def _get_secondary_channels(self):
 		return self._get_primary_channels()
 
@@ -329,7 +331,7 @@ class CSVPanel(DoubleTimeTrendPanel):
 	filter = 'ASCII text files (*.txt, *.csv, *.tab)', '*.txt|*.csv|*.tab',
 
 	time_type = Enum('unix', 'labview', 'matplotlib', 'custom')
-	time_custom = Property(depends_on='time_type')
+	time_custom = Property()
 	time_format = Str('%Y-%m-%d %H:%M:%S')
 	time_column = Str('auto')
 	time_column_options = Property(depends_on='channels')
@@ -342,9 +344,11 @@ class CSVPanel(DoubleTimeTrendPanel):
 	def _get_time_custom(self):
 		return self.time_type == 'custom'
 
+	@cached_property
 	def _get_primary_channels(self):
 		return self._filter_channels()
 
+	@cached_property
 	def _get_secondary_channels(self):
 		return self._filter_channels()
 
@@ -358,6 +362,7 @@ class CSVPanel(DoubleTimeTrendPanel):
 			check = self.time_column
 		return [i for i in self.channels if i not in check]
 
+	@cached_property
 	def _get_time_column_options(self):
 		return gui.support.EnumMapping([('auto', '(auto)')] + self.channels)
 

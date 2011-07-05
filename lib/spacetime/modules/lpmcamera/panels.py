@@ -60,8 +60,8 @@ class CameraFramePanel(CameraPanel):
 
 	mode = Enum('single frame', 'film strip')
 
-	is_singleframe = Property(depends_on='mode')
-	is_filmstrip = Property(depends_on='mode')
+	is_singleframe = Property()
+	is_filmstrip = Property()
 
 	traits_saved = 'channel', 'filter', 'clip', 'colormap', 'interpolation', 'zoom', 'rotate', 'mode'
 	
@@ -194,9 +194,9 @@ class CameraTrendPanel(DoubleTimeTrendPanel, CameraPanel, XlimitsPanel):
 	xaxis_type = Str('time')
 	xaxis_type_options = Property(depends_on='channels')
 	prev_xaxis_type = None
-	fft = Property(depends_on='xaxis_type')
-	not_fft = Property(depends_on='fft')
-	independent_x = Property(depends_on='xaxis_type')
+	fft = Property()
+	not_fft = Property()
+	independent_x = Property()
 
 	traits_saved = 'averaging', 'xaxis_type'
 
@@ -209,6 +209,7 @@ class CameraTrendPanel(DoubleTimeTrendPanel, CameraPanel, XlimitsPanel):
 	def _get_independent_x(self):
 		return self.xaxis_type != 'time'
 
+	@cached_property
 	def _get_xaxis_type_options(self):
 		return support.EnumMapping([('time', 'Time'), ('fft', 'Frequency (FFT)')] + [(i, 'Channel {0}'.format(i)) for i in self.channels])
 

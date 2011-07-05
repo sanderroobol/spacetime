@@ -26,6 +26,7 @@ class QMSPanel(TimeTrendPanel):
 		super(QMSPanel, self).__init__(*args, **kwargs)
 		self.ylog = True
 
+	@cached_property
 	def _get_normalize_channel_options(self):
 		return gui.support.EnumMapping([('none', 'Disable')] + self.channels)
 
