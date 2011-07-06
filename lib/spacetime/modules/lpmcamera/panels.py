@@ -170,7 +170,7 @@ class CameraFramePanel(CameraPanel):
 			label='Display',
 		),
 		Group(
-			Item('filter', label='Filtering', editor=EnumEditor(values=support.EnumMapping([(i, s) for (i, s, f) in filter_list]))),
+			Item('filter', label='Filtering', editor=EnumEditor(values=support.EnumMapping([('none', 'none')] + [(i, s) for (i, s, f) in filter_list]))),
 			Item('clip', label='Color clipping', tooltip='Clip colorscale at <number> standard deviations away from the average (0 to disable)', editor=support.FloatEditor()),
 			show_border=True,
 			label='Filters',
