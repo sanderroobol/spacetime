@@ -93,9 +93,9 @@ class GraphManager(HasTraits):
 	tabs = List(Instance(modules.generic.panels.Tab))
 	tab_labels = Property(depends_on='tabs')
 	selected = Int(-1)
-	selected_any = Property()
-	selected_not_first = Property()
-	selected_not_last = Property()
+	selected_any = Property(depends_on='selected')
+	selected_not_first = Property(depends_on='selected')
+	selected_not_last = Property(depends_on='selected, tab_labels')
 	add = Event
 	remove = Event
 	move_up = Event

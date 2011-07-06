@@ -331,7 +331,7 @@ class CSVPanel(DoubleTimeTrendPanel):
 	filter = 'ASCII text files (*.txt, *.csv, *.tab)', '*.txt|*.csv|*.tab',
 
 	time_type = Enum('unix', 'labview', 'matplotlib', 'custom')
-	time_custom = Property()
+	time_custom = Property(depends_on='time_type')
 	time_format = Str('%Y-%m-%d %H:%M:%S')
 	time_column = Str('auto')
 	time_column_options = Property(depends_on='channels')

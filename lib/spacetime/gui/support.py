@@ -138,8 +138,8 @@ class AxisLimits(HasTraits):
 	max = Float(1)
 	auto = Bool(True)
 
-	not_auto = Property()
-	auto_list = Property()
+	not_auto = Property(depends_on='auto')
+	auto_list = Property(depends_on='auto')
 
 	def _get_not_auto(self):
 		return not self.auto
@@ -166,7 +166,7 @@ class AxisLimits(HasTraits):
 
 class LogAxisLimits(AxisLimits):
 	scale = Enum('linear', 'log')
-	log = Property()
+	log = Property(depends_on='scale')
 
 	def _get_log(self):
 		return self.scale == 'log'
@@ -227,7 +227,7 @@ class DateTimeLimits(HasTraits):
 	min_mpldt = DelegatesTo('min', 'mpldt')
 	max_mpldt = DelegatesTo('max', 'mpldt')
 	auto = Bool(True)
-	not_auto = Property()
+	not_auto = Property(depends_on='auto')
 
 	def _get_not_auto(self):
 		return not self.auto
