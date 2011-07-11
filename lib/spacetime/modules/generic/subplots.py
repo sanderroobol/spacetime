@@ -306,7 +306,7 @@ class DoubleMultiTrend(MultiTrend, DoubleYAxisHandling):
 		if not quick:
 			if self.secondaryaxes:
 				del self.secondaryaxes.lines[:]
-			self.secondaryaxes.relim()
+				self.secondaryaxes.relim()
 		super(DoubleMultiTrend, self).clear(quick)
 
 
