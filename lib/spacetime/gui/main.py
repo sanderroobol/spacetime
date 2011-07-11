@@ -424,6 +424,7 @@ class App(HasTraits):
 	def toggle_presentation_mode(self):
 		if self.presentation_mode:
 			self.figurewindowui.control.Close()
+			self.figure_fullscreen = False
 		else:
 			self._open_presentation_mode()
 			self.update_title()
