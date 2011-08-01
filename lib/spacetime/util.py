@@ -1,5 +1,5 @@
 import matplotlib.dates
-import time, datetime, pytz
+import datetime, pytz
 import scipy.fftpack, numpy
 
 from .superstruct import Struct

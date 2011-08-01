@@ -118,15 +118,15 @@ class CSV(MultiTrend):
 		pass
 
 	def iterchannels(self):
-			time_columns = list(self.get_time_columns())
-			if time_columns[0] != 0:
-				time = self.parse_time(self.data[:,time_columns[0]])
+		time_columns = list(self.get_time_columns())
+		if time_columns[0] != 0:
+			time = self.parse_time(self.data[:, time_columns[0]])
 
-			for i, label in enumerate(self.channel_labels):
-				if time_columns and i == time_columns[0]:
-					time = self.parse_time(self.data[:,time_columns.pop(0)])
-				else:
-					yield util.Struct(time=time, value=self.data[:,i], **self.get_channel_kwargs(label, i))
+		for i, label in enumerate(self.channel_labels):
+			if time_columns and i == time_columns[0]:
+				time = self.parse_time(self.data[:, time_columns.pop(0)])
+			else:
+				yield util.Struct(time=time, value=self.data[:, i], **self.get_channel_kwargs(label, i))
 
 	def __init__(self, *args, **kwargs):
 		super(CSV, self).__init__(*args, **kwargs)
