@@ -218,7 +218,7 @@ olson_timezones = {
 # 
 # Each value is a date denoting when daylight savings starts for that timezone.
 
-def jsdate(year, month, day, hour, min, sec, whaterever):
+def jsdate(year, month, day, hour, min, sec, whatever):
 	return datetime.datetime(year, month+1, day, hour, min, sec)
 
 olson_dst_start_dates = {

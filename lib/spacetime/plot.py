@@ -93,14 +93,14 @@ class Plot(object):
 		return klass(matplotlib.figure.Figure())
 
 	@classmethod
-	def autopylab(klass, *subplots, **kwargs):
-		import matplotlib.pylab
+	def autopyplot(klass, *subplots, **kwargs):
+		import matplotlib.pyplot
 		plot = klass.newpyplotfigure(**kwargs)
 		for p in subplots:
 			plot.add_subplot(p)
 		plot.setup()
 		plot.draw()
-		matplotlib.pylab.show()
+		matplotlib.pyplot.show()
 		return plot
 
 	def clear(self):

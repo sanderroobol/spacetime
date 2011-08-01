@@ -20,10 +20,10 @@ def bgs_plane(data):
 	ny, nx = data.shape
 	xgrid, ygrid = numpy.meshgrid(numpy.arange(nx), numpy.arange(ny))
 
-	sumxi = (nx-1)/2.;
-	sumxixi = (2*nx-1)*(nx-1)/6.;
-	sumyi = (ny-1)/2.;
-	sumyiyi = (2*ny-1)*(ny-1)/6.;
+	sumxi = (nx-1)/2.
+	sumxixi = (2*nx-1)*(nx-1)/6.
+	sumyi = (ny-1)/2.
+	sumyiyi = (2*ny-1)*(ny-1)/6.
 
 	sumsi = data.mean()
 	sumsixi = (data*xgrid).mean()
