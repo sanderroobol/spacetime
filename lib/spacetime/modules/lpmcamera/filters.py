@@ -10,7 +10,7 @@ def bgs_line_by_line(data):
 	#params = []
 	for i, line in enumerate(data):
 		slope, intercept, r_value, p_value, stderr = scipy.stats.linregress(pixels, line)
-		new[i,:] = line - (slope * pixels + intercept)
+		new[i, :] = line - (slope * pixels + intercept)
 		#params.append((slope, intercept))
 	return new
 

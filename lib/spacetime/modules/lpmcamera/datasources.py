@@ -3,7 +3,6 @@ from __future__ import division
 from ..generic.datasources import DataSource, MultiTrend
 
 import numpy
-import itertools
 
 from camera.formats import raw
 

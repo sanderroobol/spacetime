@@ -14,15 +14,14 @@ logger = logging.getLogger(__name__)
 def _win32_get_appdata():
 	# inspired by Ryan Ginstrom's winpaths module
 	
-	import ctypes
-	from ctypes import wintypes, windll
+	from ctypes import c_int, wintypes, windll
 
 	CSIDL_APPDATA = 26
 
 	SHGetFolderPathW = windll.shell32.SHGetFolderPathW
 	SHGetFolderPathW.argtypes = (
 		wintypes.HWND,
-		ctypes.c_int,
+		c_int,
 		wintypes.HANDLE,
 		wintypes.DWORD,
  		wintypes.LPCWSTR

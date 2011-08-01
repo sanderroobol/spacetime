@@ -41,10 +41,10 @@ class OldGasCabinet(MultiTrend):
 		super(OldGasCabinet, self).__init__(*args, **kwargs)
 		self.data = numpy.loadtxt(self.filename)
 		# FIXME: this is an ugly hack to determine the date. the fileformat should be
-        # modified such that date information is stored INSIDE the file
+		# modified such that date information is stored INSIDE the file
 		import re
 		y, m, d = re.search('(20[0-9]{2})([0-9]{2})([0-9]{2})', self.filename).groups()
- 		self.offset = mpldtfromdatetime(localtz.localize(datetime.datetime(int(y), int(m), int(d))))
+		self.offset = mpldtfromdatetime(localtz.localize(datetime.datetime(int(y), int(m), int(d))))
 
 		columns = self.data.shape[1]
 		assert (columns - 2)  % 4 == 0

@@ -390,13 +390,13 @@ class Image(Subplot):
 	def set_colormap(self, colormap):
 		self.colormap = colormap
 		if self.axes:
- 			for image in self.axes.images:
+			for image in self.axes.images:
 				image.set_cmap(colormap)
 
 	def set_interpolation(self, interpolation):
 		self.interpolation = interpolation
 		if self.axes:
- 			for image in self.axes.images:
+			for image in self.axes.images:
 				image.set_interpolation(interpolation)
 
 	def set_rotate(self, rotate):
