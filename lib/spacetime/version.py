@@ -1,2 +1,2 @@
 name = 'Spacetime'
-version = '0.7'
+version = '0.8-dev'
