@@ -36,7 +36,7 @@ class QMS(MultiTrend):
 		self.header.starttime  = self.parseExtDT(headerlines[3].split('\t')[1].strip())
 		self.header.stoptime   = self.parseExtDT(headerlines[4].split('\t')[1].strip())
 
-		self.masses = [int(i) for i in self.fp.readline().split()]
+		self.masses = self.fp.readline().split()
 		columntitles = self.fp.readline() # not used
 		
 		data = [self.parseLine(line) for line in self.fp if line.strip()]
