@@ -565,13 +565,11 @@ class App(HasTraits):
 
 	def parseargs(self):
 		from optparse import OptionParser
-		parser = OptionParser()
+		parser = OptionParser(usage="usage: %prog [options] [project file]")
 		parser.add_option("--presentation", dest="presentation", action='store_true', help="start in presentation (two window) mode")
 		parser.add_option("--debug", dest="debug", action="store_true", help="print debugging statements")
 
 		(options, args) = parser.parse_args()
-		if len(args):
-			parser.error('invalid argument(s): {0!r}'.format(args))
 
 		return options, args
 
@@ -592,6 +590,11 @@ class App(HasTraits):
 		self.ui = self.edit_traits()
 		self.prefs.restore_window('main', self.ui)
 		self.init_recent_menu()
+
+		if args:
+			# passing in 'self' for the info argument is a bit of a hack, but fortunately self.ui.context seems to be working fine
+			self.ui.handler.do_open(self, args[0])
+			# silently ignore multiple projects for Windows Explorer integration
 
 		app.MainLoop()
 

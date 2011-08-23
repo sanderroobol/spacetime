@@ -55,6 +55,8 @@ print """
 
   !include "MUI2.nsh"
 
+  !include "fileassoc.nsh"
+
 ;--------------------------------
 ;General
 
@@ -132,6 +134,9 @@ print """
   CreateShortCut "$SMPROGRAMS\Spacetime\Spacetime (debug mode).lnk" "$INSTDIR\debug.bat" "" "$INSTDIR\spacetime\icons\spacetime-icon.ico"
   CreateShortCut "$SMPROGRAMS\Spacetime\Uninstall.lnk" "$INSTDIR\Uninstall.exe"
   
+  !insertmacro APP_ASSOCIATE "spacetime" "Spacetime.Project" "Spacetime project" "$INSTDIR\spacetime\icons\spacetime-project.ico" "Open with Spacetime" '$INSTDIR\pythonw.exe -m spacetime.gui.main "%1"'
+  !insertmacro UPDATEFILEASSOC
+
   ;Store installation folder
   WriteRegStr HKCU "Software\Spacetime" "" $INSTDIR
 
@@ -165,6 +170,9 @@ print """
   ; END AUTOMATICALLY GENERATED LIST
 
   RMDir /r "$SMPROGRAMS\Spacetime"
+
+  !insertmacro APP_UNASSOCIATE "spacetime" "Spacetime.Project"
+  !insertmacro UPDATEFILEASSOC
   
   Delete "$INSTDIR\Uninstall.exe"
 
