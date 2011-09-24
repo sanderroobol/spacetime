@@ -569,9 +569,7 @@ class App(HasTraits):
 		parser.add_option("--presentation", dest="presentation", action='store_true', help="start in presentation (two window) mode")
 		parser.add_option("--debug", dest="debug", action="store_true", help="print debugging statements")
 
-		(options, args) = parser.parse_args()
-
-		return options, args
+		return parser.parse_args()
 
 	def run(self):
 		options, args = self.parseargs()
