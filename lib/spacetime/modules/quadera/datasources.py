@@ -40,8 +40,12 @@ class QMS(MultiTrend):
 		columntitles = self.fp.readline() # not used
 		
 		data = [self.parseLine(line) for line in self.fp if line.strip()]
-		if len(data[-2]) > len(data[-1]):
-			data[-1].extend([0.] * (len(data[-2]) - len(data[-1])))
+
+		# the number of channels can be changed during measurement, and the last line is not guaranteed to be complete
+		padlength = len(data[0]) # we assume that the first line is always the longest, this seems to be valid even when adding channels halfway
+		nanlist = [numpy.nan]
+		for line in data:
+			line.extend(nanlist * (padlength - len(line)))
 		rawdata = numpy.array(data)
 
 		self.channels = []
