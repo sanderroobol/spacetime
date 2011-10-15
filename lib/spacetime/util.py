@@ -28,18 +28,17 @@ def mpldtstrptime(str, format, tz=localtz):
 
 
 def easyfft(data, sample_frequency):
-	N = len(data) - 1
-	z = scipy.fftpack.fftshift(scipy.fftpack.fft(data) / N)
+	N = len(data)
+	z = scipy.fftpack.fft(data) / N
 
 	if N % 2 == 0:
-		freq = numpy.arange(-N/2, N/2, dtype=float)
+		freq = numpy.linspace(0, sample_frequency / 2., N/2+1)
+		zpos = z[0:N/2+1]
 	else:
-		freq = numpy.arange(-(N-1)/2, (N+1)/2, dtype=float)
-	freq *= sample_frequency / N
+		freq = numpy.linspace(0, sample_frequency / 2., (N+1)/2)
+		zpos = z[0:(N+1)/2]
 
-	z = z[freq > 0]       # FIXME: this could be simplified
-	freq = freq[freq > 0] # idem
-	return (freq, z * z.conj())
+	return freq, abs(zpos)**2
 
 
 class ContextManager(object):
