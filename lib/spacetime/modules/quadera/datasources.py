@@ -20,10 +20,16 @@ class QMS(MultiTrend):
 		return util.mpldtstrptime(s, '%m/%d/%Y %I:%M:%S.%f %p')
 
 	@staticmethod
+	def floatnan(s):
+		if not s:
+			return numpy.nan
+		return float(s)
+
+	@staticmethod
 	def parseLine(line):
 		data = line.strip().split('\t')
 		assert len(data) % 3 == 0
-		return [float(d) for (i,d) in enumerate(data) if (i % 3) in (1, 2)]
+		return [QMS.floatnan(d) for (i,d) in enumerate(data) if (i % 3) in (1, 2)]
 
 	def __init__(self, *args, **kwargs):
 		super(QMS, self).__init__(*args, **kwargs)
