@@ -13,8 +13,8 @@ class GasCabinet(CSV):
 	valves = ['MIX', 'MRS', 'INJ', 'OUT', 'Pump'] 
 
 	def set_header(self, line):
-		self.channel_labels = ['{0} {1}'.format(c, p) for (c, p) in itertools.product(self.controllers, self.parameters[1:])] + \
-			['{0} valve'.format(v) for v in self.valves]
+		self.channel_labels = ['{0} {1}'.format(c, p) for (c, p) in itertools.product(self.controllers, self.parameters)] + \
+			['Valves time'] + ['{0} valve'.format(v) for v in self.valves]
 
 	def get_time_columns(self):
 		return [len(self.parameters) * i for i in range(len(self.controllers))] + [len(self.controllers) * len(self.parameters)] 

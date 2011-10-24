@@ -77,7 +77,7 @@ class CSV(MultiTrend):
 	time_column = 0
 	time_type = 'unix'
 	time_strptime = '%Y-%m-%d %H:%M:%S'
-	time_channel_headers = set('Time')
+	time_channel_headers = set(['Time'])
 
 	def set_header(self, line):
 		self.channel_labels = line.strip().split('\t')
