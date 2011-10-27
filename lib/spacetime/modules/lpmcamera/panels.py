@@ -56,7 +56,7 @@ class CameraFramePanel(CameraPanel):
 	colormap = Enum(sorted((m for m in matplotlib.cm.datad if not m.endswith("_r")), key=string.lower))
 	interpolation = Enum('nearest', 'bilinear', 'bicubic')
 	zoom = Bool(False)
-	rotate = Bool(True)
+	rotate = Bool(False)
 
 	mode = Enum('single frame', 'film strip')
 
