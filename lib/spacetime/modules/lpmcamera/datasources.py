@@ -25,7 +25,7 @@ class Camera(MultiTrend):
 
 		frameinfo = self.rawfile.frameInfo(frame)
 		ret.tstart = util.mpldtfromtimestamp(frameinfo.acquisitionTime)
-		ret.tend = ret.tstart + ret.image.size * 2 / frameinfo.pixelclock_kHz / 1000 / 86400
+		ret.tend = ret.tstart + ret.image.size * 2 / frameinfo.pixelclock_kHz / 1000 * frameinfo.samplesPerPoint / 86400
 		return ret
 
 	def getchanneldata(self, channel, frameiter=None):
@@ -45,13 +45,13 @@ class Camera(MultiTrend):
 				image = numpy.zeros((lrdata.shape[0], lrdata.shape[1]*2))
 				image[:, 0:lrdata.shape[1]] = lrdata
 				image[:, lrdata.shape[1]:] = rldata[:, ::-1]
-				tend = tstart + image.size / frameinfo.pixelclock_kHz / 1000 / 86400
+				tend = tstart + image.size / frameinfo.pixelclock_kHz / 1000 * frameinfo.samplesPerPoint / 86400
 			else:
 				image = frame.asArray(direction=self.direction)
-				tend = tstart + image.size * 2 / frameinfo.pixelclock_kHz / 1000 / 86400
+				tend = tstart + image.size * 2 / frameinfo.pixelclock_kHz / 1000 * frameinfo.samplesPerPoint / 86400
 
 			if self.fft:
-				freq, power = util.easyfft(image.flatten(), frameinfo.pixelclock_kHz * 1000)
+				freq, power = util.easyfft(image.flatten(), frameinfo.pixelclock_kHz * 1000 / frameinfo.samplesPerPoint)
 				data.append(power)
 				time.append(freq)
 			else:
