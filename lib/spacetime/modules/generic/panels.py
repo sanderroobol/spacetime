@@ -28,6 +28,11 @@ class TraitsSavedMeta(HasTraits.__metaclass__):
 class SerializableTab(Tab):
 	__metaclass__ = TraitsSavedMeta
 	drawmgr = Instance(gui.figure.DrawManager)
+	_modified = Bool(False)
+
+	def __init__(self, *args, **kwargs):
+		super(SerializableTab, self).__init__(*args, **kwargs)
+		self.on_trait_change(self.set_modified, list(self.traits_saved))
 
 	def _delayed_from_serialized(self, src):
 		with self.drawmgr.hold():
@@ -51,6 +56,12 @@ class SerializableTab(Tab):
 			return dict((id, getattr(self, id)) for id in self.traits_saved)
 		else:
 			return dict()
+
+	def clear_modified(self):
+		self._modified = False
+
+	def set_modified(self):
+		self._modified = True
 
 
 class SubplotPanel(SerializableTab):

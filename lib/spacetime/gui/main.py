@@ -76,7 +76,7 @@ class MainWindowHandler(Handler):
 	def close_project(self, info):
 		mainwindow = info.ui.context['object']
 
-		if mainwindow.has_modifications():
+		if mainwindow.project_modified:
 			dlg = wx.MessageDialog(info.ui.control, 'Save current project?', style=wx.YES_NO | wx.CANCEL | wx.ICON_EXCLAMATION)
 			ret = dlg.ShowModal()
 			if ret == wx.ID_CANCEL:
@@ -293,6 +293,8 @@ class App(HasTraits):
 
 	project_path = Str()
 	project_filename = Property(depends_on='project_path')
+	_tabs_modified = Bool(False)
+	project_modified = Property(depends_on='_tabs_modified, tabs._modified')
 
 	tabs = List(Instance(modules.generic.panels.Tab))
 
@@ -321,13 +323,20 @@ class App(HasTraits):
 		return DrawManager(self.redraw_figure, self.update_canvas)
 
 	def _tabs_changed(self):
+		self._tabs_modified = True
 		self.drawmgr.redraw_figure()
 
 	def _tabs_items_changed(self, event):
-		for removed in event.removed:
-			if isinstance(removed, MainTab):
-				self.tabs.insert(0, removed)
-		self.drawmgr.redraw_figure()
+		with self.drawmgr.hold():
+			for removed in event.removed:
+				if isinstance(removed, MainTab):
+					self.tabs.insert(0, removed)
+				else:
+					self._tabs_modified = True
+					self.drawmgr.redraw_figure()
+			if event.added:
+				self._tabs_modified = True
+				self.drawmgr.redraw_figure()
 
 	def _tabs_default(self):
 		return [self.maintab]
@@ -338,11 +347,21 @@ class App(HasTraits):
 			return ''
 		return os.path.basename(self.project_path)
 
+	@cached_property
+	def _get_project_modified(self):
+		return self._tabs_modified or True in set(tab._modified for tab in self.tabs)
+
+	def clear_project_modified(self):
+		self._tabs_modified = False
+		for tab in self.tabs:
+			tab._modified = False
+
 	def new_project(self):
 		self.tabs = self._tabs_default()
 		for klass in self.panelmgr.list_classes():
 			klass.number = 0
 		self.project_path = ''
+		self.clear_project_modified()
 
 	def open_project(self, path):
 		with open(path, 'rb') as fp:
@@ -358,6 +377,7 @@ class App(HasTraits):
 				except KeyError:
 					support.Message.show(title='Warning', message='Warning: incompatible project file', desc='Ignoring unknown graph id "{0}". Project might not be completely functional.'.format(id))
 			self.project_path = path
+			wx.CallAfter(self.clear_project_modified)
 
 	def save_project(self, path):
 		data = [('general', self.tabs[0].get_serialized())]
@@ -368,19 +388,18 @@ class App(HasTraits):
 			fp.write('Spacetime\nJSON\n')
 			json.dump(data, fp)
 		self.project_path = path
+		self.clear_project_modified()
 		return True
 
+	@on_trait_change('project_modified')
 	def update_title(self):
 		if self.project_filename:
-			self.ui.title = '{0} - {1}'.format(version.name, self.project_filename)
+			self.ui.title = '{0} - {1}{2}'.format(version.name, self.project_filename, '*' if self.project_modified else '')
 		else:
 			self.ui.title = version.name
 
 		if self.figurewindowui:
 			self.figurewindowui.title = self.ui.title
-
-	def has_modifications(self):
-		return len(self.tabs) > 1
 
 	def redraw_figure(self):
 		self.plot.clear()
