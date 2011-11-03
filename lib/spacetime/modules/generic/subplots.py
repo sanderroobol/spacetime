@@ -315,7 +315,7 @@ class Image(Subplot):
 	interpolation = 'nearest'
 	tzoom = 1
 	mode = 'film strip'
-	rotate = True
+	rotate = False
 	marker = None
 
 	def __init__(self, *args, **kwargs):
