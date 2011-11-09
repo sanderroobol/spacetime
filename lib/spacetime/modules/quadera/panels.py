@@ -7,23 +7,18 @@ from ... import gui
 from . import subplots, datasources
 
 
-class QMSPanel(TimeTrendPanel):
-	id = 'quaderaqms'
-	label = 'QMS'
-	desc = 'Reads ASCII exported Quadera files containing data from a Pfeiffer PrismaPlus quadrupole mass spectrometer.'
-
+class QuaderaPanel(TimeTrendPanel):
 	normalize_channel = Str('none')
 	normalize_channel_options = Property(depends_on='channels')
 	normalize_factor = Float(1.)
 
-	datafactory = datasources.QMS
 	plotfactory = subplots.QMS
 	filter = 'Quadera ASCII files (*.asc)', '*.asc'
 
 	traits_saved = 'normalize_channel', 'normalize_factor'
 
 	def __init__(self, *args, **kwargs):
-		super(QMSPanel, self).__init__(*args, **kwargs)
+		super(QuaderaPanel, self).__init__(*args, **kwargs)
 		self.ylog = True
 
 	@cached_property
@@ -50,3 +45,21 @@ class QMSPanel(TimeTrendPanel):
 			Include('left_yaxis_group'),
 			Include('relativistic_group'),
 		)
+
+
+class QuaderaMIDPanel(QuaderaPanel):
+	id = 'quadera_mid'
+	label = 'Quadera MID'
+	desc = 'Reads ASCII exported Quadera MID projects from a Pfeiffer PrismaPlus quadrupole mass spectrometer.'
+
+	datafactory = datasources.QuaderaMID
+
+
+class QuaderaScanPanel(QuaderaPanel):
+	id = 'quadera_scan'
+	label = 'Quadera Scan'
+	desc = 'Reads ASCII exported Quadera Scan projects from a Pfeiffer PrismaPlus quadrupole mass spectrometer.'
+
+	datafactory = datasources.QuaderaScan
+
+

@@ -6,46 +6,81 @@ import numpy
 from ... import util
 from ..generic.datasources import MultiTrend
 
-class QMS(MultiTrend):
+
+def parseDT(s):
+	return util.mpldtstrptime(s, '%m/%d/%Y %I:%M:%S %p')
+
+def parseExtDT(s):
+	return util.mpldtstrptime(s, '%m/%d/%Y %I:%M:%S.%f %p')
+
+def floatnan(s):
+	if not s:
+		return numpy.nan
+	return float(s)
+
+def parseLine(line):
+	data = line.strip().split('\t')
+	assert len(data) % 3 == 0
+	return [floatnan(d) for (i,d) in enumerate(data) if (i % 3) in (1, 2)]
+
+
+class QuaderaScan(MultiTrend):
+	def __init__(self, *args, **kwargs):
+		super(QuaderaScan, self).__init__(*args, **kwargs)
+		self.fp = open(self.filename)	
+
+		file_header = [self.fp.readline() for i in range(3)]
+		time_data = []
+		ion_data = []
+		
+		while 1:
+			scan_header = [self.fp.readline() for i in range(7)]
+			if scan_header[-1] == '':
+				break
+			time_data.append(parseExtDT(scan_header[4].split('\t')[1].strip()))
+			scan_data = []
+			while 1:
+				line = self.fp.readline().strip()
+				if line == '': # empty line indicates end of scan
+					break
+				scan_data.append(numpy.array(line.split(), dtype=float))
+			scan_data = numpy.array(scan_data)
+			masses = scan_data[:, 0]
+			ion_data.append(scan_data[:, 1])
+			
+		self.time_data = numpy.array(time_data)
+		self.ion_data = numpy.array(ion_data)
+		self.masses = numpy.array(masses) # copy
+
+		self.channels = []
+		for i, m in enumerate(self.masses):
+			d = util.Struct()
+			d.id = str(m)
+			d.time = self.time_data
+			d.value = self.ion_data[:, i]
+			self.channels.append(d)
+
+
+class QuaderaMID(MultiTrend):
 	channels = None
 	masses = None
 	fp = None
 
-	@staticmethod
-	def parseDT(s):
-		return util.mpldtstrptime(s, '%m/%d/%Y %I:%M:%S %p')
-
-	@staticmethod
-	def parseExtDT(s):
-		return util.mpldtstrptime(s, '%m/%d/%Y %I:%M:%S.%f %p')
-
-	@staticmethod
-	def floatnan(s):
-		if not s:
-			return numpy.nan
-		return float(s)
-
-	@staticmethod
-	def parseLine(line):
-		data = line.strip().split('\t')
-		assert len(data) % 3 == 0
-		return [QMS.floatnan(d) for (i,d) in enumerate(data) if (i % 3) in (1, 2)]
-
 	def __init__(self, *args, **kwargs):
-		super(QMS, self).__init__(*args, **kwargs)
+		super(QuaderaMID, self).__init__(*args, **kwargs)
 		self.fp = open(self.filename)
 
 		headerlines = [self.fp.readline() for i in range(6)]
 		self.header = util.Struct()
-		self.header.source     =                 headerlines[0].split('\t')[1].strip()
-		self.header.exporttime =    self.parseDT(headerlines[1].split('\t')[1].strip())
-		self.header.starttime  = self.parseExtDT(headerlines[3].split('\t')[1].strip())
-		self.header.stoptime   = self.parseExtDT(headerlines[4].split('\t')[1].strip())
+		self.header.source     =            headerlines[0].split('\t')[1].strip()
+		self.header.exporttime =    parseDT(headerlines[1].split('\t')[1].strip())
+		self.header.starttime  = parseExtDT(headerlines[3].split('\t')[1].strip())
+		self.header.stoptime   = parseExtDT(headerlines[4].split('\t')[1].strip())
 
 		self.masses = self.fp.readline().split()
 		columntitles = self.fp.readline() # not used
 		
-		data = [self.parseLine(line) for line in self.fp if line.strip()]
+		data = [parseLine(line) for line in self.fp if line.strip()]
 
 		# the number of channels can be changed during measurement, and the last line is not guaranteed to be complete
 		padlength = len(data[0]) # we assume that the first line is always the longest, this seems to be valid even when adding channels halfway
