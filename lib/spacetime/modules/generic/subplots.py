@@ -310,7 +310,50 @@ class DoubleMultiTrend(MultiTrend, DoubleYAxisHandling):
 		super(DoubleMultiTrend, self).clear(quick)
 
 
-class Image(Subplot):
+class ImageBase(Subplot):
+	colormap = 'rainbow'
+	interpolation = 'nearest'
+
+	def set_colormap(self, colormap):
+		self.colormap = colormap
+		if self.axes:
+			for image in self.axes.images:
+				image.set_cmap(colormap)
+
+	def set_interpolation(self, interpolation):
+		self.interpolation = interpolation
+		if self.axes:
+			for image in self.axes.images:
+				image.set_interpolation(interpolation)
+
+
+class Time2D(YAxisHandling, ImageBase):
+	def draw(self):
+		if not self.data:
+			return
+
+		for image in self.data.iterimages():
+			self.axes.imshow(self.get_imdata(image), origin='lower', extent=(image.tstart, image.tend, image.ybottom, image.ytop), aspect='auto', cmap=self.colormap, interpolation=self.interpolation)
+
+		self.ylim_rescale()
+
+	def clear(self, quick=False):
+		if not quick and self.axes:
+			del self.axes.images[:], self.axes.lines[:], self.axes.patches[:]
+			self.axes.relim()
+
+	def draw_marker(self, marker):
+		shinysilver = (.75, .75, .75, .5)
+		ax = self.axes
+		if marker.interval():
+			vspan = ax.axvspan(marker.left, marker.right, color=shinysilver, zorder=1e9)
+			marker.add_callback(lambda: ax.patches.remove(vspan))
+		else:
+			line = ax.axvline(marker.left, color=shinysilver, zorder=1e9)
+			marker.add_callback(lambda: ax.lines.remove(line))
+
+
+class Image(ImageBase):
 	colormap = 'afmhot'
 	interpolation = 'nearest'
 	tzoom = 1
@@ -381,23 +424,12 @@ class Image(Subplot):
 		if not quick:
 			if self.axes:
 				del self.axes.lines[:], self.axes.images[:], self.axes.patches[:]
-			self.axes.relim()
+				self.axes.relim()
 			if self.marker:
 				self.parent.markers.remove(self.marker)
 		self.marker = None
 		super(Image, self).clear(quick)
 
-	def set_colormap(self, colormap):
-		self.colormap = colormap
-		if self.axes:
-			for image in self.axes.images:
-				image.set_cmap(colormap)
-
-	def set_interpolation(self, interpolation):
-		self.interpolation = interpolation
-		if self.axes:
-			for image in self.axes.images:
-				image.set_interpolation(interpolation)
 
 	def set_rotate(self, rotate):
 		if rotate == self.rotate:
@@ -414,3 +446,4 @@ class Image(Subplot):
 
 	def draw_marker(self, left, right=None):
 		pass
+

@@ -32,6 +32,7 @@ class QuaderaScan(MultiTrend):
 		file_header = [self.fp.readline() for i in range(3)]
 		time_data = []
 		ion_data = []
+		scan_lengths = set()
 		
 		while 1:
 			scan_header = [self.fp.readline() for i in range(7)]
@@ -47,10 +48,22 @@ class QuaderaScan(MultiTrend):
 			scan_data = numpy.array(scan_data)
 			masses = scan_data[:, 0]
 			ion_data.append(scan_data[:, 1])
+			scan_lengths.add(len(masses))
 			
 		self.time_data = numpy.array(time_data)
-		self.ion_data = numpy.array(ion_data)
 		self.masses = numpy.array(masses) # copy
+
+		# pad the ion data array if necessary
+		if len(scan_lengths) != 1:
+			pad = max(scan_lengths)
+			nid = []
+			for i in ion_data:
+				if i.size < pad:
+					nid.append(numpy.append(i, numpy.zeros(pad - i.size)))
+				else:
+					nid.append(i)
+			ion_data = nid
+		self.ion_data = numpy.array(ion_data)
 
 		self.channels = []
 		for i, m in enumerate(self.masses):
@@ -59,6 +72,15 @@ class QuaderaScan(MultiTrend):
 			d.time = self.time_data
 			d.value = self.ion_data[:, i]
 			self.channels.append(d)
+
+	def iterimages(self):
+		d = util.Struct()
+		d.data = self.ion_data.transpose()
+		d.tstart = self.time_data[0]
+		d.tend = self.time_data[-1]
+		d.ybottom = self.masses[0]
+		d.ytop = self.masses[-1]
+		yield d
 
 
 class QuaderaMID(MultiTrend):

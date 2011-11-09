@@ -2,6 +2,9 @@ from enthought.traits.api import *
 from enthought.traits.ui.api import *
 import wx
 
+import string
+import matplotlib.cm
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -405,4 +408,56 @@ class CSVPanel(DoubleTimeTrendPanel):
 			Include('left_yaxis_group'),
 			Include('right_yaxis_group'),
 			Include('relativistic_group'),
+		)
+
+
+class Time2DPanel(TimeTrendPanel):
+	colormap = Enum(sorted((m for m in matplotlib.cm.datad if not m.endswith("_r")), key=string.lower))
+	interpolation = Enum('nearest', 'bilinear', 'bicubic')
+
+	plotfactory = subplots.Time2D
+
+	def __init__(self, *args, **kwargs):
+		self.trait_set(trait_change_notify=False, colormap='spectral')
+		super(Time2DPanel, self).__init__(*args, **kwargs)
+
+	def _colormap_changed(self):
+		self.plot.set_colormap(self.colormap)
+		self.update()
+
+	def _interpolation_changed(self):
+		self.plot.set_interpolation(self.interpolation)
+		self.update()
+
+	@on_trait_change('filename, reload')
+	def load_file(self):
+		super(Time2DPanel, self).load_file()
+		self.plot.set_data(self.data)
+		self.redraw()
+
+	def settings_changed(self):
+		pass
+
+	def traits_view(self):
+		return gui.support.PanelView(
+			Group(
+				Item('visible'),
+				Item('filename', editor=gui.support.FileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),
+				Item('reload', show_label=False),
+				show_border=True,
+				label='General',
+			),
+			Group(
+				Item('colormap'),
+				Item('interpolation', editor=EnumEditor(values=gui.support.EnumMapping([('nearest', 'none'), 'bilinear', 'bicubic']))),
+				show_border=True,
+				label='Display',
+			),
+			Group(
+				Item('ylimits', style='custom', label='Y scale'),
+				# FIXME: colorscale
+				show_border=True,
+				label='Limits',
+			),
+			# FIXME Include('relativistic_group'),
 		)
