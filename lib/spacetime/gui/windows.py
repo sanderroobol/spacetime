@@ -51,9 +51,11 @@ class PanelSelector(HasTraits):
 		modules = []
 		for name, panels in self.panelmgr.panels_by_module.iteritems():
 			treepanels = [PanelTreePanel(id=panel.id, label=panel.label, desc=panel.desc) for panel in panels]
+			treepanels.sort(key=lambda x:x.label)
 			if treepanels:
 				module = self.panelmgr.get_module_by_name(name)
 				modules.append(PanelTreeModule(label=module.label, desc=module.desc, panels=treepanels))
+		modules.sort(key=lambda x: x.label)
 		return PanelTreeRoot(modules=modules)
 
 	def iter_selected(self):
