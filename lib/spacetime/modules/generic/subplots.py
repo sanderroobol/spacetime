@@ -311,8 +311,13 @@ class DoubleMultiTrend(MultiTrend, DoubleYAxisHandling):
 
 
 class ImageBase(Subplot):
-	colormap = 'rainbow'
+	colormap = 'spectral'
 	interpolation = 'nearest'
+
+	clim_min = 0.
+	clim_max = 1.
+	clim_auto = True
+	clim_log = False
 
 	def set_colormap(self, colormap):
 		self.colormap = colormap
@@ -326,6 +331,30 @@ class ImageBase(Subplot):
 			for image in self.axes.images:
 				image.set_interpolation(interpolation)
 
+	def set_clim(self, min, max, auto, log):
+		self.clim_min = min
+		self.clim_max = max
+		self.clim_auto = auto
+		self.clim_log = log
+		self.clim_rescale()
+
+	def clim_rescale(self):
+		if self.axes:
+			for image in self.axes.images:
+				# NOTE: it seems that a single instance of mpl.colors.Normalize isn't meant to be used for multiple images
+				image.norm = self.get_clim_norm()
+
+	def get_clim_norm(self):
+		if self.clim_auto:
+			min = max = None
+		else:
+			min = self.clim_min
+			max = self.clim_max
+		if self.clim_log:
+			return matplotlib.colors.LogNorm(min, max)
+		else:
+			return matplotlib.colors.Normalize(min, max)
+
 
 class Time2D(YAxisHandling, ImageBase):
 	def draw(self):
@@ -333,7 +362,10 @@ class Time2D(YAxisHandling, ImageBase):
 			return
 
 		for image in self.data.iterimages():
-			self.axes.imshow(self.get_imdata(image), origin='lower', extent=(image.tstart, image.tend, image.ybottom, image.ytop), aspect='auto', cmap=self.colormap, interpolation=self.interpolation)
+			self.axes.imshow(self.get_imdata(image), 
+				origin='lower', extent=(image.tstart, image.tend, image.ybottom, image.ytop), aspect='auto',
+				cmap=self.colormap, interpolation=self.interpolation, norm=self.get_clim_norm()
+			)
 
 		self.ylim_rescale()
 

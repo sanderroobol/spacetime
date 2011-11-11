@@ -415,6 +415,14 @@ class Time2DPanel(TimeTrendPanel):
 	colormap = Enum(sorted((m for m in matplotlib.cm.datad if not m.endswith("_r")), key=string.lower))
 	interpolation = Enum('nearest', 'bilinear', 'bicubic')
 
+	climits = Instance(gui.support.LogAxisLimits, args=())
+	cauto = DelegatesTo('climits', 'auto')
+	cmin = DelegatesTo('climits', 'min')
+	cmax = DelegatesTo('climits', 'max')
+	clog = DelegatesTo('climits', 'log')
+
+	traits_saved = 'colormap', 'interpolation', 'cauto', 'cmin', 'cmax', 'clog'
+
 	plotfactory = subplots.Time2D
 
 	def __init__(self, *args, **kwargs):
@@ -428,6 +436,11 @@ class Time2DPanel(TimeTrendPanel):
 	def _interpolation_changed(self):
 		self.plot.set_interpolation(self.interpolation)
 		self.update()
+
+	@on_trait_change('cmin, cmax, cauto, clog')
+	def clim_changed(self):
+		self.plot.set_clim(self.climits.min, self.climits.max, self.climits.auto, self.climits.log)
+		self.redraw()
 
 	@on_trait_change('filename, reload')
 	def load_file(self):
@@ -455,7 +468,7 @@ class Time2DPanel(TimeTrendPanel):
 			),
 			Group(
 				Item('ylimits', style='custom', label='Y scale'),
-				# FIXME: colorscale
+				Item('climits', style='custom', label='Color scale'),
 				show_border=True,
 				label='Limits',
 			),
