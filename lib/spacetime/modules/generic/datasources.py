@@ -107,9 +107,9 @@ class CSV(MultiTrend):
 			return data / 86400. + 695056
 		elif self.time_type == 'strptime':
 			try:
-				return numpy.fromiter((time.strptime(i, self.strptime) for i in data), dtype=float)
+				return numpy.fromiter((util.mpldtstrptime(i, self.time_strptime) for i in data), dtype=float)
 			except TypeError:
-				return time.strptime(data, self.strptime)	
+				return util.mpldtstrptime(data, self.time_strptime)	
 
 	def get_channel_kwargs(self, label, i):
 		return dict(id=label)
@@ -126,7 +126,7 @@ class CSV(MultiTrend):
 			if time_columns and i == time_columns[0]:
 				time = self.parse_time(self.data[:, time_columns.pop(0)])
 			else:
-				yield util.Struct(time=time, value=self.data[:, i], **self.get_channel_kwargs(label, i))
+				yield util.Struct(time=time, value=self.data[:, i].astype(float), **self.get_channel_kwargs(label, i))
 
 	def __init__(self, *args, **kwargs):
 		super(CSV, self).__init__(*args, **kwargs)

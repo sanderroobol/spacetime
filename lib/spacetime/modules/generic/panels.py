@@ -342,7 +342,7 @@ class CSVPanel(DoubleTimeTrendPanel):
 	desc = 'Flexible reader for CSV / tab separated / ASCII files.\n\nAccepts times as unix timestamp (seconds sinds 1970-1-1 00:00:00 UTC), Labview timestamp (seconds since since 1904-1-1 00:00:00 UTC), Matplotlib timestamps (days since 0001-01-01 UTC, plus 1) or arbitrary strings (strptime format).'
 
 	datafactory = datasources.CSV
-	filter = 'ASCII text files (*.txt, *.csv, *.tab)', '*.txt|*.csv|*.tab',
+	filter = 'ASCII text files (*.txt, *.csv, *.tab)', '*.txt;*.csv;*.tab',
 
 	time_type = Enum('unix', 'labview', 'matplotlib', 'custom')
 	time_custom = Property(depends_on='time_type')
