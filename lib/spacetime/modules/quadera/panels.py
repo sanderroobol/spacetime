@@ -66,7 +66,7 @@ class QuaderaScanPanel(QuaderaMIDPanel):
 
 class Quadera2DScanPanel(NormalizationPanel, Time2DPanel):
 	id = 'quadera_scan2d'
-	label = 'Quadera Scan 2D'
+	label = 'Quadera Scan 2D (experimental)'
 	desc = 'Reads ASCII exported Quadera Scan projects from a Pfeiffer PrismaPlus quadrupole mass spectrometer, makes pretty 2D plots.'
 
 	plotfactory = subplots.Q2D

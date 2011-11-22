@@ -338,7 +338,7 @@ class XlimitsPanel(HasTraits):
 
 class CSVPanel(DoubleTimeTrendPanel):
 	id = 'csv'
-	label = 'Plain text'
+	label = 'Plain text (experimental)'
 	desc = 'Flexible reader for CSV / tab separated / ASCII files.\n\nAccepts times as unix timestamp (seconds sinds 1970-1-1 00:00:00 UTC), Labview timestamp (seconds since since 1904-1-1 00:00:00 UTC), Matplotlib timestamps (days since 0001-01-01 UTC, plus 1) or arbitrary strings (strptime format).'
 
 	datafactory = datasources.CSV
