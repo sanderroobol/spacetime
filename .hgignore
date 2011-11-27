@@ -3,3 +3,4 @@
 ^win32/python-dist/
 ^win32/installer\.nsi$
 \.DS_Store$
+^pylint/pylint_.*\.html$

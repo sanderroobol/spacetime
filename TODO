@@ -14,12 +14,13 @@ TODO for 1.0
 * Enh: custom canvas size for export 
 * Bug: Camera film strip Zoom-to-fit doesn't work anymore (just remove it?)
 * Enh: reduce number of digits in FloatEditors
-* New: Windows explorer file associations
+* Bug: zoom to fit / autoscale doesn't work for Camera Images
+* Enh: Allow double-clicking and pressing enter in Add subgraph window
 
 Unprioritized
 =============
 * New: Camera multi-image-mode for a single frame
-* Use AbsoluteGridSpec for subplot positioning (requires matplotlib 1.0.2)
+* Use AbsoluteGridSpec for subplot positioning (requires matplotlib 1.0.1 or this patch https://github.com/matplotlib/matplotlib/commit/c108b92b7c659cf762d241ac7f4ab5c368cead81)
 * Portable project files. Possibly 'Bloated project' containing all data files.
 * Flexible legend positioning: outside graphs, multicolumn, ... 
 * click in time graph and jump to camera image (single mode)
