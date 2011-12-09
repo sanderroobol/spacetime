@@ -7,11 +7,19 @@ from ... import util
 from ..generic.datasources import MultiTrend
 
 
+def multistrptime(s, formats):
+	for fmt in formats:
+		try:
+			return util.mpldtstrptime(s, fmt)
+		except ValueError:
+			pass
+	raise ValueError("cannot parse timestamp {0} using format strings {1:r}".format(s, formats))
+	
 def parseDT(s):
-	return util.mpldtstrptime(s, '%m/%d/%Y %I:%M:%S %p')
+	return multistrptime(s, ('%m/%d/%Y %I:%M:%S %p', '%m/%d/%Y %H:%M:%S'))
 
 def parseExtDT(s):
-	return util.mpldtstrptime(s, '%m/%d/%Y %I:%M:%S.%f %p')
+	return multistrptime(s, ('%m/%d/%Y %I:%M:%S.%f %p', '%m/%d/%Y %H:%M:%S.%f'))
 
 def floatnan(s):
 	if not s:
@@ -47,11 +55,12 @@ class QuaderaScan(MultiTrend):
 				scan_data.append(numpy.array(line.split(), dtype=float))
 			scan_data = numpy.array(scan_data)
 			masses = scan_data[:, 0]
+			if not ion_data:
+				self.masses = numpy.array(masses) # copy
 			ion_data.append(scan_data[:, 1])
 			scan_lengths.add(len(masses))
 			
 		self.time_data = numpy.array(time_data)
-		self.masses = numpy.array(masses) # copy
 
 		# pad the ion data array if necessary
 		if len(scan_lengths) != 1:
