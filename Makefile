@@ -10,6 +10,9 @@ lint:
 lintclean:
 	rm -f pylint/pylint_*.html
 
+2to3check:
+	2to3 lib/spacetime
+
 wininst:
 	python win32/geninstaller.py > win32/installer.nsi
 	cd win32 && makensis installer.nsi

@@ -194,6 +194,6 @@ class DrawManager(object):
 				finally:
 					self.drawmgr._callback_loops -= objs
 					logger.info("avoid_callback_loop: end (%r)", self.drawmgr._callback_loops)
-			decorated.func_name = func.func_name
+			decorated.__name__ = func.__name__
 			return decorated
 		return decorator
