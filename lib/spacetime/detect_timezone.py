@@ -1,6 +1,7 @@
 # Based on the Javascript version written by Jon Nylander et al. from
 # https://bitbucket.org/pellepim/jstimezonedetect
 # which is provided under the "Do Whatever You Want With This Code License"
+# Translated into Python by Sander Roobol.
 
 import time, datetime, calendar
 
