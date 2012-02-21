@@ -18,6 +18,9 @@
 
 from enthought.traits.api import *
 from enthought.traits.ui.api import *
+from enthought.traits.ui.table_column import ObjectColumn
+from enthought.traits.ui.extras.checkbox_column import CheckboxColumn
+
 import wx
 
 import string
@@ -148,6 +151,25 @@ class SubplotPanel(SerializableTab):
 		pass
 
 
+def TimeTrendChannelListEditor():
+	return TableEditor(
+		sortable = True,
+		configurable = False,
+		show_column_labels = False,
+		auto_size = False,
+		columns = [
+			CheckboxColumn(name='checked', width=0.1),
+			ObjectColumn(name='label', editable=False, width=0.5, horizontal_alignment='left'),
+		],
+	)
+
+
+class TimeTrendChannel(HasTraits):
+	id = Str
+	label = Str
+	checked = Bool(False)
+
+
 class TimeTrendPanel(SubplotPanel):
 	plotfactory = subplots.MultiTrend
 	legend = Enum('auto', 'off', 'upper right', 'upper left', 'lower left', 'lower right', 'center left', 'center right', 'lower center', 'upper center', 'center')
@@ -157,8 +179,8 @@ class TimeTrendPanel(SubplotPanel):
 	ymax = DelegatesTo('ylimits', 'max')
 	ylog = DelegatesTo('ylimits', 'log')
 	channels = List(Str)
-	primary_channels = Property(depends_on='channels')
-	selected_primary_channels = List(Str)
+	primary_channels = Property(List(TimeTrendChannel), depends_on='channels')
+	selected_primary_channels = Property(depends_on='primary_channels.checked')
 	data = Instance(datasources.DataSource)
 
 	traits_saved = 'legend', 'yauto', 'ymin', 'ymax', 'ylog', 'selected_primary_channels'
@@ -168,9 +190,23 @@ class TimeTrendPanel(SubplotPanel):
 		plot.set_ylim_callback(self.ylim_callback)
 		return plot
 
+	def filter_channels(self, channels):
+		return channels
+
 	@cached_property
 	def _get_primary_channels(self):
-		return self.channels
+		return list(self.filter_channels(TimeTrendChannel(id=name, label=name) for name in self.channels))
+
+	def _get_selected_primary_channels(self):
+		return [chan.id for chan in self.primary_channels if chan.checked]
+
+	def _set_selected_primary_channels(self, value):
+		value = set(value) # to speed up membership tests
+		for chan in self.primary_channels:
+			if chan.id in value:
+				chan.checked = True
+			else:
+				chan.checked = False
 
 	@gui.figure.DrawManager.avoid_callback_loop('ylimits')
 	def ylim_callback(self, ax):
@@ -234,7 +270,7 @@ class TimeTrendPanel(SubplotPanel):
 		)
 
 	left_yaxis_group = Group(
-		Item('primary_channels', editor=ListStrEditor(editable=False, multi_select=True, selected='selected_primary_channels')),
+		Item('primary_channels', editor=TimeTrendChannelListEditor()),
 		Item('ylimits', style='custom', label='Limits'),
 		show_border=True,
 		label='Left y-axis'
@@ -250,8 +286,8 @@ class TimeTrendPanel(SubplotPanel):
 
 class DoubleTimeTrendPanel(TimeTrendPanel):
 	plotfactory = subplots.DoubleMultiTrend
-	secondary_channels = Property(depends_on='channels')
-	selected_secondary_channels = List(Str)
+	secondary_channels = Property(List(TimeTrendChannel), depends_on='channels')
+	selected_secondary_channels = Property(depends_on='secondary_channels.checked')
 
 	ylimits2 = Instance(gui.support.LogAxisLimits, args=())
 	yauto2 = DelegatesTo('ylimits2', 'auto')
@@ -268,7 +304,18 @@ class DoubleTimeTrendPanel(TimeTrendPanel):
 
 	@cached_property
 	def _get_secondary_channels(self):
-		return self._get_primary_channels()
+		return list(self.filter_channels(TimeTrendChannel(id=name, label=name) for name in self.channels))
+
+	def _get_selected_secondary_channels(self):
+		return [chan.id for chan in self.secondary_channels if chan.checked]
+
+	def _set_selected_secondary_channels(self, value):
+		value = set(value) # to speed up membership tests
+		for chan in self.secondary_channels:
+			if chan.id in value:
+				chan.checked = True
+			else:
+				chan.checked = False
 
 	@gui.figure.DrawManager.avoid_callback_loop('ylimits', 'ylimits2')
 	def ylim_callback(self, ax):
@@ -308,7 +355,7 @@ class DoubleTimeTrendPanel(TimeTrendPanel):
 		self.redraw()
 
 	right_yaxis_group = Group(
-		Item('secondary_channels', editor=ListStrEditor(editable=False, multi_select=True, selected='selected_secondary_channels')),
+		Item('secondary_channels', editor=TimeTrendChannelListEditor()),
 		Item('ylimits2', style='custom', label='Limits'),
 		show_border=True,
 		label='Right y-axis'
@@ -368,35 +415,27 @@ class CSVPanel(DoubleTimeTrendPanel):
 	time_column = Str('auto')
 	time_column_options = Property(depends_on='channels')
 
-	primary_channels = Property(depends_on='channels, time_column')
-	secondary_channels = Property(depends_on='channels, time_column')
-
 	traits_saved = 'time_type', 'time_format', 'time_column'
 
 	def _get_time_custom(self):
 		return self.time_type == 'custom'
 
-	@cached_property
-	def _get_primary_channels(self):
-		return self._filter_channels()
-
-	@cached_property
-	def _get_secondary_channels(self):
-		return self._filter_channels()
-
-	def _filter_channels(self):
+	def filter_channels(self, channels):
 		if self.time_column == 'auto':
 			if self.data:
-				check = self.data.time_channel_headers
+				check = set(self.data.time_channel_headers)
 			else:
-				check = []
+				check = set()
 		else:
-			check = self.time_column
-		return [i for i in self.channels if i not in check]
+			check = set([self.time_column])
+		return (chan for chan in channels if chan.id not in check)
 
 	@cached_property
 	def _get_time_column_options(self):
 		return gui.support.EnumMapping([('auto', '(auto)')] + self.channels)
+
+	def _time_column_changed(self):
+		self.channels = list(self.channels) # trigger rebuild of primary_channels and secondary_channels
 
 	@on_trait_change('selected_primary_channels, selected_secondary_channels, time_type, time_format, time_column')
 	def settings_changed(self):

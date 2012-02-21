@@ -93,5 +93,5 @@ class ReactorEnvironmentPanel(DoubleTimeTrendPanel):
 	datafactory = CSVFactory(time_type='labview', time_column='auto')
 	filter = 'ASCII text files (*.txt)', '*.txt',
 
-	def _get_primary_channels(self):
-		return [i for i in self.channels if i != 'Time']
+	def filter_channels(self, channels):
+		return (chan for chan in channels if chan.id != 'Time')

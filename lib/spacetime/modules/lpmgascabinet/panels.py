@@ -31,10 +31,9 @@ class GasCabinetPanel(DoubleTimeTrendPanel):
 	datafactory = datasources.GasCabinet
 	filter = 'ASCII text files (*.txt)', '*.txt',
 
-	@cached_property
-	def _get_primary_channels(self):
+	def filter_channels(self, channels):
 		if self.data:
 			time_columns = set(self.data.get_time_columns())
-			return [label for (i, label) in enumerate(self.channels) if i not in time_columns]
+			return (chan for (i, chan) in enumerate(channels) if i not in time_columns)
 		else:
-			return []
+			return channels
