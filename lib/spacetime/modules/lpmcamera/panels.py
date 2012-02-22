@@ -43,7 +43,7 @@ class CameraPanel(SubplotPanel):
 
 	def _direction_changed(self):
 		self.data.direction = self.direction
-		self.redraw()
+		self.rebuild()
 
 
 class CameraFramePanelHandler(Handler):
@@ -102,15 +102,15 @@ class CameraFramePanel(CameraPanel):
 	def _mode_changed(self):
 		self.plot.mode = self.mode
 		self.select_data()
-		self.redraw_figure()
+		self.rebuild_figure()
 
 	def _colormap_changed(self):
 		self.plot.set_colormap(self.colormap)
-		self.update()
+		self.redraw()
 
 	def _interpolation_changed(self):
 		self.plot.set_interpolation(self.interpolation)
-		self.update()
+		self.redraw()
 
 	def _filename_changed(self):
 		self.data = datasources.Camera(self.filename)
@@ -125,11 +125,11 @@ class CameraFramePanel(CameraPanel):
 			self.plot.axes.set_xlim(*self.plot.axes.dataLim.intervalx)
 		else:
 			self.context.plot.autoscale(self.plot)
-		self.update()
+		self.redraw()
 
 	def _rotate_changed(self):
 		self.plot.set_rotate(self.rotate)
-		self.update()
+		self.redraw()
 
 	def _firstframe_changed(self):
 		if self.mode == 'single frame' or self.firstframe > self.lastframe:
@@ -156,7 +156,7 @@ class CameraFramePanel(CameraPanel):
 	@on_trait_change('channel, filter, clip, lastframe, stepframe')
 	def settings_changed(self):
 		self.select_data()
-		self.redraw()
+		self.rebuild()
 
 	traits_view = support.PanelView(
 		Group(
@@ -261,7 +261,7 @@ class CameraTrendPanel(DoubleTimeTrendPanel, CameraPanel, XlimitsPanel):
 					self.prev_xaxis_type != self.xaxis_type
 					and 'time' in (self.prev_xaxis_type, self.xaxis_type)
 				):
-				self.redraw_figure()
+				self.rebuild_figure()
 			self.prev_xaxis_type = self.xaxis_type
 
 	def _firstframe_changed(self):
@@ -289,7 +289,7 @@ class CameraTrendPanel(DoubleTimeTrendPanel, CameraPanel, XlimitsPanel):
 			self.plot.set_data(y1, y2, data.selectchannels(lambda chan: chan.id == self.xaxis_type))
 		else:
 			self.plot.set_data(y1, y2)
-		self.redraw()
+		self.rebuild()
 
 	traits_view = support.PanelView(
 		Group(

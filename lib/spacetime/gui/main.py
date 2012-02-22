@@ -64,7 +64,7 @@ class MainTab(modules.generic.panels.SerializableTab):
 	def xlim_changed(self):
 		logger.info('%s.xlim_changed: (%s, %s) %s', self.__class__.__name__, self.xlimits.min, self.xlimits.max, 'auto' if self.xauto else 'manual')
 		self.xmin_mpldt, self.xmax_mpldt = self.context.plot.set_shared_xlim(self.xmin_mpldt, self.xmax_mpldt, self.xauto)
-		self.context.canvas.update_canvas()
+		self.context.canvas.redraw()
 
 	def reset_autoscale(self):
 		self.xauto = True
@@ -134,7 +134,7 @@ class MainWindowHandler(Handler):
 		mainwindow.prefs.add_recent('project', path)
 		mainwindow.rebuild_recent_menu()
 		mainwindow.update_title()
-		mainwindow.drawmgr.redraw_figure()
+		mainwindow.context.canvas.rebuild()
 
 	# you got to be f*cking kidding me...
 	def do_open_recent_0(self, info):
@@ -326,9 +326,9 @@ class App(HasTraits):
 	def on_figure_resize(self, event):
 		logger.info('on_figure_resize called')
 		self.plot.setup_margins()
-		self.drawmgr.update_canvas()
+		self.context.canvas.redraw()
 
-	def update_canvas(self):
+	def redraw_canvas(self):
 		# make a closure on self so figure.canvas can be changed in the meantime
 		wx.CallAfter(lambda: self.figure.canvas.draw())
 
@@ -348,23 +348,23 @@ class App(HasTraits):
 		return MainTab(context=self.context)
 
 	def _drawmgr_default(self):
-		return DrawManager(self.redraw_figure, self.update_canvas)
+		return DrawManager(self.rebuild_figure, self.redraw_canvas)
 
 	def _tabs_changed(self):
 		self._tabs_modified = True
-		self.drawmgr.redraw_figure()
+		self.context.canvas.rebuild()
 
 	def _tabs_items_changed(self, event):
-		with self.drawmgr.hold():
+		with self.context.canvas.hold():
 			for removed in event.removed:
 				if isinstance(removed, MainTab):
 					self.tabs.insert(0, removed)
 				else:
 					self._tabs_modified = True
-					self.drawmgr.redraw_figure()
+					self.context.canvas.rebuild()
 			if event.added:
 				self._tabs_modified = True
-				self.drawmgr.redraw_figure()
+				self.context.canvas.rebuild()
 
 	def _tabs_default(self):
 		return [self.maintab]
@@ -396,7 +396,7 @@ class App(HasTraits):
 			if fp.read(15) != 'Spacetime\nJSON\n':
 				raise ValueError('not a valid Spacetime project file')
 			data = json.load(fp)
-		with self.drawmgr.hold_delayed():
+		with self.context.canvas.hold_delayed():
 			self.tabs[0].from_serialized(data.pop(0)[1])
 			# FIXME: check version number and emit warning
 			for id, props in data:
@@ -429,7 +429,7 @@ class App(HasTraits):
 		if self.figurewindowui:
 			self.figurewindowui.title = self.ui.title
 
-	def redraw_figure(self):
+	def rebuild_figure(self):
 		self.plot.clear()
 		[self.plot.add_subplot(tab.plot) for tab in self.tabs if isinstance(tab, modules.generic.panels.SubplotPanel) and tab.visible]
 		self.plot.setup()
@@ -455,14 +455,14 @@ class App(HasTraits):
 	def _close_presentation_mode(self):
 		self.presentation_mode = False
 		self.figurewindowui = None
-		with self.drawmgr.hold():
+		with self.context.canvas.hold():
 			self.mainwindow = SplitMainWindow(app=self)
 			self.on_figure_resize(None)
 		wx.CallAfter(self._connect_canvas_resize_event)
 
 	def _open_presentation_mode(self):
 		self.presentation_mode = True
-		with self.drawmgr.hold():
+		with self.context.canvas.hold():
 			self.mainwindow = SimpleMainWindow(app=self)
 			self.figurewindowui = windows.FigureWindow(mainwindow=self, prefs=self.prefs).edit_traits()
 		wx.CallAfter(self._connect_canvas_resize_event)
@@ -634,6 +634,7 @@ class App(HasTraits):
 
 		self.ui = self.edit_traits()
 		self.context.uiparent = self.ui.control
+		self.context.plot = self.plot
 		self.prefs.restore_window('main', self.ui)
 		self.init_recent_menu()
 
@@ -646,4 +647,6 @@ class App(HasTraits):
 
 if __name__ == '__main__':
 	app = App()
-	app.run()
+	context = app.context
+	del app
+	context.app.run()

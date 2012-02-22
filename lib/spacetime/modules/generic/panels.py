@@ -122,26 +122,26 @@ class SubplotPanel(SerializableTab):
 		if self.__class__.number != 1:
 			self.label = '{0} {1}'.format(self.label, self.__class__.number)
 
-	def redraw_figure(self):
-		self.context.canvas.redraw_figure()
+	def rebuild_figure(self):
+		self.context.canvas.rebuild()
 
-	def redraw(self):
-		self.context.canvas.redraw_subgraph(lambda: (
+	def rebuild(self):
+		self.context.canvas.rebuild_subgraph(lambda: (
 			self.plot.clear(),
 			self.plot.draw(),
 			self.context.plot.autoscale(self.plot),
 		))
 
-	def update(self):
-		self.context.canvas.update_canvas()
+	def redraw(self):
+		self.context.canvas.redraw()
 
 	def _visible_changed(self):
-		self.redraw_figure()
+		self.rebuild_figure()
 
 	@on_trait_change('simultaneity_offset, time_dilation_factor')
 	def relativistics_changed(self):
 		self.plot.adjust_time(self.simultaneity_offset, self.time_dilation_factor)
-		self.redraw()
+		self.rebuild()
 
 	def reset_autoscale(self):
 		pass
@@ -227,19 +227,19 @@ class TimeTrendPanel(SubplotPanel):
 		if not self.data:
 			return
 		self.plot.set_data(self.data.selectchannels(lambda chan: chan.id in self.selected_primary_channels))
-		self.redraw()
+		self.rebuild()
 
 	@on_trait_change('ymin, ymax, yauto')
 	@gui.figure.DrawManager.avoid_callback_loop('ylimits')
 	def ylim_changed(self):
 		logger.info('%s.ylim_changed: %s', self.__class__.__name__, self.ylimits)
 		self.ymin, self.ymax = self.plot.set_ylim(self.ylimits.min, self.ylimits.max, self.ylimits.auto)
-		self.update()
+		self.redraw()
 
 	@gui.figure.DrawManager.avoid_callback_loop('ylimits')
 	def _ylog_changed(self):
 		self.plot.set_ylog(self.ylog)
-		self.update()
+		self.redraw()
 
 	def reset_autoscale(self):
 		super(TimeTrendPanel, self).reset_autoscale()
@@ -253,7 +253,7 @@ class TimeTrendPanel(SubplotPanel):
 		else:
 			legend = self.legend
 		self.plot.set_legend(legend)
-		self.update()
+		self.redraw()
 
 	def get_general_view_group(self):
 		return Group(
@@ -329,12 +329,12 @@ class DoubleTimeTrendPanel(TimeTrendPanel):
 	def ylim2_changed(self):
 		logger.info('%s.ylim2_changed: %s', self.__class__.__name__, self.ylimits2)
 		self.ymin2, self.ymax2 = self.plot.set_ylim2(self.ylimits2.min, self.ylimits2.max, self.ylimits2.auto)
-		self.update()
+		self.redraw()
 
 	@gui.figure.DrawManager.avoid_callback_loop('ylimits2')
 	def _ylog2_changed(self):
 		self.plot.set_ylog2(self.ylog2)
-		self.update()
+		self.redraw()
 
 	def reset_autoscale(self):
 		super(DoubleTimeTrendPanel, self).reset_autoscale()
@@ -348,7 +348,7 @@ class DoubleTimeTrendPanel(TimeTrendPanel):
 			self.data.selectchannels(lambda chan: chan.id in self.selected_primary_channels),
 			self.data.selectchannels(lambda chan: chan.id in self.selected_secondary_channels),
 		)
-		self.redraw()
+		self.rebuild()
 
 	right_yaxis_group = Group(
 		Item('secondary_channels', editor=TimeTrendChannelListEditor()),
@@ -380,12 +380,12 @@ class XlimitsPanel(HasTraits):
 	def xlim_changed(self):
 		logger.info('%s.xlim_changed: %s', self.__class__.__name__, self.xlimits)
 		self.xmin, self.xmax = self.plot.set_xlim(self.xlimits.min, self.xlimits.max, self.xlimits.auto)
-		self.update()
+		self.redraw()
 
 	@gui.figure.DrawManager.avoid_callback_loop('xlimits')
 	def _xlog_changed(self):
 		self.plot.set_xlog(self.xlog)
-		self.update()
+		self.redraw()
 
 	@gui.figure.DrawManager.avoid_callback_loop('xlimits')
 	def xlim_callback(self, ax):
@@ -484,22 +484,22 @@ class Time2DPanel(TimeTrendPanel):
 
 	def _colormap_changed(self):
 		self.plot.set_colormap(self.colormap)
-		self.update()
+		self.redraw()
 
 	def _interpolation_changed(self):
 		self.plot.set_interpolation(self.interpolation)
-		self.update()
+		self.redraw()
 
 	@on_trait_change('cmin, cmax, cauto, clog')
 	def clim_changed(self):
 		self.plot.set_clim(self.climits.min, self.climits.max, self.climits.auto, self.climits.log)
-		self.redraw()
+		self.rebuild()
 
 	@on_trait_change('filename, reload')
 	def load_file(self):
 		super(Time2DPanel, self).load_file()
 		self.plot.set_data(self.data)
-		self.redraw()
+		self.rebuild()
 
 	def settings_changed(self):
 		pass

@@ -48,7 +48,7 @@ class NormalizationPanel(HasTraits):
 			self.plot.set_normalization(self.normalize_factor)
 		else:
 			self.plot.set_normalization(self.normalize_factor, self.data.selectchannels(lambda chan: chan.id == self.normalize_channel))
-		self.redraw()
+		self.rebuild()
 
 
 class QuaderaMIDPanel(NormalizationPanel, TimeTrendPanel):

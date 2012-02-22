@@ -145,9 +145,9 @@ class DrawManager(object):
 	_hold = 0
 	level = 0
 
-	def __init__(self, redraw_figure, update_canvas):
-		self._redraw_figure = redraw_figure
-		self._update_canvas = update_canvas
+	def __init__(self, rebuild, redraw):
+		self._rebuild = rebuild
+		self._redraw = redraw
 		self.subgraphs = []
 		self._callback_loops = set()
 
@@ -163,38 +163,38 @@ class DrawManager(object):
 	def release_manual(self):
 		if self._hold == 1:
 			if self.level & 5 == 5:
-				self._redraw_figure()
+				self._rebuild()
 				del self.subgraphs[:]
-				self._update_canvas()
+				self._redraw()
 			elif self.level & 3 == 3:
 				for cb in self.subgraphs:
 					cb()
-				self._update_canvas()
+				self._redraw()
 			elif self.level & 1:
-				self._update_canvas()
+				self._redraw()
 			self.level = 0
 		self._hold -= 1
 
-	def redraw_figure(self):
+	def rebuild(self):
 		if self._hold:
 			self.level |= 5
 		else:
-			self._redraw_figure()
-			self._update_canvas()
+			self._rebuild()
+			self._redraw()
 		
-	def redraw_subgraph(self, cb):
+	def rebuild_subgraph(self, cb):
 		if self._hold:
 			self.level |= 3
 			self.subgraphs.append(cb)
 		else:
 			cb()
-			self._update_canvas()
+			self._redraw()
 	
-	def update_canvas(self):
+	def redraw(self):
 		if self._hold:
 			self.level |= 1
 		else:
-			self._update_canvas()
+			self._redraw()
 
 	# decorator function
 	@staticmethod

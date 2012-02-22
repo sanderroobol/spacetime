@@ -53,7 +53,7 @@ class TPDirkPanel(DoubleTimeTrendPanel):
 				self.filename = ''
 				return
 			self.plot.set_data(self.data)
-			self.redraw()
+			self.rebuild()
 
 	def traits_view(self):
 		return support.PanelView(
