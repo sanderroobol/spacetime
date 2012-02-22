@@ -81,13 +81,13 @@ class PanelSelector(HasTraits):
 			if isinstance(s, PanelTreePanel):
 				yield s.id
 
-	@staticmethod
-	def run(mainwindow, live=True):
-		ps = PanelSelector(moduleloader=mainwindow.moduleloader)
-		ps.edit_traits(parent=mainwindow.ui.control, scrollable=False)
-		tabs = [mainwindow.get_new_tab(mainwindow.moduleloader.get_class_by_id(id)) for id in ps.iter_selected()]
+	@classmethod
+	def run_static(cls, context, live=True):
+		ps = PanelSelector(moduleloader=context.app.moduleloader)
+		ps.edit_traits(parent=context.uiparent, scrollable=False)
+		tabs = [context.app.get_new_tab(context.app.moduleloader.get_class_by_id(id)) for id in ps.iter_selected()]
 		if live:
-			mainwindow.tabs.extend(tabs)
+			context.app.tabs.extend(tabs)
 		return tabs
 
 	traits_view = View(
@@ -151,14 +151,14 @@ class GraphManager(HasTraits):
 		self.tabs[selected], self.tabs[selected+1] = self.tabs[selected+1], self.tabs[selected]
 		self.selected = selected
 
-	@staticmethod
-	def run(mainwindow, parent=None):
+	@classmethod
+	def run_static(cls, context):
 		# get non-live behaviour by maintaining our own copy of mainwindow.tabs
-		gm = GraphManager(mainwindow=mainwindow)
-		gm.tabs = [t for t in mainwindow.tabs]
-		with mainwindow.drawmgr.hold():
-			if gm.edit_traits(parent=parent).result:
-				mainwindow.tabs = gm.tabs
+		gm = cls(context=context)
+		gm.tabs = [t for t in context.app.tabs]
+		with context.canvas.hold():
+			if gm.edit_traits(parent=context.uiparent).result:
+				context.app.tabs = gm.tabs
 
 	traits_view = View(
 		HGroup(
@@ -185,7 +185,7 @@ class GraphManager(HasTraits):
 	)
 
 
-class PythonWindow(support.PersistantGeometry):
+class PythonWindow(support.PersistantGeometryWindow):
 	prefs_id = 'python'
 	shell = PythonValue({})
 	traits_view = View(
@@ -198,7 +198,7 @@ class PythonWindow(support.PersistantGeometry):
 	)
 
 
-class AboutWindow(HasTraits):
+class AboutWindow(support.UtilityWindow):
 	title = Str("{0} {1}".format(version.name, version.version))
 	desc = Str("""Copyright 2010-2012 Leiden University.
 Written by Sander Roobol <roobol@physics.leidenuniv.nl>.
@@ -233,16 +233,16 @@ class FigureWindowHandler(support.PersistantGeometryHandler):
 	def close(self, info, is_ok=None):
 		super(FigureWindowHandler, self).close(info, is_ok)
 		figurewindow = info.ui.context['object']
-		figurewindow.mainwindow._close_presentation_mode()
+		figurewindow.app._close_presentation_mode()
 		return True
 
 
-class FigureWindow(support.PersistantGeometry):
+class FigureWindow(support.PersistantGeometryWindow):
 	prefs_id = 'figure'
 
-	mainwindow = Any
-	figure = DelegatesTo('mainwindow')
-	status = DelegatesTo('mainwindow')
+	app = Instance(HasTraits)
+	figure = DelegatesTo('app')
+	status = DelegatesTo('app')
 
 	traits_view = View(
 		Group(

@@ -257,14 +257,24 @@ class DateTimeLimits(HasTraits):
 	)
 
 
-class PersistantGeometry(HasTraits):
-	prefs = Instance(prefs.Storage)
+class UtilityWindow(HasTraits):
+	context = Instance(HasTraits)
+
+	def run(self):
+		return self.edit_traits(parent=self.context.uiparent)
+
+	@classmethod
+	def run_static(cls, context):
+		return cls(context=context).run()
+
+
+class PersistantGeometryWindow(UtilityWindow):
 	prefs_id = None
 
 	def edit_traits(self, *args, **kwargs):
-		ui = super(PersistantGeometry, self).edit_traits(*args, **kwargs)
+		ui = super(PersistantGeometryWindow, self).edit_traits(*args, **kwargs)
 		if self.prefs_id:
-			self.prefs.restore_window(self.prefs_id, ui)
+			self.context.prefs.restore_window(self.prefs_id, ui)
 		return ui
 
 
@@ -272,7 +282,7 @@ class PersistantGeometryHandler(Handler):
 	def close(self, info, is_ok=None):
 		window = info.ui.context['object']
 		if window.prefs_id:
-			window.prefs.save_window(window.prefs_id, info.ui)
+			window.context.prefs.save_window(window.prefs_id, info.ui)
 		return True
 
 

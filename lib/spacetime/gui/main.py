@@ -193,14 +193,13 @@ class MainWindowHandler(Handler):
 		return False
 
 	def do_add(self, info):
-		windows.PanelSelector.run(mainwindow=info.ui.context['object'])
+		windows.PanelSelector.run_static(info.ui.context['object'].context)
 
 	def do_python(self, info):
-		mainwindow = info.ui.context['object']
-		windows.PythonWindow(prefs=mainwindow.prefs).edit_traits(parent=info.ui.control)
+		windows.PythonWindow.run_static(info.ui.context['object'].context)
 
 	def do_about(self, info):
-		windows.AboutWindow().edit_traits(parent=info.ui.control)
+		windows.AboutWindow.run_static(info.ui.context['object'].context)
 
 	def do_export(self, info):
 		# mostly borrowed from Matplotlib's NavigationToolbar2Wx.save()
@@ -256,15 +255,15 @@ class MainWindowHandler(Handler):
 		info.ui.context['object'].toggle_fullscreen()
 
 	def do_graphmanager(self, info):
-		windows.GraphManager.run(mainwindow=info.ui.context['object'], parent=info.ui.control)
+		windows.GraphManager.run_static(info.ui.context['object'].context)
 
 
 
-class MainWindow(HasTraits):
+class Frame(HasTraits):
 	pass
 
 
-class SplitMainWindow(MainWindow):
+class SplitFrame(Frame):
 	app = Instance(HasTraits)
 	figure = DelegatesTo('app')
 	tabs = DelegatesTo('app')
@@ -279,7 +278,7 @@ class SplitMainWindow(MainWindow):
 	)
 
 
-class SimpleMainWindow(MainWindow):
+class SimpleFrame(Frame):
 	app = Instance(HasTraits)
 	tabs = DelegatesTo('app')
 
@@ -289,6 +288,7 @@ class SimpleMainWindow(MainWindow):
 			show_labels=False,
 		)
 	)
+
 
 class Context(HasTraits):
 	app = Instance(HasTraits)
@@ -305,7 +305,7 @@ class App(HasTraits):
 	status = DelegatesTo('maintab')
 	drawmgr = Instance(DrawManager)
 	moduleloader = Instance(modules.Loader, args=())
-	mainwindow = Instance(MainWindow)
+	frame = Instance(Frame)
 	figurewindowui = None
 	figure_fullscreen = Bool(False)
 	prefs = Instance(prefs.Storage, args=())
@@ -449,22 +449,22 @@ class App(HasTraits):
 	def _figure_default(self):
 		return self.plot.figure
 
-	def _mainwindow_default(self):
-		return SplitMainWindow(app=self)
+	def _frame_default(self):
+		return SplitFrame(app=self)
 
 	def _close_presentation_mode(self):
 		self.presentation_mode = False
 		self.figurewindowui = None
 		with self.context.canvas.hold():
-			self.mainwindow = SplitMainWindow(app=self)
+			self.frame = SplitFrame(app=self)
 			self.on_figure_resize(None)
 		wx.CallAfter(self._connect_canvas_resize_event)
 
 	def _open_presentation_mode(self):
 		self.presentation_mode = True
 		with self.context.canvas.hold():
-			self.mainwindow = SimpleMainWindow(app=self)
-			self.figurewindowui = windows.FigureWindow(mainwindow=self, prefs=self.prefs).edit_traits()
+			self.frame = SimpleFrame(app=self)
+			self.figurewindowui = windows.FigureWindow(context=self.context, app=self).edit_traits()
 		wx.CallAfter(self._connect_canvas_resize_event)
 		wx.CallAfter(lambda: self.figure.canvas.Bind(wx.EVT_KEY_DOWN, self.fullscreen_keyevent))
 
@@ -596,7 +596,7 @@ class App(HasTraits):
 
 	traits_view = View(
 			Group(
-				Item('mainwindow', style='custom', editor=InstanceEditor()),
+				Item('frame', style='custom', editor=InstanceEditor()),
 				show_labels=False,
 			),
 			resizable=True,
