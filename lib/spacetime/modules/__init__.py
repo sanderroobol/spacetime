@@ -19,12 +19,12 @@
 from .generic.panels import SubplotPanel
 import os, glob
 
-class PanelManager(object):
+class Loader(object):
 	def __init__(self):
 		self.panels_by_module = {}
 		self.modules = {}
 		self._list_classes = []
-		self._detect_panels()
+		self._detect_modules()
 		self._list_labels = tuple(klass.label for klass in self._list_classes)
 
 		self.mapping_id_class = {}
@@ -36,8 +36,8 @@ class PanelManager(object):
 			self.mapping_id_class[klass.id] = klass
 			self.mapping_classobjectid_id[id(klass)] = klass.id
 
-	def _detect_panels(self):
-		# this function looks through in spacetime.modules.*.panels.* for any class that
+	def _detect_modules(self):
+		# this function looks in spacetime.modules.*.panels.* for any class that
         # 1. inherits from SubplotPanel
 		# 2. has a id attribute
 		# 3. is found in the same module where it is defined (suppose
@@ -53,12 +53,9 @@ class PanelManager(object):
 			self.panels_by_module[mname] = []
 			for i in dir(module.panels):
 				obj = getattr(module.panels, i)
-				try:
-					if issubclass(obj, SubplotPanel) and hasattr(obj, 'id') and obj.id and obj.__module__ == 'spacetime.modules.{0}.panels'.format(mname):
-						self.panels_by_module[mname].append(obj)
-						self._list_classes.append(obj)
-				except TypeError: # obj is not a class
-					pass
+				if isinstance(obj, type) and issubclass(obj, SubplotPanel) and hasattr(obj, 'id') and obj.id and obj.__module__ == 'spacetime.modules.{0}.panels'.format(mname):
+					self.panels_by_module[mname].append(obj)
+					self._list_classes.append(obj)
 
 	def list_classes(self):
 		return self._list_classes

@@ -304,7 +304,7 @@ class App(HasTraits):
 	maintab = Instance(MainTab)
 	status = DelegatesTo('maintab')
 	drawmgr = Instance(DrawManager)
-	panelmgr = Instance(modules.PanelManager, args=())
+	moduleloader = Instance(modules.Loader, args=())
 	mainwindow = Instance(MainWindow)
 	figurewindowui = None
 	figure_fullscreen = Bool(False)
@@ -386,7 +386,7 @@ class App(HasTraits):
 
 	def new_project(self):
 		self.tabs = self._tabs_default()
-		for klass in self.panelmgr.list_classes():
+		for klass in self.moduleloader.list_classes():
 			klass.number = 0
 		self.project_path = ''
 		self.clear_project_modified()
@@ -401,7 +401,7 @@ class App(HasTraits):
 			# FIXME: check version number and emit warning
 			for id, props in data:
 				try:
-					self.add_tab(self.panelmgr.get_class_by_id(id), props)
+					self.add_tab(self.moduleloader.get_class_by_id(id), props)
 				except KeyError:
 					support.Message.show(title='Warning', message='Warning: incompatible project file', desc='Ignoring unknown graph id "{0}". Project might not be completely functional.'.format(id))
 			self.project_path = path
@@ -411,7 +411,7 @@ class App(HasTraits):
 		data = [('general', self.tabs[0].get_serialized())]
 		for tab in self.tabs:
 			if isinstance(tab, modules.generic.panels.SubplotPanel):
-				data.append((self.panelmgr.get_id_by_instance(tab), tab.get_serialized()))
+				data.append((self.moduleloader.get_id_by_instance(tab), tab.get_serialized()))
 		with open(path, 'wb') as fp:
 			fp.write('Spacetime\nJSON\n')
 			json.dump(data, fp)

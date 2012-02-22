@@ -61,17 +61,17 @@ class PanelTreeRoot(HasTraits):
 
 
 class PanelSelector(HasTraits):
-	panelmgr = Instance(modules.PanelManager)
+	moduleloader = Instance(modules.Loader)
 	selected = List()
 	root = Instance(PanelTreeRoot)
 
 	def _root_default(self):
 		modules = []
-		for name, panels in self.panelmgr.panels_by_module.iteritems():
+		for name, panels in self.moduleloader.panels_by_module.iteritems():
 			treepanels = [PanelTreePanel(id=panel.id, label=panel.label, desc=panel.desc) for panel in panels]
 			treepanels.sort(key=lambda x:x.label)
 			if treepanels:
-				module = self.panelmgr.get_module_by_name(name)
+				module = self.moduleloader.get_module_by_name(name)
 				modules.append(PanelTreeModule(label=module.label, desc=module.desc, panels=treepanels))
 		modules.sort(key=lambda x: x.label)
 		return PanelTreeRoot(modules=modules)
@@ -83,9 +83,9 @@ class PanelSelector(HasTraits):
 
 	@staticmethod
 	def run(mainwindow, live=True):
-		ps = PanelSelector(panelmgr=mainwindow.panelmgr)
+		ps = PanelSelector(moduleloader=mainwindow.moduleloader)
 		ps.edit_traits(parent=mainwindow.ui.control, scrollable=False)
-		tabs = [mainwindow.get_new_tab(mainwindow.panelmgr.get_class_by_id(id)) for id in ps.iter_selected()]
+		tabs = [mainwindow.get_new_tab(mainwindow.moduleloader.get_class_by_id(id)) for id in ps.iter_selected()]
 		if live:
 			mainwindow.tabs.extend(tabs)
 		return tabs
