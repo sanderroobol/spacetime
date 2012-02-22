@@ -47,8 +47,6 @@ class MainTab(modules.generic.panels.SerializableTab):
 
 	traits_saved = 'version', 'xmin_mpldt', 'xmax_mpldt', 'xauto'
 
-	mainwindow = Any
-
 	def _get_version(self):
 		return version.version
 
@@ -65,8 +63,8 @@ class MainTab(modules.generic.panels.SerializableTab):
 	@DrawManager.avoid_callback_loop('xlimits')
 	def xlim_changed(self):
 		logger.info('%s.xlim_changed: (%s, %s) %s', self.__class__.__name__, self.xlimits.min, self.xlimits.max, 'auto' if self.xauto else 'manual')
-		self.xmin_mpldt, self.xmax_mpldt = self.mainwindow.plot.set_shared_xlim(self.xmin_mpldt, self.xmax_mpldt, self.xauto)
-		self.mainwindow.update_canvas()
+		self.xmin_mpldt, self.xmax_mpldt = self.context.plot.set_shared_xlim(self.xmin_mpldt, self.xmax_mpldt, self.xauto)
+		self.context.canvas.update_canvas()
 
 	def reset_autoscale(self):
 		self.xauto = True
@@ -292,6 +290,13 @@ class SimpleMainWindow(MainWindow):
 		)
 	)
 
+class Context(HasTraits):
+	app = Instance(HasTraits)
+#	document = Instance(Any)
+	canvas = Instance(DrawManager)
+	prefs = Instance(prefs.Storage)
+	uiparent = Any
+
 
 class App(HasTraits):
 	plot = Instance(plot.Plot)
@@ -304,6 +309,8 @@ class App(HasTraits):
 	figurewindowui = None
 	figure_fullscreen = Bool(False)
 	prefs = Instance(prefs.Storage, args=())
+
+	context = Instance(Context)
 
 	pan_checked = Bool(False)
 	zoom_checked = Bool(False)
@@ -326,7 +333,7 @@ class App(HasTraits):
 		wx.CallAfter(lambda: self.figure.canvas.draw())
 
 	def get_new_tab(self, klass):
-		return klass(drawmgr=self.drawmgr, autoscale=self.plot.autoscale, prefs=self.prefs, parent=self.ui.control)
+		return klass(context=self.context)
 
 	def add_tab(self, klass, serialized_data=None):
 		tab = self.get_new_tab(klass)
@@ -334,8 +341,11 @@ class App(HasTraits):
 			tab.from_serialized(serialized_data)
 		self.tabs.append(tab)
 
+	def _context_default(self):
+		return Context(app=self, canvas=self.drawmgr, prefs=self.prefs)
+
 	def _maintab_default(self):
-		return MainTab(mainwindow=self, drawmgr=self.drawmgr)
+		return MainTab(context=self.context)
 
 	def _drawmgr_default(self):
 		return DrawManager(self.redraw_figure, self.update_canvas)
@@ -623,6 +633,7 @@ class App(HasTraits):
 			self._open_presentation_mode()
 
 		self.ui = self.edit_traits()
+		self.context.uiparent = self.ui.control
 		self.prefs.restore_window('main', self.ui)
 		self.init_recent_menu()
 

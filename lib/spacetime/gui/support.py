@@ -108,7 +108,7 @@ class FileEditorImplementation(enthought.traits.ui.wx.file_editor.SimpleEditor):
 		if path:
 			dlg.Path = path
 		else:
-			dlg.Directory = self.context_object.prefs.get_path(self.context_object.id)
+			dlg.Directory = self.context_object.context.prefs.get_path(self.context_object.id)
 
 		return dlg
 
@@ -123,7 +123,7 @@ class FileEditorImplementation(enthought.traits.ui.wx.file_editor.SimpleEditor):
 			file_name = os.path.abspath( dlg.GetPath() )
 			dlg.Destroy()
 			if rc:
-				self.context_object.prefs.set_path(self.context_object.id, dlg.Directory)
+				self.context_object.context.prefs.set_path(self.context_object.id, dlg.Directory)
 				if self.factory.truncate_ext:
 					file_name = os.path.splitext( file_name )[0]
 

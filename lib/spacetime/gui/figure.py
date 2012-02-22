@@ -201,17 +201,18 @@ class DrawManager(object):
 	def avoid_callback_loop(*names):
 		def decorator(func):
 			def decorated(self, *args, **kwargs):
+				callback_loops = self.context.canvas._callback_loops
 				objs = set(getattr(self, i) for i in names)
-				if objs & self.drawmgr._callback_loops:
-					logger.info("avoid_callback_loop: deny (%r + %r)", self.drawmgr._callback_loops, objs)
+				if objs & callback_loops:
+					logger.info("avoid_callback_loop: deny (%r + %r)", callback_loops, objs)
 					return
-				logger.info("avoid_callback_loop: enter (%r + %r)", self.drawmgr._callback_loops, objs)
-				self.drawmgr._callback_loops |= objs
+				logger.info("avoid_callback_loop: enter (%r + %r)", callback_loops, objs)
+				callback_loops |= objs
 				try:
 					return func(self, *args, **kwargs)
 				finally:
-					self.drawmgr._callback_loops -= objs
-					logger.info("avoid_callback_loop: end (%r)", self.drawmgr._callback_loops)
+					callback_loops -= objs
+					logger.info("avoid_callback_loop: end (%r)", callback_loops)
 			decorated.__name__ = func.__name__
 			return decorated
 		return decorator

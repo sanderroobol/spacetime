@@ -124,7 +124,7 @@ class CameraFramePanel(CameraPanel):
 		if self.zoom:
 			self.plot.axes.set_xlim(*self.plot.axes.dataLim.intervalx)
 		else:
-			self.autoscale(self.plot)
+			self.context.plot.autoscale(self.plot)
 		self.update()
 
 	def _rotate_changed(self):
@@ -246,7 +246,7 @@ class CameraTrendPanel(DoubleTimeTrendPanel, CameraPanel, XlimitsPanel):
 			try:
 				self.data = datasources.Camera(self.filename)
 			except:
-				support.Message.file_open_failed(self.filename, parent=self.parent)
+				support.Message.file_open_failed(self.filename, parent=self.context.uiparent)
 				self.filename = ''
 				return
 			self.channels = list(self.data.iterchannelnames())
@@ -255,7 +255,7 @@ class CameraTrendPanel(DoubleTimeTrendPanel, CameraPanel, XlimitsPanel):
 			self.settings_changed()
 
 	def _xaxis_type_changed(self):
-		with self.drawmgr.hold():
+		with self.context.canvas.hold():
 			self._firstframe_changed() # this makes sure that firstframe <= lastframe and calls settings_changed()
 			if self.prev_xaxis_type is None or (
 					self.prev_xaxis_type != self.xaxis_type

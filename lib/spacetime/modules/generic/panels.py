@@ -29,7 +29,7 @@ import matplotlib.cm
 import logging
 logger = logging.getLogger(__name__)
 
-from ... import prefs, gui
+from ... import gui
 
 from . import subplots
 from . import datasources
@@ -51,7 +51,7 @@ class TraitsSavedMeta(HasTraits.__metaclass__):
 
 class SerializableTab(Tab):
 	__metaclass__ = TraitsSavedMeta
-	drawmgr = Instance(gui.figure.DrawManager)
+	context = Instance(HasTraits)
 	_modified = Bool(False)
 
 	def __init__(self, *args, **kwargs):
@@ -59,7 +59,7 @@ class SerializableTab(Tab):
 		self.on_trait_change(self.set_modified, list(self.traits_saved))
 
 	def _delayed_from_serialized(self, src):
-		with self.drawmgr.hold():
+		with self.context.canvas.hold():
 			# trait_set has to be called separately for each trait to respect the ordering of traits_saved
 			for id in src:
 				if id in self.traits_saved:
@@ -100,10 +100,6 @@ class SubplotPanel(SerializableTab):
 	visible = Bool(True)
 	number = 0
 
-	autoscale = Callable
-	prefs = prefs.Storage
-	parent = Any
-
 	# Magic attribute with "class level" "extension inheritance". Does this make any sense?
 	# It means that when you derive a class from this class, you only have to
 	# specify the attributes that are "new" in the derived class, any
@@ -127,17 +123,17 @@ class SubplotPanel(SerializableTab):
 			self.label = '{0} {1}'.format(self.label, self.__class__.number)
 
 	def redraw_figure(self):
-		self.drawmgr.redraw_figure()
+		self.context.canvas.redraw_figure()
 
 	def redraw(self):
-		self.drawmgr.redraw_subgraph(lambda: (
+		self.context.canvas.redraw_subgraph(lambda: (
 			self.plot.clear(),
 			self.plot.draw(),
-			self.autoscale(self.plot),
+			self.context.plot.autoscale(self.plot),
 		))
 
 	def update(self):
-		self.drawmgr.update_canvas()
+		self.context.canvas.update_canvas()
 
 	def _visible_changed(self):
 		self.redraw_figure()
@@ -220,7 +216,7 @@ class TimeTrendPanel(SubplotPanel):
 			try:
 				self.data = self.datafactory(self.filename)
 			except:
-				gui.support.Message.file_open_failed(self.filename, parent=self.parent)
+				gui.support.Message.file_open_failed(self.filename, parent=self.context.uiparent)
 				self.filename = ''
 				return
 			self.channels = list(self.data.iterchannelnames())

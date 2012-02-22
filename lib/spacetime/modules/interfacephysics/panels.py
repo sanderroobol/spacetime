@@ -49,7 +49,7 @@ class TPDirkPanel(DoubleTimeTrendPanel):
 			try:
 				self.data = self.datafactory(self.filename)
 			except:
-				support.Message.file_open_failed(self.filename, parent=self.parent)
+				support.Message.file_open_failed(self.filename, parent=self.context.uiparent)
 				self.filename = ''
 				return
 			self.plot.set_data(self.data)
