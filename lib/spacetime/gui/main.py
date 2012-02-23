@@ -25,6 +25,7 @@ from . import support, windows
 from enthought.traits.api import *
 from enthought.traits.ui.api import *
 import matplotlib.figure
+from matplotlib.backends.backend_agg import FigureCanvasAgg
 import wx
 import json
 import os
@@ -202,30 +203,33 @@ class MainWindowHandler(Handler):
 		windows.AboutWindow.run_static(info.ui.context['object'].context)
 
 	def do_export(self, info):
-		# mostly borrowed from Matplotlib's NavigationToolbar2Wx.save()
-		mainwindow = info.ui.context['object']
-		canvas = mainwindow.figure.canvas
-		# Fetch the required filename and file type.
-		filetypes, exts, filter_index = canvas._get_imagesave_wildcards()
-		default_file = "image." + canvas.get_default_filetype()
-		dlg = wx.FileDialog(info.ui.control, "Save to file", "", default_file, filetypes, wx.SAVE|wx.OVERWRITE_PROMPT)
-		dlg.SetFilterIndex(filter_index)
-		dlg.Directory = mainwindow.prefs.get_path('export')
+		context = info.ui.context['object'].context
+		mainwindow = context.app
+		
+		exportdialog = windows.ExportDialog(context=context)
+		if not exportdialog.run().result:
+			return
+
+		dlg = wx.FileDialog(
+			info.ui.control,
+			"Export",
+			context.prefs.get_path('export'),
+			"image." + exportdialog.extension,
+			exportdialog.wxfilter + "|All files (*.*)|*.*",
+			wx.SAVE|wx.OVERWRITE_PROMPT
+		)
+
 		if dlg.ShowModal() == wx.ID_OK:
-			dirname  = dlg.GetDirectory()
-			mainwindow.prefs.set_path('export', dirname)
-			filename = dlg.GetFilename()
-			format = exts[dlg.GetFilterIndex()]
-			basename, ext = os.path.splitext(filename)
-			if ext.startswith('.'):
-				ext = ext[1:]
-			if ext in ('svg', 'pdf', 'ps', 'eps', 'png') and format != ext:
-				#looks like they forgot to set the image type drop down, going with the extension.
-				#warnings.warn('extension %s did not match the selected image type %s; going with %s'%(
-				format = ext
-			path = os.path.join(dirname, filename)
+			context.prefs.set_path('export', dlg.GetDirectory())
+			path = dlg.GetPath()
 			try:
-				canvas.print_figure(path, format=format)
+				newfig = matplotlib.figure.Figure(exportdialog.figsize, exportdialog.dpi)
+				canvas = FigureCanvasAgg(newfig)
+				context.app.plot.relocate(newfig)
+				context.app.rebuild_figure()
+				newfig.savefig(path, dpi=exportdialog.dpi, format=exportdialog.extension)
+				context.app.plot.relocate(context.app.figure)
+				context.app.rebuild_figure()
 			except:
 				support.Message.file_save_failed(path, parent=info.ui.control)
 

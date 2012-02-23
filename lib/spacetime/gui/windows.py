@@ -257,3 +257,66 @@ class FigureWindow(support.PersistantGeometryWindow):
 		icon=support.GetIcon('spacetime-icon'),
 		handler=FigureWindowHandler(),
 	)
+
+class ExportDialog(support.UtilityWindow):
+	filetype = Str('Portable Network Graphics (*.png)')
+	extension = Property(depends_on='filetype')
+	wxfilter = Property(depends_on='filetype') 
+
+	filetypes = List(Str)
+	extensions = List(Str)
+	wxfilters = List(Str)
+
+	dpi = Range(low=1, high=None, value=72)
+	rasterize = Property(depends_on='filetype')
+
+	canvas_width = Float(800)
+	canvas_height = Float(600)
+	canvas_unit = Enum('px', 'cm', 'inch')
+	figsize = Property(depends_on='canvas_width, canvas_height, canvas_unit')
+
+	def _get_rasterize(self):
+		ft = self.filetype.lower()
+		for i in ('pdf', 'vector', 'postscript', 'metafile'):
+			if i in ft:
+				return False
+		return True
+
+	def _get_extension(self):
+		return self.extensions[self.filetypes.index(self.filetype)]
+
+	def _get_wxfilter(self):
+		return self.wxfilters[self.filetypes.index(self.filetype)]
+
+	def _get_figsize(self):
+		if self.canvas_unit == 'inch':
+			return self.canvas_width, self.canvas_height
+		elif self.canvas_unit == 'cm':
+			return self.canvas_width / 2.54, self.canvas_height / 2.54
+		else: # self.canvas_unit == 'px'
+			return self.canvas_width / self.dpi, self.canvas_height / self.dpi
+
+	def run(self):
+		mplcanvas = self.context.app.figure.canvas
+		filetypes, exts, filter_index = mplcanvas._get_imagesave_wildcards()
+		self.filetypes = filetypes.split('|')[::2]
+		self.extensions = exts
+		self.wxfilters = ['|'.join(i) for i in zip(self.filetypes, filetypes.split('|')[1::2])]
+		return super(ExportDialog, self).run()
+
+	traits_view = View(
+		Item('filetype', editor=EnumEditor(name='filetypes')),
+		Item('dpi', enabled_when='rasterize'),
+		Group(
+			Item('canvas_width', label='Width'),
+			Item('canvas_height', label='Height'),
+			Item('canvas_unit', label='Unit'),
+			label='Canvas size',
+			show_border=True,
+		),
+		buttons=OKCancelButtons,
+		title='Export',
+		resizable=False,
+		kind='modal',
+	)
+		

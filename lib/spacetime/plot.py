@@ -121,6 +121,10 @@ class Plot(object):
 		matplotlib.pyplot.show()
 		return plot
 
+	def relocate(self, figure):
+		self.clear()
+		self.figure = figure
+
 	def clear(self):
 		for p in self.subplots:
 			p.clear(quick=True)
