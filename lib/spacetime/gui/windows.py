@@ -267,7 +267,7 @@ class ExportDialog(support.UtilityWindow):
 	extensions = List(Str)
 	wxfilters = List(Str)
 
-	dpi = Range(low=1, high=None, value=72)
+	dpi = Range(low=1, high=10000000, value=72)
 	rasterize = Property(depends_on='filetype')
 
 	canvas_width = Float(800)
@@ -295,6 +295,26 @@ class ExportDialog(support.UtilityWindow):
 			return self.canvas_width / 2.54, self.canvas_height / 2.54
 		else: # self.canvas_unit == 'px'
 			return self.canvas_width / self.dpi, self.canvas_height / self.dpi
+
+	def _canvas_unit_changed(self, old, new):
+		if old == 'px' and new == 'inch':
+				self.canvas_width  /= self.dpi
+				self.canvas_height /= self.dpi
+		elif old == 'px' and new == 'cm':
+				self.canvas_width  /= self.dpi / 2.54
+				self.canvas_height /= self.dpi / 2.54
+		elif old == 'cm' and new == 'inch':
+				self.canvas_width  /= 2.54
+				self.canvas_height /= 2.54
+		elif old == 'inch' and new == 'px':
+				self.canvas_width  *= self.dpi
+				self.canvas_height *= self.dpi
+		elif old == 'cm' and new == 'px':
+				self.canvas_width  *= self.dpi / 2.54
+				self.canvas_height *= self.dpi / 2.54
+		elif old == 'inch' and new == 'cm':
+				self.canvas_width  *= 2.54
+				self.canvas_height *= 2.54
 
 	def run(self):
 		mplcanvas = self.context.app.figure.canvas
