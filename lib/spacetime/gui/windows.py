@@ -341,6 +341,7 @@ class ExportDialog(support.UtilityWindow):
 	)
 
 class MovieDialogMainTab(HasTraits):
+	label = Str('General')
 	format = Str('mp4')
 	codec = Str('libx264')
 	ffmpeg_options = Str('')

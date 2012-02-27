@@ -91,7 +91,7 @@ class FFmpegEncode(object):
 		if opts:
 			command.extend(opts)
 		command.append(path)
-		self.pipes = subprocess.Popen(
+		self.proc = subprocess.Popen(
 			command,
 			stdin=subprocess.PIPE,
 			stdout=subprocess.PIPE,
@@ -99,14 +99,18 @@ class FFmpegEncode(object):
 		)
 
 	def writeframe(self, data): # needs RGB raw data
-		self.pipes.stdin.write(data)
+		self.proc.stdin.write(data)
 
 	def close(self):
-		if hasattr(self, 'pipes'):
-			self.pipes.stdin.close()
-			ret = self.pipes.stdout.read(), self.pipes.stderr.read()
-			del self.pipes
+		if hasattr(self, 'proc'):
+			self.proc.stdin.close()
+			ret = self.proc.stdout.read(), self.proc.stderr.read()
+			del self.proc
 			return ret
+
+	def abort(self):
+		self.proc.terminate()
+		return self.close()
 
 	def __enter__(self):
 		return self

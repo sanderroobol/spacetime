@@ -26,6 +26,7 @@ from . import support, windows
 
 from enthought.traits.api import *
 from enthought.traits.ui.api import *
+from enthought.pyface.api import ProgressDialog
 import matplotlib.figure
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 import wx
@@ -263,6 +264,9 @@ class MainWindowHandler(Handler):
 
 		movie = None
 		try:
+			progress = ProgressDialog(title="Movie", message="Building movie", can_cancel=True)
+			progress.open()
+
 			newfig = matplotlib.figure.Figure((moviedialog.frame_width / moviedialog.dpi, moviedialog.frame_height / moviedialog.dpi), moviedialog.dpi)
 			canvas = FigureCanvasAgg(newfig)
 			context.app.plot.relocate(newfig)
@@ -274,20 +278,30 @@ class MainWindowHandler(Handler):
 				(moviedialog.frame_width, moviedialog.frame_height),
 				moviedialog.ffmpeg_options,
 			)
+			progress.update(0)
 
-			# disable drawmanager
+			# FIXME disable drawmanager? relocate? hold?
 			iters = tuple(i() for i in moviedialog.get_animate_functions())
 			for frameno, void in enumerate(itertools.izip_longest(*iters)):
-				context.app.rebuild_figure()
+				context.canvas.rebuild()
 				newfig.canvas.draw()
 				movie.writeframe(newfig.canvas.tostring_rgb())
-			stdout, stderr = movie.close()
-			# FIXME: do proper debugging
-			print "FFMPEG -- output: stdout"
-			print stdout
-			print "FFMPEG -- output: stderr"
-			print stderr
-			print "FFMPEG -- end of output"
+				(cont, skip) = progress.update(frameno)
+				if not cont or skip:
+					movie.abort()
+					try:
+						os.path.unlink(dlg.GetPath())
+					except:
+						pass
+					break
+			else:
+				stdout, stderr = movie.close()
+				# FIXME: do proper debugging
+				print "FFMPEG -- output: stdout"
+				print stdout
+				print "FFMPEG -- output: stderr"
+				print stderr
+				print "FFMPEG -- end of output"
 		except:
 			raise # FIXME proper error handling
 			#support.Message.file_save_failed(path, parent=info.ui.control) # better error
@@ -295,8 +309,8 @@ class MainWindowHandler(Handler):
 			if movie:
 				movie.close()
 			context.app.plot.relocate(context.app.figure)
-			context.app.rebuild_figure()
-			#re-enable drawmanager
+			progress.close()
+			context.canvas.rebuild()
 
 	def do_fit(self, info):
 		mainwindow = info.ui.context['object']
