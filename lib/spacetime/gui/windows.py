@@ -339,4 +339,68 @@ class ExportDialog(support.UtilityWindow):
 		resizable=False,
 		kind='modal',
 	)
-		
+
+class MovieDialogMainTab(HasTraits):
+	format = Str('mp4')
+	codec = Str('libx264')
+	ffmpeg_options = Str('')
+
+	frame_width = Int(800)
+	frame_height = Int(600)
+	dpi = Range(low=1, high=10000000, value=72)
+	frame_rate = Int(5)
+
+	animation_view = View(Group(
+		Group(
+			Item('frame_width', label='Width'),
+			Item('frame_height', label='Height'),
+			Item('dpi', enabled_when='rasterize'),
+			label='Dimensions',
+			show_border=True,
+		),
+		Group(
+			Item('frame_rate'),
+			Item('format'),
+			Item('codec'),
+			Item('ffmpeg_options', label='Extra options', tooltip='Extra options to be passed to the ffmpeg executable'),
+			label='Movie options',
+			show_border=True,
+		),
+	))
+
+
+class MovieDialog(support.UtilityWindow):
+	maintab = Instance(MovieDialogMainTab, args=())
+	tabs = List(HasTraits)
+
+	format = DelegatesTo('maintab')
+	codec = DelegatesTo('maintab')
+	ffmpeg_options = DelegatesTo('maintab')
+	frame_width = DelegatesTo('maintab')
+	frame_height = DelegatesTo('maintab')
+	dpi = DelegatesTo('maintab')
+	frame_rate = DelegatesTo('maintab')
+
+	def get_animate_functions(self):
+		return tuple(getattr(tab, 'animate') for tab in self.tabs[1:])
+
+	def run(self):
+		self.tabs = [self.maintab]
+		for tab in self.context.app.tabs:
+			if hasattr(tab, 'animate'):
+				self.tabs.append(tab)
+		if len(self.tabs) == 1:
+			raise RuntimeError('None of the graphs support animation.')
+		return super(MovieDialog, self).run()
+
+	traits_view = View(
+		Group(
+			Item('tabs', style='custom', editor=ListEditor(use_notebook=True, page_name='.label', view='animation_view')),
+			show_labels=False,
+		),
+		title='Movie',
+		resizable=False,
+		height=300, width=400,
+		kind='modal',
+		buttons=OKCancelButtons,
+	)

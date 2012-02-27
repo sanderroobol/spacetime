@@ -16,10 +16,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import division
+
 # keep this import at top to ensure proper matplotlib backend selection
 from .figure import MPLFigureEditor, DrawManager
 
-from .. import plot, modules, version, prefs
+from .. import plot, modules, version, prefs, util
 from . import support, windows
 
 from enthought.traits.api import *
@@ -29,6 +31,7 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg
 import wx
 import json
 import os
+import itertools
 
 import logging
 logger = logging.getLogger(__name__)
@@ -228,10 +231,72 @@ class MainWindowHandler(Handler):
 				context.app.plot.relocate(newfig)
 				context.app.rebuild_figure()
 				newfig.savefig(path, dpi=exportdialog.dpi, format=exportdialog.extension)
-				context.app.plot.relocate(context.app.figure)
-				context.app.rebuild_figure()
 			except:
 				support.Message.file_save_failed(path, parent=info.ui.control)
+			finally:
+				context.app.plot.relocate(context.app.figure)
+				context.app.rebuild_figure()
+
+	def do_movie(self, info):
+		context = info.ui.context['object'].context
+		
+		moviedialog = windows.MovieDialog(context=context)
+		try:
+			if not moviedialog.run().result:
+				return
+		except RuntimeError as e:
+			support.Message.show(message='Nothing to animate', desc=str(e))
+			return
+
+		dlg = wx.FileDialog(
+			info.ui.control,
+			"Save movie",
+			context.prefs.get_path('movie'),
+			"movie." + moviedialog.format,
+			"*.{0}|*.{0}|All files (*.*)|*.*".format(moviedialog.format),
+			wx.SAVE|wx.OVERWRITE_PROMPT
+		)
+
+		if dlg.ShowModal() != wx.ID_OK:
+			return
+		context.prefs.set_path('movie', dlg.GetDirectory())
+
+		movie = None
+		try:
+			newfig = matplotlib.figure.Figure((moviedialog.frame_width / moviedialog.dpi, moviedialog.frame_height / moviedialog.dpi), moviedialog.dpi)
+			canvas = FigureCanvasAgg(newfig)
+			context.app.plot.relocate(newfig)
+			movie = util.FFmpegEncode(
+				dlg.GetPath(),
+				moviedialog.format,
+				moviedialog.codec,
+				moviedialog.frame_rate,
+				(moviedialog.frame_width, moviedialog.frame_height),
+				moviedialog.ffmpeg_options,
+			)
+
+			# disable drawmanager
+			iters = tuple(i() for i in moviedialog.get_animate_functions())
+			for frameno, void in enumerate(itertools.izip_longest(*iters)):
+				context.app.rebuild_figure()
+				newfig.canvas.draw()
+				movie.writeframe(newfig.canvas.tostring_rgb())
+			stdout, stderr = movie.close()
+			# FIXME: do proper debugging
+			print "FFMPEG -- output: stdout"
+			print stdout
+			print "FFMPEG -- output: stderr"
+			print stderr
+			print "FFMPEG -- end of output"
+		except:
+			raise # FIXME proper error handling
+			#support.Message.file_save_failed(path, parent=info.ui.control) # better error
+		finally:
+			if movie:
+				movie.close()
+			context.app.plot.relocate(context.app.figure)
+			context.app.rebuild_figure()
+			#re-enable drawmanager
 
 	def do_fit(self, info):
 		mainwindow = info.ui.context['object']
@@ -326,6 +391,15 @@ class App(HasTraits):
 	project_modified = Property(depends_on='_tabs_modified, tabs._modified')
 
 	tabs = List(Instance(modules.generic.panels.Tab))
+
+	def clone_traits(self, *args, **kwargs):
+		# FIXME: Somehow clone_traits() gets called to make (shallow) copies of
+		# App instances. I don't know why this happens. Unfortunately, some
+		# attributes do not get copied properly, in particular self.ui, but the
+		# same applies to the context attribute of the Panels. To work around
+		# the problem, just don't copy anymore. This doesn't seem to have any
+		# negative side effects...
+		return self
 
 	def on_figure_resize(self, event):
 		logger.info('on_figure_resize called')
@@ -567,6 +641,7 @@ class App(HasTraits):
 		Menu(
 			'export',
 				Action(name='&Export...', action='do_export', accelerator='Ctrl+E', image=support.GetIcon('export')),
+				Action(name='&Movie...', action='do_movie', accelerator='Ctrl+M', image=support.GetIcon('movie')),
 			'python',
 				Action(name='&Python console...', action='do_python', image=support.GetIcon('python')),
 			name='&Tools',
@@ -591,6 +666,7 @@ class App(HasTraits):
 			Action(name='Pan', action='do_pan', tooltip='Pan', image=support.GetIcon('pan'), checked_when='pan_checked', style='toggle'),
 		'export',
 			Action(name='Export', action='do_export', tooltip='Export', image=support.GetIcon('export')),
+			Action(name='Movie', action='do_movie', tooltip='Movie', image=support.GetIcon('movie')),
 		'python', 
 			Action(name='Python', action='do_python', tooltip='Python console', image=support.GetIcon('python')),
 		'about',

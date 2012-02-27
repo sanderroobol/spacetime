@@ -19,6 +19,7 @@
 import matplotlib.dates
 import datetime, pytz
 import scipy.fftpack, numpy
+import subprocess
 
 from .superstruct import Struct
 from .detect_timezone import detect_timezone
@@ -69,3 +70,46 @@ class ContextManager(object):
 
 	def __exit__(self, exc_type, exc_value, traceback):
 		return self.exit(exc_type, exc_value, traceback)
+
+
+class FFmpegEncode(object):
+	def __init__(self, path, format, codec, framerate, framesize, opts=None):
+		command = [
+			'ffmpeg',
+			'-y',                # force overwrite
+			'-f', 'rawvideo',    # input file format
+			'-pix_fmt', 'rgb24', # input pixel format
+			'-r', str(framerate),
+			'-s', '{0}x{1}'.format(*framesize),
+			'-i', '-',           # read from std input
+			'-an',               # no audio
+			'-pix_fmt', 'bgr24', # output pixel format
+			'-r', str(framerate),
+			'-f', format,        # output file format
+			'-vcodec', codec,
+		]
+		if opts:
+			command.extend(opts)
+		command.append(path)
+		self.pipes = subprocess.Popen(
+			command,
+			stdin=subprocess.PIPE,
+			stdout=subprocess.PIPE,
+			stderr=subprocess.PIPE,
+		)
+
+	def writeframe(self, data): # needs RGB raw data
+		self.pipes.stdin.write(data)
+
+	def close(self):
+		if hasattr(self, 'pipes'):
+			self.pipes.stdin.close()
+			ret = self.pipes.stdout.read(), self.pipes.stderr.read()
+			del self.pipes
+			return ret
+
+	def __enter__(self):
+		return self
+
+	def __exit__(self, exc_type, exc_value, traceback):
+		self.close()

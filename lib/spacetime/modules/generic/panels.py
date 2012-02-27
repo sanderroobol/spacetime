@@ -58,6 +58,9 @@ class SerializableTab(Tab):
 		super(SerializableTab, self).__init__(*args, **kwargs)
 		self.on_trait_change(self.set_modified, list(self.traits_saved))
 
+	def clone_traits(self, *args, **kwargs):
+		return self # FIXME: see note in spacetime.gui.main.App.clone_traits()
+
 	def _delayed_from_serialized(self, src):
 		with self.context.canvas.hold():
 			# trait_set has to be called separately for each trait to respect the ordering of traits_saved

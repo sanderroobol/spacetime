@@ -197,6 +197,24 @@ class CameraFramePanel(CameraPanel):
 		handler=CameraFramePanelHandler()
 	)
 
+	def animate(self):
+		# FIXME: this only makes sense in single frame mode...
+		for i in range(self.animation_firstframe, self.animation_lastframe + 1):
+			self.firstframe = i
+			yield
+
+	animation_firstframe = Int(0)
+	animation_lastframe = Int(0)
+
+	animation_view = View(Group(
+		Group(
+			Item('animation_firstframe', label='First', editor=RangeEditor(low=0, high_name='framecount', mode='spinner')),
+			Item('animation_lastframe', label='Last', editor=RangeEditor(low=0, high_name='framecount', mode='spinner')),
+			label='Frames',
+			show_border=True,
+		)
+	))
+
 
 class CameraTrendPanel(DoubleTimeTrendPanel, CameraPanel, XlimitsPanel):
 	id = 'cameratrend'
