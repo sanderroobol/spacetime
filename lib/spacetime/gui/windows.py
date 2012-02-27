@@ -385,6 +385,9 @@ class MovieDialog(support.UtilityWindow):
 	def get_animate_functions(self):
 		return tuple(getattr(tab, 'animate') for tab in self.tabs[1:])
 
+	def get_framecount(self):
+		return max(getattr(tab, 'animation_framecount') for tab in self.tabs[1:])
+
 	def run(self):
 		self.tabs = [self.maintab]
 		for tab in self.context.app.tabs:

@@ -205,6 +205,10 @@ class CameraFramePanel(CameraPanel):
 
 	animation_firstframe = Int(0)
 	animation_lastframe = Int(0)
+	animation_framecount = Property(depends_on='animation_firstframe, animation_lastframe')
+
+	def _get_animation_framecount(self):
+		return self.animation_lastframe - self.animation_firstframe + 1
 
 	animation_view = View(Group(
 		Group(

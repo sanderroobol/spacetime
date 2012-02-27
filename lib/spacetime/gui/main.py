@@ -264,7 +264,7 @@ class MainWindowHandler(Handler):
 
 		movie = None
 		try:
-			progress = ProgressDialog(title="Movie", message="Building movie", can_cancel=True)
+			progress = ProgressDialog(title="Movie", message="Building movie", max=moviedialog.get_framecount()+2, can_cancel=True)
 			progress.open()
 
 			newfig = matplotlib.figure.Figure((moviedialog.frame_width / moviedialog.dpi, moviedialog.frame_height / moviedialog.dpi), moviedialog.dpi)
@@ -278,7 +278,7 @@ class MainWindowHandler(Handler):
 				(moviedialog.frame_width, moviedialog.frame_height),
 				moviedialog.ffmpeg_options,
 			)
-			progress.update(0)
+			progress.update(1)
 
 			# FIXME disable drawmanager? relocate? hold?
 			iters = tuple(i() for i in moviedialog.get_animate_functions())
@@ -286,16 +286,18 @@ class MainWindowHandler(Handler):
 				context.canvas.rebuild()
 				newfig.canvas.draw()
 				movie.writeframe(newfig.canvas.tostring_rgb())
-				(cont, skip) = progress.update(frameno)
+				(cont, skip) = progress.update(frameno+2)
 				if not cont or skip:
 					movie.abort()
 					try:
-						os.path.unlink(dlg.GetPath())
+						os.unlink(dlg.GetPath())
 					except:
 						pass
+					progress.close()
 					break
 			else:
 				stdout, stderr = movie.close()
+				progress.update(progress.max)
 				# FIXME: do proper debugging
 				print "FFMPEG -- output: stdout"
 				print stdout
@@ -309,7 +311,6 @@ class MainWindowHandler(Handler):
 			if movie:
 				movie.close()
 			context.app.plot.relocate(context.app.figure)
-			progress.close()
 			context.canvas.rebuild()
 
 	def do_fit(self, info):
