@@ -276,8 +276,9 @@ class MainWindowHandler(Handler):
 				moviedialog.codec,
 				moviedialog.frame_rate,
 				(moviedialog.frame_width, moviedialog.frame_height),
-				moviedialog.ffmpeg_options,
+				moviedialog.ffmpeg_options.split(),
 			)
+			thread, queue = movie.spawnstdoutthread()
 			progress.update(1)
 
 			# FIXME disable drawmanager? relocate? hold?
@@ -296,18 +297,23 @@ class MainWindowHandler(Handler):
 					progress.close()
 					break
 			else:
-				stdout, stderr = movie.close()
+				movie.eof() # closes stdin
+				thread.join() # blocks until stdout has been read
+				stdout = []
+				while not queue.empty():
+					stdout.append(queue.get_nowait())
+				stdout = ''.join(stdout)
+				movie.close()
 				progress.update(progress.max)
 				# FIXME: do proper debugging
-				print "FFMPEG -- output: stdout"
+				print "FFMPEG -- output"
 				print stdout
-				print "FFMPEG -- output: stderr"
-				print stderr
 				print "FFMPEG -- end of output"
 		except:
 			raise # FIXME proper error handling
 			#support.Message.file_save_failed(path, parent=info.ui.control) # better error
 		finally:
+			# FIXME: cleanup dlg.GetPath() if an error occurred
 			if movie:
 				movie.close()
 			context.app.plot.relocate(context.app.figure)

@@ -20,6 +20,7 @@ import matplotlib.dates
 import datetime, pytz
 import scipy.fftpack, numpy
 import subprocess
+import threading, Queue
 
 from .superstruct import Struct
 from .detect_timezone import detect_timezone
@@ -95,18 +96,37 @@ class FFmpegEncode(object):
 			command,
 			stdin=subprocess.PIPE,
 			stdout=subprocess.PIPE,
-			stderr=subprocess.PIPE,
+			stderr=subprocess.STDOUT,
+			close_fds=(not subprocess.mswindows),
 		)
+
+	def spawnstdoutthread(self):
+		queue = Queue.Queue()
+		def readstdout(queue, stdout):
+			for line in stdout:
+				queue.put(line)
+			stdout.close()
+		thread = threading.Thread(target=readstdout, args=(queue, self.proc.stdout))
+		thread.start()
+		return thread, queue
 
 	def writeframe(self, data): # needs RGB raw data
 		self.proc.stdin.write(data)
 
+	def eof(self):
+		self.proc.stdin.close()
+
 	def close(self):
 		if hasattr(self, 'proc'):
-			self.proc.stdin.close()
-			ret = self.proc.stdout.read(), self.proc.stderr.read()
+			if not self.proc.stdin.closed:
+				self.proc.stdin.close()
+			if self.proc.stdout.closed:
+				stdout = None
+			else:
+				stdout = self.proc.stdout.read()
+				self.proc.stdout.close()
 			del self.proc
-			return ret
+			return stdout
 
 	def abort(self):
 		self.proc.terminate()
