@@ -19,7 +19,7 @@
 from __future__ import division
 
 # keep this import at top to ensure proper matplotlib backend selection
-from .figure import MPLFigureEditor, DrawManager
+from .figure import MPLFigureEditor, DrawManager, CallbackLoopManager
 
 from .. import plot, modules, version, prefs, util
 from . import support, windows
@@ -58,14 +58,17 @@ class MainTab(modules.generic.panels.SerializableTab):
 	def _set_version(self, version):
 		pass
 
-	@DrawManager.avoid_callback_loop('xlimits')
 	def xlim_callback(self, ax):
+		# NOTE: the next line is not protected by a self.context.callbacks.avoid(self.xlimits) call.
+		# This will make sure that context.plot.shared_xmin/max will be in sync with all the shared-x
+		# Panels.plot.axes.xlims
 		self.xmin_mpldt, self.xmax_mpldt = ax.get_xlim()
-		self.xauto = False
+		if not self.context.callbacks.is_avoiding(self.xlimits):
+			self.xauto = False
 		logger.info('%s.xlim_callback: (%s, %s) %s', self.__class__.__name__, self.xlimits.min, self.xlimits.max, 'auto' if self.xauto else 'manual')
 
 	@on_trait_change('xmin_mpldt, xmax_mpldt, xauto')
-	@DrawManager.avoid_callback_loop('xlimits')
+	@CallbackLoopManager.decorator('xlimits')
 	def xlim_changed(self):
 		logger.info('%s.xlim_changed: (%s, %s) %s', self.__class__.__name__, self.xlimits.min, self.xlimits.max, 'auto' if self.xauto else 'manual')
 		self.xmin_mpldt, self.xmax_mpldt = self.context.plot.set_shared_xlim(self.xmin_mpldt, self.xmax_mpldt, self.xauto)
@@ -385,6 +388,7 @@ class Context(HasTraits):
 	app = Instance(HasTraits)
 #	document = Instance(Any)
 	canvas = Instance(DrawManager)
+	callbacks = Instance(CallbackLoopManager, args=())
 	prefs = Instance(prefs.Storage)
 	uiparent = Any
 
@@ -534,7 +538,8 @@ class App(HasTraits):
 		[self.plot.add_subplot(tab.plot) for tab in self.tabs if isinstance(tab, modules.generic.panels.SubplotPanel) and tab.visible]
 		self.plot.setup()
 		self.plot.draw()
-		self.plot.autoscale()
+		with self.context.callbacks.general_blockade():
+			self.plot.autoscale()
 
 	def _connect_canvas_resize_event(self):
 		self.figure.canvas.mpl_connect('resize_event', self.on_figure_resize), 

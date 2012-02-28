@@ -196,23 +196,60 @@ class DrawManager(object):
 		else:
 			self._redraw()
 
-	# decorator function
+
+class CallbackLoopManager(object):
+	_general_blockade = 0
+
+	def __init__(self):
+		self.objects = {}
+
+	def general_blockade(self):
+		return util.ContextManager(self._acquire_general_blockade, lambda x,y,z: self._release_general_blockade())
+
+	def _acquire_general_blockade(self):
+		self._general_blockade += 1
+
+	def _release_general_blockade(self):
+		self._general_blockade -= 1
+
+	def is_avoiding(self, *objs):
+		if self._general_blockade:
+			logger.info("is_avoiding: general blockade (%r)", objs)
+			return True
+		for obj in objs:
+			if obj in self.objects:
+				logger.info("is_avoiding: deny (%r + %r)", self.objects, objs)
+				return True
+		logger.info("is_avoiding: allow (%r + %r)", self.objects, objs)
+		return False
+
+	def avoid(self, *objs):
+		return util.ContextManager(lambda: self._acquire(objs), lambda x,y,z: self._release(objs))
+
+	def _acquire(self, objs):
+		logger.info("_acquire: %r", objs)
+		for obj in objs:
+			if obj in self.objects:
+				self.objects[obj] += 1
+			else:
+				self.objects[obj] = 1
+		
+	def _release(self, objs):
+		logger.info("_release: %r", objs)
+		for obj in objs:
+			self.objects[obj] -= 1
+			if not self.objects[obj]:
+				del self.objects[obj]
+
 	@staticmethod
-	def avoid_callback_loop(*names):
-		def decorator(func):
-			def decorated(self, *args, **kwargs):
-				callback_loops = self.context.canvas._callback_loops
-				objs = set(getattr(self, i) for i in names)
-				if objs & callback_loops:
-					logger.info("avoid_callback_loop: deny (%r + %r)", callback_loops, objs)
-					return
-				logger.info("avoid_callback_loop: enter (%r + %r)", callback_loops, objs)
-				callback_loops |= objs
-				try:
-					return func(self, *args, **kwargs)
-				finally:
-					callback_loops -= objs
-					logger.info("avoid_callback_loop: end (%r)", callback_loops)
-			decorated.__name__ = func.__name__
-			return decorated
-		return decorator
+	def decorator(*names):
+		def _decorator(func):
+			def _decorated(self, *args, **kwargs):
+				callbacks = self.context.callbacks
+				objs = tuple(getattr(self, i) for i in names)
+				if not callbacks.is_avoiding(*objs):
+					with callbacks.avoid(*objs):
+						return func(self, *args, **kwargs)
+			_decorated.__name__ = func.__name__
+			return _decorated
+		return _decorator

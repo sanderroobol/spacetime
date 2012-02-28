@@ -129,11 +129,12 @@ class SubplotPanel(SerializableTab):
 		self.context.canvas.rebuild()
 
 	def rebuild(self):
-		self.context.canvas.rebuild_subgraph(lambda: (
-			self.plot.clear(),
-			self.plot.draw(),
-			self.context.plot.autoscale(self.plot),
-		))
+		def callback():
+			self.plot.clear()
+			self.plot.draw()
+			with self.context.callbacks.general_blockade():
+				self.context.plot.autoscale(self.plot)
+		self.context.canvas.rebuild_subgraph(callback)
 
 	def redraw(self):
 		self.context.canvas.redraw()
@@ -207,10 +208,11 @@ class TimeTrendPanel(SubplotPanel):
 			else:
 				chan.checked = False
 
-	@gui.figure.DrawManager.avoid_callback_loop('ylimits')
 	def ylim_callback(self, ax):
-		self.ymin, self.ymax = ax.get_ylim()
-		self.yauto = False
+		with self.context.callbacks.avoid(self.ylimits):
+			self.ymin, self.ymax = ax.get_ylim()
+		if not self.context.callbacks.is_avoiding(self.ylimits):
+			self.yauto = False
 		logger.info('%s.ylim_callback: %s', self.__class__.__name__, self.ylimits)
 
 	@on_trait_change('filename, reload')
@@ -233,13 +235,13 @@ class TimeTrendPanel(SubplotPanel):
 		self.rebuild()
 
 	@on_trait_change('ymin, ymax, yauto')
-	@gui.figure.DrawManager.avoid_callback_loop('ylimits')
+	@gui.figure.CallbackLoopManager.decorator('ylimits')
 	def ylim_changed(self):
 		logger.info('%s.ylim_changed: %s', self.__class__.__name__, self.ylimits)
 		self.ymin, self.ymax = self.plot.set_ylim(self.ylimits.min, self.ylimits.max, self.ylimits.auto)
 		self.redraw()
 
-	@gui.figure.DrawManager.avoid_callback_loop('ylimits')
+	@gui.figure.CallbackLoopManager.decorator('ylimits')
 	def _ylog_changed(self):
 		self.plot.set_ylog(self.ylog)
 		self.redraw()
@@ -316,25 +318,28 @@ class DoubleTimeTrendPanel(TimeTrendPanel):
 			else:
 				chan.checked = False
 
-	@gui.figure.DrawManager.avoid_callback_loop('ylimits', 'ylimits2')
 	def ylim_callback(self, ax):
 		if ax is self.plot.axes:
-			self.ymin, self.ymax = ax.get_ylim()
-			self.yauto = False
+			with self.context.callbacks.avoid(self.ylimits):
+				self.ymin, self.ymax = ax.get_ylim()
+			if not self.context.callbacks.is_avoiding(self.ylimits):
+				self.yauto = False
 			logger.info('%s.ylim_callback primary: %s', self.__class__.__name__, self.ylimits)
 		elif ax is self.plot.secondaryaxes:
-			self.ymin2, self.ymax2 = ax.get_ylim()
-			self.yauto2 = False
+			with self.context.callbacks.avoid(self.ylimits2):
+				self.ymin2, self.ymax2 = ax.get_ylim()
+			if not self.context.callbacks.is_avoiding(self.ylimits2):
+				self.yauto2 = False
 			logger.info('%s.ylim_callback secondary: %s', self.__class__.__name__, self.ylimits2)
 
 	@on_trait_change('ymin2, ymax2, yauto2')
-	@gui.figure.DrawManager.avoid_callback_loop('ylimits2')
+	@gui.figure.CallbackLoopManager.decorator('ylimits2')
 	def ylim2_changed(self):
 		logger.info('%s.ylim2_changed: %s', self.__class__.__name__, self.ylimits2)
 		self.ymin2, self.ymax2 = self.plot.set_ylim2(self.ylimits2.min, self.ylimits2.max, self.ylimits2.auto)
 		self.redraw()
 
-	@gui.figure.DrawManager.avoid_callback_loop('ylimits2')
+	@gui.figure.CallbackLoopManager.decorator('ylimits2')
 	def _ylog2_changed(self):
 		self.plot.set_ylog2(self.ylog2)
 		self.redraw()
@@ -379,21 +384,22 @@ class XlimitsPanel(HasTraits):
 	traits_saved = 'xauto', 'xmin', 'xmax', 'xlog'
 
 	@on_trait_change('xmin, xmax, xauto')
-	@gui.figure.DrawManager.avoid_callback_loop('xlimits')
+	@gui.figure.CallbackLoopManager.decorator('xlimits')
 	def xlim_changed(self):
 		logger.info('%s.xlim_changed: %s', self.__class__.__name__, self.xlimits)
 		self.xmin, self.xmax = self.plot.set_xlim(self.xlimits.min, self.xlimits.max, self.xlimits.auto)
 		self.redraw()
 
-	@gui.figure.DrawManager.avoid_callback_loop('xlimits')
+	@gui.figure.CallbackLoopManager.decorator('xlimits')
 	def _xlog_changed(self):
 		self.plot.set_xlog(self.xlog)
 		self.redraw()
 
-	@gui.figure.DrawManager.avoid_callback_loop('xlimits')
 	def xlim_callback(self, ax):
-		self.xmin, self.xmax = ax.get_xlim()
-		self.xauto = False
+		with self.context.callbacks.avoid(self.xlimits):
+			self.xmin, self.xmax = ax.get_xlim()
+		if not self.context.callbacks.is_avoiding(self.xlimits):
+			self.xauto = False
 		logger.info('%s.xlim_callback: %s', self.__class__.__name__, self.xlimits)
 
 	def reset_autoscale(self):
