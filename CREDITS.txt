@@ -1,0 +1,9 @@
+Spacetime is created by Sander Roobol.
+
+The Spacetime logo contains STM data by Kees Herbschleb.
+Catal. Today 154, 61 (2010).
+
+Some of the icons are made by Mark James, famfamfam.com.
+Creative Commons Attribution License version 2.5 or 3.0.
+
+The other icons are LPGL'ed stock icons from the GTK project: www.gtk.org.

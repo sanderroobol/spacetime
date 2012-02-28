@@ -111,6 +111,8 @@ Section
   File python-dist\python26.dll
   File python-dist\ffmpeg.exe
   File ..\README.html
+  File ..\LICENSE.txt
+  File ..\CREDITS.txt
   File /r /x .* python-dist\Lib
 
   File debug.bat
@@ -156,6 +158,8 @@ Section "Uninstall"
   Delete "$INSTDIR\python26.dll"
   Delete "$INSTDIR\ffmpeg.exe"
   Delete "$INSTDIR\README.html"
+  Delete "$INSTDIR\LICENSE.txt"
+  Delete "$INSTDIR\CREDITS.txt"
   RMDir /r "$INSTDIR\Lib"
 
   Delete "$INSTDIR\debug.bat"
