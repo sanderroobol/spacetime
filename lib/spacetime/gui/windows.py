@@ -350,6 +350,7 @@ class MovieDialogMainTab(HasTraits):
 	frame_height = Int(600)
 	dpi = Range(low=1, high=10000000, value=72)
 	frame_rate = Int(5)
+	kbpf = Int(2048)
 
 	animation_view = View(Group(
 		Group(
@@ -361,6 +362,7 @@ class MovieDialogMainTab(HasTraits):
 		),
 		Group(
 			Item('frame_rate'),
+			Item('kbpf', label='kbits per frame', tooltip='Movie bitrate will be equal to frame rate * kbits per frame'),
 			Item('format'),
 			Item('codec'),
 			Item('ffmpeg_options', label='Extra options', tooltip='Extra options to be passed to the ffmpeg executable'),
@@ -381,6 +383,7 @@ class MovieDialog(support.UtilityWindow):
 	frame_height = DelegatesTo('maintab')
 	dpi = DelegatesTo('maintab')
 	frame_rate = DelegatesTo('maintab')
+	kbpf = DelegatesTo('maintab')
 
 	def get_animate_functions(self):
 		return tuple(getattr(tab, 'animate') for tab in self.tabs[1:])

@@ -74,7 +74,7 @@ class ContextManager(object):
 
 
 class FFmpegEncode(object):
-	def __init__(self, path, format, codec, framerate, framesize, opts=None):
+	def __init__(self, path, format, codec, framerate, framesize, bitrate, opts=None):
 		command = [
 			'ffmpeg',
 			'-y',                # force overwrite
@@ -88,6 +88,7 @@ class FFmpegEncode(object):
 			'-r', str(framerate),
 			'-f', format,        # output file format
 			'-vcodec', codec,
+			'-b', str(bitrate),
 		]
 		if opts:
 			command.extend(opts)
@@ -129,7 +130,8 @@ class FFmpegEncode(object):
 			return stdout
 
 	def abort(self):
-		self.proc.terminate()
+		if hasattr(self, 'proc'):
+			self.proc.terminate()
 		return self.close()
 
 	def __enter__(self):

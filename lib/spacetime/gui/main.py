@@ -264,7 +264,7 @@ class MainWindowHandler(Handler):
 
 		movie = None
 		try:
-			progress = ProgressDialog(title="Movie", message="Building movie", max=moviedialog.get_framecount()+2, can_cancel=True)
+			progress = ProgressDialog(title="Movie", message="Building movie", max=moviedialog.get_framecount()+2, can_cancel=True, parent=context.uiparent)
 			progress.open()
 
 			newfig = matplotlib.figure.Figure((moviedialog.frame_width / moviedialog.dpi, moviedialog.frame_height / moviedialog.dpi), moviedialog.dpi)
@@ -276,6 +276,7 @@ class MainWindowHandler(Handler):
 				moviedialog.codec,
 				moviedialog.frame_rate,
 				(moviedialog.frame_width, moviedialog.frame_height),
+				moviedialog.kbpf * moviedialog.frame_rate * 1024,
 				moviedialog.ffmpeg_options.split(),
 			)
 			thread, queue = movie.spawnstdoutthread()
@@ -305,17 +306,17 @@ class MainWindowHandler(Handler):
 				stdout = ''.join(stdout)
 				movie.close()
 				progress.update(progress.max)
-				# FIXME: do proper debugging
-				print "FFMPEG -- output"
-				print stdout
-				print "FFMPEG -- end of output"
+				support.Message.show(parent=context.uiparent, title='Movie complete', message='Movie complete', desc='The movie successfully been generated.\nFor debugging purposes, the full FFmpeg output can be found below.', bt=stdout)
 		except:
-			raise # FIXME proper error handling
-			#support.Message.file_save_failed(path, parent=info.ui.control) # better error
-		finally:
-			# FIXME: cleanup dlg.GetPath() if an error occurred
 			if movie:
-				movie.close()
+				movie.abort()
+			thread.join()
+			try:
+				os.unlink(dlg.GetPath())
+			except:
+				pass	
+			support.Message.exception(message='Movie export failed', desc='Something went wrong while exporting the movie. Detailed debugging information can be found below.')
+		finally:
 			context.app.plot.relocate(context.app.figure)
 			context.canvas.rebuild()
 
