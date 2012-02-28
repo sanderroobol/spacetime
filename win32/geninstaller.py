@@ -47,7 +47,7 @@ installer.install_recursively('lib', 'spacetime')
 installer.install_recursively('win32', 'licenses')
 
 
-print """
+print r"""
 ; Based on: NSIS Modern User Interface/Basic Example Script by Joost Verburg
 
 ;--------------------------------
@@ -63,12 +63,12 @@ print """
   ;Name and file
 """
 
-print """
+print r"""
   Name "Spacetime {version}"
   OutFile "Spacetime-{version}.exe"
 """.format(version=spacetime.version.version)
 
-print """
+print r"""
   ;Default installation folder
   InstallDir "$PROGRAMFILES\Spacetime"
   
@@ -109,6 +109,7 @@ Section
   File python-dist\python.exe
   File python-dist\pythonw.exe
   File python-dist\python26.dll
+  File python-dist\ffmpeg.exe
   File ..\README.html
   File /r /x .* python-dist\Lib
 
@@ -119,7 +120,7 @@ Section
 
 installer.print_install()
 
-print """
+print r"""
   ; END AUTOMATICALLY GENERATED LIST
 
   SetOutPath "$INSTDIR"
@@ -153,6 +154,7 @@ Section "Uninstall"
   Delete "$INSTDIR\python.exe"
   Delete "$INSTDIR\pythonw.exe"
   Delete "$INSTDIR\python26.dll"
+  Delete "$INSTDIR\ffmpeg.exe"
   Delete "$INSTDIR\README.html"
   RMDir /r "$INSTDIR\Lib"
 
@@ -166,7 +168,7 @@ Section "Uninstall"
 
 installer.print_uninstall()
 
-print """
+print r"""
   ; END AUTOMATICALLY GENERATED LIST
 
   RMDir /r "$SMPROGRAMS\Spacetime"
