@@ -278,7 +278,6 @@ class MainWindowHandler(Handler):
 				moviedialog.codec,
 				moviedialog.frame_rate,
 				(moviedialog.frame_width, moviedialog.frame_height),
-				moviedialog.kbpf * moviedialog.frame_rate * 1024,
 				moviedialog.ffmpeg_options.split(),
 			)
 			thread, queue = movie.spawnstdoutthread()

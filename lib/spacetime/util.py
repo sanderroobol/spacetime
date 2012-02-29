@@ -74,7 +74,7 @@ class ContextManager(object):
 
 
 class FFmpegEncode(object):
-	def __init__(self, path, format, codec, framerate, framesize, bitrate, opts=None):
+	def __init__(self, path, format, codec, framerate, framesize, opts=None):
 		command = [
 			'ffmpeg',
 			'-y',                # force overwrite
@@ -84,11 +84,9 @@ class FFmpegEncode(object):
 			'-s', '{0}x{1}'.format(*framesize),
 			'-i', '-',           # read from std input
 			'-an',               # no audio
-			'-pix_fmt', 'bgr24', # output pixel format
 			'-r', str(framerate),
 			'-f', format,        # output file format
 			'-vcodec', codec,
-			'-b', str(bitrate),
 		]
 		if opts:
 			command.extend(opts)

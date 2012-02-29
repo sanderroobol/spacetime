@@ -344,13 +344,12 @@ class MovieDialogMainTab(HasTraits):
 	label = Str('General')
 	format = Str('mp4')
 	codec = Str('libx264')
-	ffmpeg_options = Str('')
+	ffmpeg_options = Str('-x264opts crf=12 -preset medium')
 
 	frame_width = Int(800)
 	frame_height = Int(600)
 	dpi = Range(low=1, high=10000000, value=72)
-	frame_rate = Int(5)
-	kbpf = Int(2048)
+	frame_rate = Int(2)
 
 	animation_view = View(Group(
 		Group(
@@ -362,7 +361,6 @@ class MovieDialogMainTab(HasTraits):
 		),
 		Group(
 			Item('frame_rate'),
-			Item('kbpf', label='kbits per frame', tooltip='Movie bitrate will be equal to frame rate * kbits per frame'),
 			Item('format'),
 			Item('codec'),
 			Item('ffmpeg_options', label='Extra options', tooltip='Extra options to be passed to the ffmpeg executable'),
@@ -383,7 +381,6 @@ class MovieDialog(support.UtilityWindow):
 	frame_height = DelegatesTo('maintab')
 	dpi = DelegatesTo('maintab')
 	frame_rate = DelegatesTo('maintab')
-	kbpf = DelegatesTo('maintab')
 
 	def get_animate_functions(self):
 		return tuple(getattr(tab, 'animate') for tab in self.tabs[1:])
@@ -407,6 +404,7 @@ class MovieDialog(support.UtilityWindow):
 		),
 		title='Movie',
 		resizable=False,
+		width=400,
 		kind='modal',
 		buttons=OKCancelButtons,
 	)
