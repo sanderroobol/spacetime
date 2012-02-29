@@ -73,7 +73,6 @@ class CameraFramePanel(CameraPanel):
 	clip = Float(4.)
 	colormap = Enum(sorted((m for m in matplotlib.cm.datad if not m.endswith("_r")), key=string.lower))
 	interpolation = Enum('nearest', 'bilinear', 'bicubic')
-	zoom = Bool(False)
 	rotate = Bool(False)
 
 	mode = Enum('single frame', 'film strip')
@@ -81,7 +80,7 @@ class CameraFramePanel(CameraPanel):
 	is_singleframe = Property(depends_on='mode')
 	is_filmstrip = Property(depends_on='mode')
 
-	traits_saved = 'channel', 'filter', 'clip', 'colormap', 'interpolation', 'zoom', 'rotate', 'mode'
+	traits_saved = 'channel', 'filter', 'clip', 'colormap', 'interpolation', 'rotate', 'mode'
 	
 	def __init__(self, *args, **kwargs):
 		super(CameraFramePanel, self).__init__(*args, **kwargs)
@@ -118,14 +117,6 @@ class CameraFramePanel(CameraPanel):
 		self.framecount = self.data.getframecount() - 1
 		self.firstframe = self.lastframe = 0
 		self.settings_changed()
-
-	def _zoom_changed(self):
-		# FIXME: this does not remember state
-		if self.zoom:
-			self.plot.axes.set_xlim(*self.plot.axes.dataLim.intervalx)
-		else:
-			self.context.plot.autoscale(self.plot)
-		self.redraw()
 
 	def _rotate_changed(self):
 		self.plot.set_rotate(self.rotate)
@@ -178,11 +169,6 @@ class CameraFramePanel(CameraPanel):
 				Item('rotate', label='Rotate image', tooltip='Plot scanlines vertically', enabled_when='is_singleframe'),
 				show_border=True,
 				label='Single frame',
-			),
-			Group(
-				Item('zoom', label='Zoom to fit', enabled_when='is_filmstrip'),
-				show_border=True,
-				label='Film strip'
 			),
 			show_border=True,
 			label='Display',
