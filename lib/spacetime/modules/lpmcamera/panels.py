@@ -163,6 +163,7 @@ class CameraFramePanel(CameraPanel):
 			label='General',
 		),
 		Group(
+			Item('size'),
 			Item('colormap'),
 			Item('interpolation', editor=EnumEditor(values=support.EnumMapping([('nearest', 'none'), 'bilinear', 'bicubic']))),
 			Group(
@@ -309,6 +310,7 @@ class CameraTrendPanel(DoubleTimeTrendPanel, CameraPanel, XlimitsPanel):
 			Item('direction', editor=EnumEditor(values=support.EnumMapping([(1, 'L2R'), (2, 'R2L'), (3, 'both')]))),
 			Item('averaging', tooltip='Per-line averaging', enabled_when='not_fft'),
 			Item('legend'),
+			Item('size'),
 			show_border=True,
 			label='General',
 		),

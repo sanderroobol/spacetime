@@ -101,6 +101,7 @@ class SubplotPanel(SerializableTab):
 
 	plot = Instance(subplots.Subplot)
 	visible = Bool(True)
+	size = Range(1, 10)
 	number = 0
 
 	# Magic attribute with "class level" "extension inheritance". Does this make any sense?
@@ -149,6 +150,10 @@ class SubplotPanel(SerializableTab):
 
 	def reset_autoscale(self):
 		pass
+
+	def _size_changed(self):
+		self.plot.size = self.size
+		self.rebuild_figure()
 
 
 def TimeTrendChannelListEditor():
@@ -266,6 +271,7 @@ class TimeTrendPanel(SubplotPanel):
 			Item('filename', editor=gui.support.FileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),
 			Item('reload', show_label=False),
 			Item('legend'),
+			Item('size'),
 			show_border=True,
 			label='General',
 		)
@@ -523,6 +529,7 @@ class Time2DPanel(TimeTrendPanel):
 				label='General',
 			),
 			Group(
+				Item('size'),
 				Item('colormap'),
 				Item('interpolation', editor=EnumEditor(values=gui.support.EnumMapping([('nearest', 'none'), 'bilinear', 'bicubic']))),
 				show_border=True,

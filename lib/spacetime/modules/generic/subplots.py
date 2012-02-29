@@ -35,6 +35,7 @@ class Subplot(object):
 	axes = None
 	time_offset = 0.
 	time_factor = 1.
+	size = 1
 
 	def __init__(self, data=None):
 		self.data = data
@@ -43,7 +44,7 @@ class Subplot(object):
 		self.data = data
 
 	def get_axes_requirements(self):
-		return [AxesRequirements()] # request a single subplot
+		return [AxesRequirements(size=self.size)] # request a single subplot
 
 	def set_axes(self, axes):
 		self.axes = axes[0]
@@ -102,7 +103,7 @@ class XAxisHandling(object):
 	xlog = False
 
 	def get_axes_requirements(self):
-		return [AxesRequirements(independent_x=True)]
+		return [AxesRequirements(size=self.size, independent_x=True)]
 
 	def xlim_callback(self, ax):
 		self.xlim_min, self.xlim_max = ax.get_xlim()
@@ -222,7 +223,7 @@ class DoubleYAxisHandling(YAxisHandling):
 			self.secondaryaxes.set_yscale('log' if ylog2 else 'linear')
 
 	def get_axes_requirements(self):
-		return [AxesRequirements(twinx=True)]
+		return [AxesRequirements(size=self.size, twinx=True)]
 
 
 class MultiTrendFormatter(object):
@@ -441,9 +442,9 @@ class Image(ImageBase):
 
 	def get_axes_requirements(self):
 		if self.mode == 'single frame':
-			return [AxesRequirements(independent_x=True)]
+			return [AxesRequirements(size=self.size, independent_x=True)]
 		else:
-			return [AxesRequirements()]
+			return [AxesRequirements(size=self.size)]
 
 	def setup(self):
 		super(Image, self).setup()

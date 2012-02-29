@@ -41,7 +41,7 @@ class CameraTrend(XAxisHandling, DoubleMultiTrend):
 			raise util.SharedXError
 
 	def get_axes_requirements(self):
-		return [AxesRequirements(twinx=True, independent_x=bool(self.xdata) or self.fft)]
+		return [AxesRequirements(size=self.size, twinx=True, independent_x=bool(self.xdata) or self.fft)]
 
 	def setup(self):
 		super(CameraTrend, self).setup()
