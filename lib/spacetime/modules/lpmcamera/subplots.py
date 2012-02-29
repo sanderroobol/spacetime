@@ -19,7 +19,7 @@
 import itertools
 import numpy
 
-from ..generic.subplots import DoubleMultiTrend, XAxisHandling
+from ..generic.subplots import DoubleMultiTrend, XAxisHandling, AxesRequirements
 
 from ... import util
 
@@ -41,7 +41,7 @@ class CameraTrend(XAxisHandling, DoubleMultiTrend):
 			raise util.SharedXError
 
 	def get_axes_requirements(self):
-		return [util.Struct(twinx=True, independent_x=bool(self.xdata) or self.fft)]
+		return [AxesRequirements(twinx=True, independent_x=bool(self.xdata) or self.fft)]
 
 	def setup(self):
 		super(CameraTrend, self).setup()

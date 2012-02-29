@@ -428,7 +428,6 @@ class App(HasTraits):
 
 	def on_figure_resize(self, event):
 		logger.info('on_figure_resize called')
-		self.plot.setup_margins()
 		self.context.canvas.redraw()
 
 	def redraw_canvas(self):

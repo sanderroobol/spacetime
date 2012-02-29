@@ -17,9 +17,57 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import itertools
-import matplotlib, matplotlib.figure, matplotlib.dates
+import numpy
+import matplotlib, matplotlib.figure, matplotlib.dates, matplotlib.gridspec
 
 from . import util
+
+
+class AbsoluteGridSpec(matplotlib.gridspec.GridSpecBase):
+	def __init__(self, nrows, ncols,
+	             margins=(.75, .75, .75, .75),
+	             spacing=(.75, .75),
+	             ratios=(None, None)):
+		"""gridspec in absolute units
+
+		all sizes in inches
+		* margins: top, right, bottom, left
+		* spacing: horizontal, vertical 
+		* ratios:  like GridSpec's ratios
+		"""
+
+		self._margins = margins
+		self._spacing = spacing
+
+		matplotlib.gridspec.GridSpecBase.__init__(self, nrows, ncols,
+		                      width_ratios=ratios[0],
+		                      height_ratios=ratios[1])
+
+	@staticmethod
+	def _divide_into_cells(size, n, margin_low, margin_high, spacing, ratios):
+		total = size - margin_low - margin_high - (n-1)*spacing
+		cell = total / n
+
+		if ratios is None:
+			cells = [cell] * n
+		else:
+			tr = sum(ratios)
+			cells = [total*r/tr for r in ratios]
+
+		seps = [0] + ([spacing] * (n-1))
+		cells = numpy.add.accumulate(numpy.ravel(zip(seps, cells)))
+
+		lowers = [(margin_low + cells[2*i])/size for i in range(n)]
+		uppers = [(margin_low + cells[2*i+1])/size for i in range(n)]
+		return lowers, uppers
+
+	def get_grid_positions(self, fig):
+		width, height = fig.get_size_inches()
+		mtop, mright, mbottom, mleft = self._margins
+		hspace, vspace = self._spacing
+		figBottoms, figTops = self._divide_into_cells(height, self._nrows, mbottom, mtop, vspace, self._row_height_ratios)
+		figLefts, figRights = self._divide_into_cells(width,  self._ncols, mleft, mright, hspace, self._col_width_ratios)
+		return figBottoms[::-1], figTops[::-1], figLefts, figRights
 
 class Marker(object):
 	def __init__(self, left, right=None):
@@ -79,13 +127,6 @@ class Markers(object):
 	
 
 class Plot(object):
-	left = .75
-	right = .75
-	top = .2
-	bottom = .75
-	hspace = .2
-	wspace = .2
-
 	shared_xlim_callback_ext = None
 	shared_xmin = 0.
 	shared_xmax = 1.
@@ -102,9 +143,7 @@ class Plot(object):
 	@classmethod
 	def newpyplotfigure(klass, size=(14,8)):
 		import matplotlib.pyplot
-		plot = klass(matplotlib.pyplot.figure(figsize=size))
-		plot.figure.canvas.mpl_connect('resize_event', plot.setup_margins)
-		return plot
+		return klass(matplotlib.pyplot.figure(figsize=size))
 
 	@classmethod
 	def newmatplotlibfigure(klass):
@@ -147,16 +186,22 @@ class Plot(object):
 
 		ret = []
 		shared = None
+		gridspec = AbsoluteGridSpec(
+				total, 1,
+				margins=(.2, .75, .75, .75),
+				spacing=(.2, .2),
+				ratios=(None, tuple(1./r.size for (p, r) in req))
+		)
 		for i, (p, r) in enumerate(req):
 			if r.independent_x:
-				axes = self.figure.add_subplot(total, 1, i+1)
+				axes = self.figure.add_subplot(gridspec[i, 0])
 				self.independent_axes.append(axes)
 			else:
 				if shared:
-					axes = self.figure.add_subplot(total, 1, i+1, sharex=shared)
+					axes = self.figure.add_subplot(gridspec[i, 0], sharex=shared)
 				else:
-					shared = axes = self.figure.add_subplot(total, 1, i+1)
-				self.shared_axes.append(axes)	
+					shared = axes = self.figure.add_subplot(gridspec[i, 0])
+				self.shared_axes.append(axes)
 				self.setup_xaxis_labels(axes)
 			axes.autoscale(False)
 
@@ -187,21 +232,6 @@ class Plot(object):
 		for p in self.subplots:
 			p.draw()
 
-	def setup_margins(self, event=None):
-		width, height = self.figure.get_size_inches()
-
-		def wabs2rel(x): return x / width
-		def habs2rel(x): return x / height
-	
-		self.figure.subplots_adjust(
-				left   = wabs2rel(self.left),
-				right  = 1-wabs2rel(self.right),
-				top    = 1-habs2rel(self.top),
-				bottom = habs2rel(self.bottom),
-				hspace = habs2rel(self.hspace) * len(self.subplots),
-				wspace = wabs2rel(self.wspace),
-		)
-
 	def setup_xaxis_labels(self, axes):
 		axes.xaxis_date(tz=util.localtz)
 		
@@ -214,8 +244,6 @@ class Plot(object):
 			for label in axes.get_xticklabels():
 				label.set_ha('right')
 				label.set_rotation(30)
-
-			self.setup_margins()
 		else:
 			for label in axes.get_xticklabels():
 				label.set_visible(False)
