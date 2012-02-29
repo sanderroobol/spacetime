@@ -110,7 +110,7 @@ class SubplotPanel(SerializableTab):
 	# attributed listed in one of the parent classes will be added
 	# automatically.
 	# Anyway, this is possible thanks to the TraitsSavedMeta metaclass.
-	traits_saved = 'visible', 'filename', 'simultaneity_offset', 'time_dilation_factor'
+	traits_saved = 'visible', 'filename', 'simultaneity_offset', 'time_dilation_factor', 'size'
 	# traits_not_saved = ... can be used to specify parameters that should not be copied in a derived classes
 
 	relativistic_group = Group(
