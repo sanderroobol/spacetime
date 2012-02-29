@@ -45,7 +45,7 @@ class CameraTrend(XAxisHandling, DoubleMultiTrend):
 
 	def setup(self):
 		super(CameraTrend, self).setup()
-		if (self.xdata or self.fft) and self.xlim_callback:
+		if (self.xdata or self.fft):
 			self.axes.callbacks.connect('xlim_changed', self.xlim_callback)
 
 	def get_xdata(self, chandata):

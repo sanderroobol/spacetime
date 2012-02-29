@@ -87,7 +87,7 @@ class Subplot(object):
 
 
 class XAxisHandling(object):
-	xlim_callback = None
+	xlim_callback_ext = None
 	xlim_min = 0.
 	xlim_max = 1.
 	xlim_auto = True
@@ -95,6 +95,11 @@ class XAxisHandling(object):
 
 	def get_axes_requirements(self):
 		return [util.Struct(independent_x = True)]
+
+	def xlim_callback(self, ax):
+		self.xlim_min, self.xlim_max = ax.get_xlim()
+		if self.xlim_callback_ext:
+			self.xlim_callback_ext(ax)
 
 	def set_xlim_callback(self, func):
 		self.xlim_callback = func
@@ -130,14 +135,19 @@ class XAxisHandling(object):
 
 
 class YAxisHandling(object):
-	ylim_callback = None
+	ylim_callback_ext = None
 	ylim_min = 0.
 	ylim_max = 1.
 	ylim_auto = True
 	ylog = False
 
+	def ylim_callback(self, ax):
+		self.ylim_min, self.ylim_max = ax.get_ylim()
+		if self.ylim_callback_ext:
+			self.ylim_callback_ext(ax)
+
 	def set_ylim_callback(self, func):
-		self.ylim_callback = func
+		self.ylim_callback_ext = func
 
 	def set_ylim(self, min, max, auto):
 		self.ylim_min = min
@@ -170,6 +180,14 @@ class DoubleYAxisHandling(YAxisHandling):
 	ylim2_max = 1.
 	ylim2_auto = True
 	ylog2 = False
+
+	def ylim_callback(self, ax):
+		if ax is self.axes:
+			self.ylim_min, self.ylim_max = ax.get_ylim()
+		elif ax is self.secondaryaxes:
+			self.ylim2_min, self.ylim2_max = ax.get_ylim()
+		if self.ylim_callback_ext:
+			self.ylim_callback_ext(ax)
 
 	def set_ylim2(self, min, max, auto):
 		self.ylim2_min = min
@@ -229,8 +247,7 @@ class MultiTrend(YAxisHandling, Subplot):
 
 	def setup(self):
 		super(MultiTrend, self).setup()
-		if self.ylim_callback:
-			self.axes.callbacks.connect('ylim_changed', self.ylim_callback)
+		self.axes.callbacks.connect('ylim_changed', self.ylim_callback)
 
 	def get_xdata(self, chandata):
 		return self.time_factor*chandata.time + self.time_offset/86400.
@@ -296,8 +313,7 @@ class DoubleMultiTrend(MultiTrend, DoubleYAxisHandling):
 	def setup(self):
 		super(DoubleMultiTrend, self).setup()
 		self.secondaryaxes.fmt_xdata = self.axes.fmt_xdata
-		if self.ylim_callback:
-			self.secondaryaxes.callbacks.connect('ylim_changed', self.ylim_callback)
+		self.secondaryaxes.callbacks.connect('ylim_changed', self.ylim_callback)
 
 	def draw(self):
 		super(DoubleMultiTrend, self).draw()

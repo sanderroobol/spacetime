@@ -86,7 +86,7 @@ class Plot(object):
 	hspace = .2
 	wspace = .2
 
-	shared_xlim_callback = None
+	shared_xlim_callback_ext = None
 	shared_xmin = 0.
 	shared_xmax = 1.
 	shared_xauto = True
@@ -178,9 +178,8 @@ class Plot(object):
 
 		if self.shared_axes:
 			self.master_axes = self.shared_axes[-1]
-			if self.shared_xlim_callback:
-				for axes in self.shared_axes:
-					axes.callbacks.connect('xlim_changed', self.shared_xlim_callback)
+			for axes in self.shared_axes:
+				axes.callbacks.connect('xlim_changed', self.shared_xlim_callback)
 		else:
 			self.master_axes = None
 
@@ -221,8 +220,13 @@ class Plot(object):
 			for label in axes.get_xticklabels():
 				label.set_visible(False)
 
-	def set_xlim_callback(self, func):
-		self.shared_xlim_callback = func
+	def shared_xlim_callback(self, ax):
+		self.shared_xmin, self.shared_xmax = ax.get_xlim()
+		if self.shared_xlim_callback_ext:
+			self.shared_xlim_callback_ext(ax)
+
+	def set_shared_xlim_callback(self, func):
+		self.shared_xlim_callback_ext = func
 
 	def autoscale(self, subplot=None):
 		if subplot:

@@ -59,10 +59,8 @@ class MainTab(modules.generic.panels.SerializableTab):
 		pass
 
 	def xlim_callback(self, ax):
-		# NOTE: the next line is not protected by a self.context.callbacks.avoid(self.xlimits) call.
-		# This will make sure that context.plot.shared_xmin/max will be in sync with all the shared-x
-		# Panels.plot.axes.xlims
-		self.xmin_mpldt, self.xmax_mpldt = ax.get_xlim()
+		with self.context.callbacks.avoid(self.xlimits):
+			self.xmin_mpldt, self.xmax_mpldt = ax.get_xlim()
 		if not self.context.callbacks.is_avoiding(self.xlimits):
 			self.xauto = False
 		logger.info('%s.xlim_callback: (%s, %s) %s', self.__class__.__name__, self.xlimits.min, self.xlimits.max, 'auto' if self.xauto else 'manual')
@@ -547,7 +545,7 @@ class App(HasTraits):
 	def _plot_default(self):
 		p = plot.Plot.newmatplotlibfigure()
 		p.setup()
-		p.set_xlim_callback(self.maintab.xlim_callback)
+		p.set_shared_xlim_callback(self.maintab.xlim_callback)
 		wx.CallAfter(self._connect_canvas_resize_event)
 		return p
 
