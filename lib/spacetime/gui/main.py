@@ -264,7 +264,7 @@ class MainWindowHandler(Handler):
 		context.prefs.set_path('movie', dlg.GetDirectory())
 
 		movie = None
-		oldfix = context.plot.oldfig
+		oldfig = context.plot.figure
 		try:
 			progress = ProgressDialog(title="Movie", message="Building movie", max=moviedialog.get_framecount()+2, can_cancel=True, parent=context.uiparent)
 			progress.open()
