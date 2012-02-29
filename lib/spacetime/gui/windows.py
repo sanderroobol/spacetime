@@ -407,7 +407,6 @@ class MovieDialog(support.UtilityWindow):
 		),
 		title='Movie',
 		resizable=False,
-		height=300, width=400,
 		kind='modal',
 		buttons=OKCancelButtons,
 	)
