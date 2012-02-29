@@ -241,7 +241,7 @@ class FigureWindow(support.PersistantGeometryWindow):
 	prefs_id = 'figure'
 
 	app = Instance(HasTraits)
-	figure = DelegatesTo('app')
+	figure = Instance(matplotlib.figure.Figure, args=())
 	status = DelegatesTo('app')
 
 	traits_view = View(
@@ -317,7 +317,7 @@ class ExportDialog(support.UtilityWindow):
 				self.canvas_height *= 2.54
 
 	def run(self):
-		mplcanvas = self.context.app.figure.canvas
+		mplcanvas = self.context.plot.figure.canvas
 		filetypes, exts, filter_index = mplcanvas._get_imagesave_wildcards()
 		self.filetypes = filetypes.split('|')[::2]
 		self.extensions = exts

@@ -230,13 +230,13 @@ class MainWindowHandler(Handler):
 			try:
 				newfig = matplotlib.figure.Figure(exportdialog.figsize, exportdialog.dpi)
 				canvas = FigureCanvasAgg(newfig)
-				context.app.plot.relocate(newfig)
+				context.plot.relocate(newfig)
 				context.app.rebuild_figure()
 				newfig.savefig(path, dpi=exportdialog.dpi, format=exportdialog.extension)
 			except:
 				support.Message.file_save_failed(path, parent=info.ui.control)
 			finally:
-				context.app.plot.relocate(context.app.figure)
+				context.plot.relocate(context.app.figure)
 				context.app.rebuild_figure()
 
 	def do_movie(self, info):
@@ -264,13 +264,14 @@ class MainWindowHandler(Handler):
 		context.prefs.set_path('movie', dlg.GetDirectory())
 
 		movie = None
+		oldfix = context.plot.oldfig
 		try:
 			progress = ProgressDialog(title="Movie", message="Building movie", max=moviedialog.get_framecount()+2, can_cancel=True, parent=context.uiparent)
 			progress.open()
 
 			newfig = matplotlib.figure.Figure((moviedialog.frame_width / moviedialog.dpi, moviedialog.frame_height / moviedialog.dpi), moviedialog.dpi)
 			canvas = FigureCanvasAgg(newfig)
-			context.app.plot.relocate(newfig)
+			context.plot.relocate(newfig)
 			movie = util.FFmpegEncode(
 				dlg.GetPath(),
 				moviedialog.format,
@@ -318,7 +319,7 @@ class MainWindowHandler(Handler):
 				pass	
 			support.Message.exception(message='Movie export failed', desc='Something went wrong while exporting the movie. Detailed debugging information can be found below.')
 		finally:
-			context.app.plot.relocate(context.app.figure)
+			context.plot.relocate(oldfig)
 			context.canvas.rebuild()
 
 	def do_fit(self, info):
@@ -329,13 +330,13 @@ class MainWindowHandler(Handler):
 
 	def do_zoom(self, info):
 		mainwindow = info.ui.context['object']
-		mainwindow.figure.toolbar.zoom()
+		mainwindow.plot.figure.toolbar.zoom()
 		mainwindow.zoom_checked = not mainwindow.zoom_checked
 		mainwindow.pan_checked = False
 
 	def do_pan(self, info):
 		mainwindow = info.ui.context['object']
-		mainwindow.figure.toolbar.pan()
+		mainwindow.plot.figure.toolbar.pan()
 		mainwindow.pan_checked = not mainwindow.pan_checked
 		mainwindow.zoom_checked = False
 
@@ -357,7 +358,7 @@ class Frame(HasTraits):
 
 class SplitFrame(Frame):
 	app = Instance(HasTraits)
-	figure = DelegatesTo('app')
+	figure = Instance(matplotlib.figure.Figure, args=())
 	tabs = DelegatesTo('app')
 	status = DelegatesTo('app')
 
@@ -385,6 +386,7 @@ class SimpleFrame(Frame):
 class Context(HasTraits):
 	app = Instance(HasTraits)
 #	document = Instance(Any)
+	plot = Instance(plot.Plot)
 	canvas = Instance(DrawManager)
 	callbacks = Instance(CallbackLoopManager, args=())
 	prefs = Instance(prefs.Storage)
@@ -393,7 +395,6 @@ class Context(HasTraits):
 
 class App(HasTraits):
 	plot = Instance(plot.Plot)
-	figure = Instance(matplotlib.figure.Figure)
 	maintab = Instance(MainTab)
 	status = DelegatesTo('maintab')
 	drawmgr = Instance(DrawManager)
@@ -432,7 +433,7 @@ class App(HasTraits):
 
 	def redraw_canvas(self):
 		# make a closure on self so figure.canvas can be changed in the meantime
-		wx.CallAfter(lambda: self.figure.canvas.draw())
+		wx.CallAfter(lambda: self.context.plot.figure.canvas.draw())
 
 	def get_new_tab(self, klass):
 		return klass(context=self.context)
@@ -540,17 +541,14 @@ class App(HasTraits):
 			self.plot.autoscale()
 
 	def _connect_canvas_resize_event(self):
-		self.figure.canvas.mpl_connect('resize_event', self.on_figure_resize), 
+		self.context.plot.figure.canvas.mpl_connect('resize_event', self.on_figure_resize), 
 
 	def _plot_default(self):
-		p = plot.Plot.newmatplotlibfigure()
+		p = plot.Plot(self.frame.figure)
 		p.setup()
-		p.set_shared_xlim_callback(self.maintab.xlim_callback)
+		wx.CallAfter(p.set_shared_xlim_callback, self.maintab.xlim_callback)
 		wx.CallAfter(self._connect_canvas_resize_event)
 		return p
-
-	def _figure_default(self):
-		return self.plot.figure
 
 	def _frame_default(self):
 		return SplitFrame(app=self)
@@ -558,18 +556,20 @@ class App(HasTraits):
 	def _close_presentation_mode(self):
 		self.presentation_mode = False
 		self.figurewindowui = None
-		with self.context.canvas.hold():
-			self.frame = SplitFrame(app=self)
-			self.on_figure_resize(None)
+		self.frame = SplitFrame(app=self)
+		self.plot.relocate(self.frame.figure)
+		self.context.canvas.rebuild()
 		wx.CallAfter(self._connect_canvas_resize_event)
 
 	def _open_presentation_mode(self):
 		self.presentation_mode = True
-		with self.context.canvas.hold():
-			self.frame = SimpleFrame(app=self)
-			self.figurewindowui = windows.FigureWindow(context=self.context, app=self).edit_traits()
+		self.frame = SimpleFrame(app=self)
+		fw = windows.FigureWindow(context=self.context, app=self)
+		self.figurewindowui = fw.edit_traits()
+		self.plot.relocate(fw.figure)
+		self.context.canvas.rebuild()
 		wx.CallAfter(self._connect_canvas_resize_event)
-		wx.CallAfter(lambda: self.figure.canvas.Bind(wx.EVT_KEY_DOWN, self.fullscreen_keyevent))
+		wx.CallAfter(self.context.plot.figure.canvas.Bind, wx.EVT_KEY_DOWN, self.fullscreen_keyevent)
 
 	def toggle_presentation_mode(self):
 		if self.presentation_mode:
