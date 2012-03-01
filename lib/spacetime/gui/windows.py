@@ -60,10 +60,21 @@ class PanelTreeRoot(HasTraits):
 	traits_view = View()
 
 
+class PanelSelectorHandler(Controller):
+	def on_dclick(self, obj):
+		self.info.ui.control.Close()
+
+
 class PanelSelector(HasTraits):
 	moduleloader = Instance(modules.Loader)
 	selected = List()
 	root = Instance(PanelTreeRoot)
+
+	def clone_traits(self, *args, **kwargs):
+		# Somehow this is needed, otherwise self.selected() is empty after the
+		# window has been closed via PanelSelectorHandler.on_dclick()
+		# See also spacetime.gui.main.App.clone_traits()
+		return self
 
 	def _root_default(self):
 		modules = []
@@ -92,7 +103,7 @@ class PanelSelector(HasTraits):
 
 	traits_view = View(
 		Group(
-			Item('root', editor=TreeEditor(editable=True, selection_mode='extended', selected='selected', hide_root=True, nodes=[
+			Item('root', editor=TreeEditor(editable=True, on_dclick='handler.on_dclick', selection_mode='extended', selected='selected', hide_root=True, nodes=[
 				TreeNode(node_for=[PanelTreeRoot], auto_open=True, children='modules', label='label'),
 				TreeNode(node_for=[PanelTreeModule], auto_open=True, children='panels', label='label'),
 				TreeNode(node_for=[PanelTreePanel], label='label'),
@@ -105,6 +116,7 @@ class PanelSelector(HasTraits):
 		width=600,
 		buttons=OKCancelButtons,
 		kind='modal',
+		handler=PanelSelectorHandler()
 	)
 
 
