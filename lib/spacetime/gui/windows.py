@@ -70,12 +70,6 @@ class PanelSelector(HasTraits):
 	selected = List()
 	root = Instance(PanelTreeRoot)
 
-	def clone_traits(self, *args, **kwargs):
-		# Somehow this is needed, otherwise self.selected() is empty after the
-		# window has been closed via PanelSelectorHandler.on_dclick()
-		# See also spacetime.gui.main.App.clone_traits()
-		return self
-
 	def _root_default(self):
 		modules = []
 		for name, panels in self.moduleloader.panels_by_module.iteritems():
@@ -115,7 +109,7 @@ class PanelSelector(HasTraits):
 		height=400,
 		width=600,
 		buttons=OKCancelButtons,
-		kind='modal',
+		kind='livemodal',
 		handler=PanelSelectorHandler()
 	)
 
@@ -268,6 +262,7 @@ class FigureWindow(support.PersistantGeometryWindow):
 		statusbar='status',
 		icon=support.GetIcon('spacetime-icon'),
 		handler=FigureWindowHandler(),
+		kind='live',
 	)
 
 class ExportDialog(support.UtilityWindow):
@@ -349,7 +344,7 @@ class ExportDialog(support.UtilityWindow):
 		buttons=OKCancelButtons,
 		title='Export',
 		resizable=False,
-		kind='modal',
+		kind='livemodal',
 	)
 
 class MovieDialogMainTab(HasTraits):
@@ -417,6 +412,6 @@ class MovieDialog(support.UtilityWindow):
 		title='Movie',
 		resizable=False,
 		width=400,
-		kind='modal',
+		kind='livemodal',
 		buttons=OKCancelButtons,
 	)

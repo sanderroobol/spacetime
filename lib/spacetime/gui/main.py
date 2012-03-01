@@ -416,15 +416,6 @@ class App(HasTraits):
 
 	tabs = List(Instance(modules.generic.panels.Tab))
 
-	def clone_traits(self, *args, **kwargs):
-		# FIXME: Somehow clone_traits() gets called to make (shallow) copies of
-		# App instances. I don't know why this happens. Unfortunately, some
-		# attributes do not get copied properly, in particular self.ui, but the
-		# same applies to the context attribute of the Panels. To work around
-		# the problem, just don't copy anymore. This doesn't seem to have any
-		# negative side effects...
-		return self
-
 	def on_figure_resize(self, event):
 		logger.info('on_figure_resize called')
 		self.context.canvas.redraw()
@@ -711,6 +702,7 @@ class App(HasTraits):
 			statusbar='status',
 			handler=MainWindowHandler(),
 			icon=support.GetIcon('spacetime-icon'),
+			kind='live',
 		)
 
 	def parseargs(self):
