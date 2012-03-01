@@ -100,32 +100,33 @@ class FFmpegEncode(object):
 		)
 
 	def spawnstdoutthread(self):
-		queue = Queue.Queue()
 		def readstdout(queue, stdout):
 			for line in stdout:
 				queue.put(line)
 			stdout.close()
+		queue = Queue.Queue()
 		thread = threading.Thread(target=readstdout, args=(queue, self.proc.stdout))
 		thread.start()
-		return thread, queue
+
+		def cleanup():
+			thread.join()
+			stdout = []
+			while not queue.empty():
+				stdout.append(queue.get())		
+			print stdout
+			return ''.join(stdout)
+		return cleanup
 
 	def writeframe(self, data): # needs RGB raw data
 		self.proc.stdin.write(data)
-
-	def eof(self):
-		self.proc.stdin.close()
 
 	def close(self):
 		if hasattr(self, 'proc'):
 			if not self.proc.stdin.closed:
 				self.proc.stdin.close()
-			if self.proc.stdout.closed:
-				stdout = None
-			else:
-				stdout = self.proc.stdout.read()
-				self.proc.stdout.close()
+			proc = self.proc
 			del self.proc
-			return stdout
+			return proc.wait()
 
 	def abort(self):
 		if hasattr(self, 'proc'):

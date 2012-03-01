@@ -33,6 +33,9 @@ import wx
 import json
 import os
 import itertools
+import sys
+import shutil
+import traceback
 
 import logging
 logger = logging.getLogger(__name__)
@@ -247,7 +250,7 @@ class MainWindowHandler(Handler):
 			if not moviedialog.run().result:
 				return
 		except RuntimeError as e:
-			support.Message.show(message='Nothing to animate', desc=str(e))
+			support.Message.show(parent=context.uiparent, message='Nothing to animate', desc=str(e))
 			return
 
 		dlg = wx.FileDialog(
@@ -263,24 +266,32 @@ class MainWindowHandler(Handler):
 			return
 		context.prefs.set_path('movie', dlg.GetDirectory())
 
-		movie = None
+		# preparations, no harm is done if something goes wrong here
+		movie = stdout_cb = stdout = None
 		oldfig = context.plot.figure
-		try:
-			progress = ProgressDialog(title="Movie", message="Building movie", max=moviedialog.get_framecount()+2, can_cancel=True, parent=context.uiparent)
-			progress.open()
+		progress = ProgressDialog(title="Movie", message="Building movie", max=moviedialog.get_framecount()+2, can_cancel=True, parent=context.uiparent)
+		newfig = matplotlib.figure.Figure((moviedialog.frame_width / moviedialog.dpi, moviedialog.frame_height / moviedialog.dpi), moviedialog.dpi)
+		canvas = FigureCanvasAgg(newfig)
 
-			newfig = matplotlib.figure.Figure((moviedialog.frame_width / moviedialog.dpi, moviedialog.frame_height / moviedialog.dpi), moviedialog.dpi)
-			canvas = FigureCanvasAgg(newfig)
+		finalpath = dlg.GetPath()
+		temppath = finalpath + '.temp'
+
+		class UserCanceled(Exception): pass
+		class FFmpegFailed(Exception): pass
+
+		# now the real thing starts. we have to clean up properly
+		try:
+			progress.open()
 			context.plot.relocate(newfig)
 			movie = util.FFmpegEncode(
-				dlg.GetPath(),
+				temppath,
 				moviedialog.format,
 				moviedialog.codec,
 				moviedialog.frame_rate,
 				(moviedialog.frame_width, moviedialog.frame_height),
 				moviedialog.ffmpeg_options.split(),
 			)
-			thread, queue = movie.spawnstdoutthread()
+			stdout_cb = movie.spawnstdoutthread()
 			progress.update(1)
 
 			# FIXME disable drawmanager? relocate? hold?
@@ -291,35 +302,54 @@ class MainWindowHandler(Handler):
 				movie.writeframe(newfig.canvas.tostring_rgb())
 				(cont, skip) = progress.update(frameno+2)
 				if not cont or skip:
-					movie.abort()
-					try:
-						os.unlink(dlg.GetPath())
-					except:
-						pass
-					progress.close()
-					break
-			else:
-				movie.eof() # closes stdin
-				thread.join() # blocks until stdout has been read
-				stdout = []
-				while not queue.empty():
-					stdout.append(queue.get_nowait())
-				stdout = ''.join(stdout)
-				movie.close()
-				progress.update(progress.max)
-				support.Message.show(parent=context.uiparent, title='Movie complete', message='Movie complete', desc='The movie successfully been generated.\nFor debugging purposes, the full FFmpeg output can be found below.', bt=stdout)
+					raise UserCanceled()
+			
+			ret = movie.close()	
+			if ret != 0:
+				raise FFmpegFailed('ffmpeg returned {0}'.format(ret))
+			stdout = stdout_cb()
+			stdout_cb = None
+			shutil.move(temppath, finalpath)
+			progress.update(progress.max)
+
+		except UserCanceled:
+			movie.abort()
+			return
 		except:
-			if movie:
-				movie.abort()
-			thread.join()
-			try:
-				os.unlink(dlg.GetPath())
-			except:
-				pass	
-			support.Message.exception(message='Movie export failed', desc='Something went wrong while exporting the movie. Detailed debugging information can be found below.')
+			exc_info = sys.exc_info()[2]
+			movie.close()
+			if stdout_cb:
+				try:
+					stdout = stdout_cb()
+				except:
+					pass
+			stdout_cb = None
+
+			support.Message.show(
+				parent=context.uiparent, 
+				message='Movie export failed', title='Exception occured',
+				desc='Something went wrong while exporting the movie. Detailed debugging information can be found below.',
+				bt="FFMPEG output:\n{0}\n\nBACKTRACE:\n{1}".format(stdout, traceback.format_exc(exc_info))
+			)
+			return
 		finally:
+			if stdout_cb:
+				stdout = stdout_cb()
+			progress.close()
+			try:
+				os.remove(tempfile)
+			except:
+				pass
 			context.plot.relocate(oldfig)
 			context.canvas.rebuild()
+
+		support.Message.show(
+			parent=context.uiparent,
+			title='Movie complete', message='Movie complete',
+			desc='The movie successfully been generated.\nFor debugging purposes, the full FFmpeg output can be found below.',
+			bt=stdout
+		)
+
 
 	def do_fit(self, info):
 		mainwindow = info.ui.context['object']
