@@ -595,8 +595,8 @@ class RGBImageGUI(ImageGUI):
 	def _selected_filename_changed(self):
 		self.selected_index = self.short_filenames.index(self.selected_filename)
 
-	@on_trait_change('reload')
-	def _selected_index_changed(self):
+	@on_trait_change('reload, selected_index')
+	def file_changed(self):
 		if self.selected_index >= self.filename_count:
 			self.selected_index = self.filename_count - 1
 			return
@@ -605,7 +605,7 @@ class RGBImageGUI(ImageGUI):
 		self.rebuild()
 
 	def _filenames_changed(self):
-		self._selected_index_changed()
+		self.file_changed()
 
 	def _select_files_fired(self):
 		dlg = wx.FileDialog(

@@ -20,7 +20,7 @@ import itertools
 import time
 import os.path
 import numpy
-import matplotlib.image
+import PIL.Image, matplotlib.image
 
 from ... import util
 
@@ -179,7 +179,7 @@ class RGBImage(DataSource):
 		self.filename = filename
 	
 	def getframe(self):
-		return ImageFrame(image=matplotlib.image.imread(self.filename), tstart=util.mpldtfromtimestamp(os.path.getmtime(self.filename)))
+		return ImageFrame(image=matplotlib.image.pil_to_array(PIL.Image.open(self.filename)), tstart=util.mpldtfromtimestamp(os.path.getmtime(self.filename)))
 	
 	def iterframes(self):
 		yield self.getframe()

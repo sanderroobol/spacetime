@@ -9,6 +9,7 @@ TODO for 1.0
 * Enh: relative paths in project files (introduce File Dependency object for Panels)
 * Enh: reduce number of digits in FloatEditors
 * Bug: zoom to fit / autoscale doesn't work for Camera Images
+* Enh: Factor out generic ImageGUI code from CameraGUI
 
 Unprioritized
 =============

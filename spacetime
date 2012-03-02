@@ -34,4 +34,6 @@ except ImportError:
 		sys.stderr.write("Loading Spacetime from ./lib\n")
 
 app = spacetime.gui.main.App()
-app.run()
+context = app.context
+del app, sys, spacetime
+context.app.run()
