@@ -18,7 +18,7 @@
 
 from __future__ import division
 
-from ..generic.datasources import DataSource, MultiTrend
+from ..generic.datasources import DataSource, MultiTrend, DataChannel, ImageFrame
 
 import numpy
 
@@ -37,7 +37,7 @@ class Camera(MultiTrend):
 		self.rawfile = raw.RawFileReader(self.filename)
 
 	def getdata(self, channel, frame):
-		ret = util.Struct()
+		ret = ImageFrame()
 		ret.image = self.rawfile.channelImage(frame, channel).asArray(direction=self.direction)
 		ysize, xsize = ret.image.shape
 
@@ -79,7 +79,7 @@ class Camera(MultiTrend):
 					im = image.flatten()
 				data.append(im)
 				time.append(numpy.linspace(tstart, tend, im.size))
-		return util.Struct(id=str(channel), value=numpy.hstack(data), time=numpy.hstack(time))
+		return DataChannel(id=str(channel), value=numpy.hstack(data), time=numpy.hstack(time))
 
 	def getframecount(self):
 		return self.rawfile.header.frameCount

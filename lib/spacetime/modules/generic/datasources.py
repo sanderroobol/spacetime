@@ -18,9 +18,29 @@
 
 import itertools
 import time
+import os.path
 import numpy
+import matplotlib.image
 
 from ... import util
+
+
+class DataObject(object):
+	def __init__(self, **kwargs):
+		self.__dict__.update(kwargs)
+
+
+class DataChannel(object):
+	id = None
+	time = None
+	value = None
+
+
+class ImageFrame(DataObject):
+	tstart = None
+	tend = None
+	image = None
+
 
 class DataSource(object):
 	def __init__(self, filename):
@@ -144,7 +164,7 @@ class CSV(MultiTrend):
 			if time_columns and i == time_columns[0]:
 				time = self.parse_time(self.data[:, time_columns.pop(0)])
 			else:
-				yield util.Struct(time=time, value=self.data[:, i].astype(float), **self.get_channel_kwargs(label, i))
+				yield DataChannel(time=time, value=self.data[:, i].astype(float), **self.get_channel_kwargs(label, i))
 
 	def __init__(self, *args, **kwargs):
 		super(CSV, self).__init__(*args, **kwargs)
@@ -152,3 +172,14 @@ class CSV(MultiTrend):
 			self.set_header(fp.readline())
 			self.data = numpy.loadtxt(fp)
 		self.verify_data(self.data)
+
+
+class RGBImage(DataSource):
+	def set_filename(self, filename):
+		self.filename = filename
+	
+	def getframe(self):
+		return ImageFrame(image=matplotlib.image.imread(self.filename), tstart=util.mpldtfromtimestamp(os.path.getmtime(self.filename)))
+	
+	def iterframes(self):
+		yield self.getframe()

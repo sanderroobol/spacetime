@@ -21,6 +21,7 @@ from enthought.traits.ui.api import *
 from enthought.traits.ui.table_column import ObjectColumn
 from enthought.traits.ui.extras.checkbox_column import CheckboxColumn
 
+import os
 import wx
 
 import string
@@ -555,4 +556,78 @@ class Time2DGUI(TimeTrendGUI):
 				label='Limits',
 			),
 			# FIXME Include('relativistic_group'),
+		)
+
+
+class ImageGUI(SubplotGUI): # FIXME: this should be the base class for the Camera stuff too
+	pass
+
+
+class RGBImageGUI(ImageGUI):
+	id = 'rgbimage'
+	label = 'Image'
+	desc = 'Any bitmap image (PNG, JPEG, TIFF, BMP, ...)'
+	filenames = List(Str)
+	filename_count = Property(Int, depends_on='filenames')
+	short_filenames = Property(List(Str), depends_on='filenames')
+	select_files = Button
+	selected_filename = Str
+	selected_index = Int
+
+	traits_saved = 'filenames', 'selected_index'
+	traits_not_saved = 'filename',
+
+	plotfactory = subplots.Image	
+	datafactory = datasources.RGBImage
+
+	def _plot_default(self):
+		plot = self.plotfactory()
+		plot.mode = 'single frame'
+		return plot
+
+	@cached_property
+	def _get_short_filenames(self):
+		return [os.path.basename(i) for i in self.filenames]
+
+	def _get_filename_count(self):
+		return len(self.filenames)
+
+	def _selected_filename_changed(self):
+		self.selected_index = self.short_filenames.index(self.selected_filename)
+
+	@on_trait_change('reload')
+	def _selected_index_changed(self):
+		if self.selected_index >= self.filename_count:
+			self.selected_index = self.filename_count - 1
+			return
+		self.selected_filename = self.short_filenames[self.selected_index]
+		self.plot.set_data(self.datafactory(self.filenames[self.selected_index]))
+		self.rebuild()
+
+	def _filenames_changed(self):
+		self._selected_index_changed()
+
+	def _select_files_fired(self):
+		dlg = wx.FileDialog(
+			self.context.uiparent,
+			defaultDir=self.context.prefs.get_path('rgbimage'),
+			style=wx.FD_OPEN|wx.FD_MULTIPLE,
+			wildcard='All files|*'
+		)
+		if dlg.ShowModal() != wx.ID_OK:
+			return
+		self.context.prefs.set_path('rgbimage', dlg.GetDirectory())
+		self.filenames = dlg.GetPaths()
+
+	def traits_view(self):
+		return gui.support.PanelView(
+			Group(
+				Item('visible'),
+				Item('select_files', show_label=False),
+				Item('selected_filename', label='File', editor=EnumEditor(name='short_filenames')),
+				Item('selected_index', label='Number', editor=RangeEditor(low=0, high_name='filename_count', mode='spinner')),
+				Item('reload', show_label=False),
+				show_border=True,
+				label='General',
+			),
 		)

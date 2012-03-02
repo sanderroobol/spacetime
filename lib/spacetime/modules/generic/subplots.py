@@ -462,9 +462,12 @@ class Image(ImageBase):
 		for d in self.data.iterframes():
 			# map the linenunumber to the time axis and the individual points to some arbitrary unit axis
 			# transpose the image data to plot scanlines vertical
-			ysize, xsize = d.image.shape
+			ysize, xsize = d.image.shape[:2] # support NxM 'greyscale' images, NxMx3 RGB, and NxMx4 RGBA
 			tstart = self.time_factor * d.tstart + self.time_offset / 86400.
-			tend = self.time_factor * d.tend + self.time_offset / 86400.
+			if d.tend is None:
+				tend = None
+			else:
+				tend = self.time_factor * d.tend + self.time_offset / 86400.
 
 			if self.mode == 'single frame':
 				# somehow, origin=upper is not respected here for imshow, fix manually
