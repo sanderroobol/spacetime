@@ -171,6 +171,9 @@ class TimeTrendChannel(HasTraits):
 	label = Str
 	checked = Bool(False)
 
+	def __repr__(self):
+		return HasTraits.__repr__(self) + self.id + self.label + str(self.checked)
+
 
 class TimeTrendPanel(SubplotPanel):
 	plotfactory = subplots.MultiTrend
@@ -225,9 +228,12 @@ class TimeTrendPanel(SubplotPanel):
 			except:
 				gui.support.Message.file_open_failed(self.filename, parent=self.context.uiparent)
 				self.filename = ''
-				return
+				return False
 			self.channels = list(self.data.iterchannelnames())
+			self.primary_channels[0].checked = False # the TableEditor checks the first checkbox...
 			self.settings_changed()
+			return True
+		return False
 
 	@on_trait_change('selected_primary_channels')
 	def settings_changed(self):
@@ -300,6 +306,12 @@ class DoubleTimeTrendPanel(TimeTrendPanel):
 	ylog2 = DelegatesTo('ylimits2', 'log')
 
 	traits_saved = 'selected_secondary_channels', 'yauto2', 'ymin2', 'ymax2', 'ylog2'
+
+
+	@on_trait_change('filename, reload')
+	def load_file(self):
+		if super(DoubleTimeTrendPanel, self).load_file():
+			self.secondary_channels[0].checked = False
 
 	def _plot_default(self):
 		plot = self.plotfactory()

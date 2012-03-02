@@ -299,6 +299,8 @@ class MultiTrend(YAxisHandling, Subplot):
 			handles, labels = self.get_legend_items()
 			if handles:
 				self.get_legend_axes().legend(handles, labels, loc=self.legend, prop=self.legendprops)
+			else:
+				self.get_legend_axes().legend_ = None
 
 	def draw_marker(self, marker):
 		ax = self.axes
