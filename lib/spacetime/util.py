@@ -113,7 +113,6 @@ class FFmpegEncode(object):
 			stdout = []
 			while not queue.empty():
 				stdout.append(queue.get())		
-			print stdout
 			return ''.join(stdout)
 		return cleanup
 
