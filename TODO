@@ -1,28 +1,19 @@
 TODO for 1.0
 ============
-* Bug: twinx()ed autoscale applies to both y-axes
 * Bug: markers can cause autoscaled axes to include [0, 1]
 * Enh: rework subplot management:
-        - Subplot size hinting
         - X-axis labels and vertical spacing when using non-shared axes
 * New: Relative / rezero'ed time axis
 * New: Axes labels (mostly y-axis, but also others)
-* Enh: Interface redesign: decide what to do with the Main tab
 * New: API docs and examples
-* Enh: relative paths in project files
-* Bug: canvas not resized when leaving presentation mode
-* Enh: custom canvas size for export 
-* Bug: Camera film strip Zoom-to-fit doesn't work anymore (just remove it?)
+* Enh: relative paths in project files (introduce File Dependency object for Panels)
 * Enh: reduce number of digits in FloatEditors
 * Bug: zoom to fit / autoscale doesn't work for Camera Images
-* Enh: Allow double-clicking and pressing enter in Add subgraph window
 
 Unprioritized
 =============
 * New: Camera multi-image-mode for a single frame
-* Use AbsoluteGridSpec for subplot positioning (requires matplotlib 1.0.1 or this patch https://github.com/matplotlib/matplotlib/commit/c108b92b7c659cf762d241ac7f4ab5c368cead81)
 * Portable project files. Possibly 'Bloated project' containing all data files.
-* Flexible legend positioning: outside graphs, multicolumn, ... 
 * click in time graph and jump to camera image (single mode)
 * Camera: cursor should show time instead of pixels in single frame mode
 * Data export? How? Where? Why? When? Whatfor? Whatever! :)
@@ -36,8 +27,14 @@ Unprioritized
 * Generalize DoubleMultiTrend to an arbitrary number of subplots (with or without twinx'ed graphs).
 * Native Mac OS X package
 * QMS: correct for fragmentation factors and ionization probabilities
+* Separate concept of Plot and Canvas: multi canvas plots (dual-plot/semi-clone presentation mode)
+* Two (or more) phase Panels: Initialization phase (no graph yet: select file and essential parameters for reading/interpreting), Plotting phase (any change is live!)
+* Dual-plot/semi-clone presentation mode!
+* Open frame in external editor (link to WSxM/Gwyddion/Camera)
+* General raster-image plotting (or even Gwyddion file modules? Timestamp selection based on: exif, Gwyddion metadata field, filename pattern matching, filename datestamp)
 
-KNOWN BUGS (not my fault! :)
+Known bugs / limitations in the Enthought Traits UI toolkit
+===========================================================
 * when selecting items in a ListStrEditor using SHIFT instead of CONTROL, the 'selected' trait isn't updated properly
    (see also: https://svn.enthought.com/enthought/changeset?reponame=&old=19115%40TraitsBackendWX/trunk/enthought/traits&new=19161%40TraitsBackendWX/trunk/enthought/traits)
 * ListStrEditor editable=False is not honoured (GTK only? works fine on Windows)
