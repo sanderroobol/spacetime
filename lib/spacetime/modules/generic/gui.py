@@ -61,14 +61,19 @@ class SerializableTab(Tab):
 	def _delayed_from_serialized(self, src):
 		with self.context.canvas.hold():
 			# trait_set has to be called separately for each trait to respect the ordering of traits_saved
-			for id in src:
-				if id in self.traits_saved:
+			for id in self.traits_saved:
+				if id in src:
 					try: 
 						self.trait_set(**dict(((id, src[id]),)))
 					except:
 						gui.support.Message.exception(title='Warning', message='Warning: incompatible project file', desc='Could not restore property "{0}" for graph "{1}". This graph might not be completely functional.'.format(id, self.label))
-				else:
-					gui.support.Message.show(title='Warning', message='Warning: incompatible project file', desc='Ignoring unknown property "{0}" for graph "{1}". This graph might not be completely functional.'.format(id, self.label))
+					del src[id]
+				# else: silently ignore
+			if src: # complain about unknown properties
+				gui.support.Message.show(
+					title='Warning', message='Warning: incompatible project file',
+					desc='Ignoring unknown properties "{0}" for graph "{1}". This graph might not be completely functional.'.format('", "'.join(src.keys()), self.label)
+				)
   
 
 	def from_serialized(self, src):
@@ -166,13 +171,24 @@ def TimeTrendChannelListEditor():
 	)
 
 
+def DoubleTimeTrendChannelListEditor():
+	return TableEditor(
+		sortable = True,
+		configurable = False,
+		auto_size = False,
+		columns = [
+			CheckboxColumn(name='checked', label='L', width=0.1),
+			CheckboxColumn(name='checked2', label='R', width=0.1),
+			ObjectColumn(name='label', label='Name', editable=False, width=0.5, horizontal_alignment='left'),
+		],
+	)
+
+
 class TimeTrendChannel(HasTraits):
 	id = Str
 	label = Str
 	checked = Bool(False)
-
-	def __repr__(self):
-		return HasTraits.__repr__(self) + self.id + self.label + str(self.checked)
+	checked2 = Bool(False)
 
 
 class TimeTrendGUI(SubplotGUI):
@@ -183,9 +199,9 @@ class TimeTrendGUI(SubplotGUI):
 	ymin = DelegatesTo('ylimits', 'min')
 	ymax = DelegatesTo('ylimits', 'max')
 	ylog = DelegatesTo('ylimits', 'log')
-	channels = List(Str)
-	primary_channels = Property(List(TimeTrendChannel), depends_on='channels')
-	selected_primary_channels = Property(depends_on='primary_channels.checked')
+	channel_names = List(Str)
+	channelobjs = Property(List(TimeTrendChannel), depends_on='channel_names')
+	selected_primary_channels = Property(depends_on='channelobjs.checked')
 	data = Instance(datasources.DataSource)
 
 	traits_saved = 'legend', 'yauto', 'ymin', 'ymax', 'ylog', 'selected_primary_channels'
@@ -199,15 +215,15 @@ class TimeTrendGUI(SubplotGUI):
 		return channels
 
 	@cached_property
-	def _get_primary_channels(self):
-		return list(self.filter_channels(TimeTrendChannel(id=name, label=name) for name in self.channels))
+	def _get_channelobjs(self):
+		return list(self.filter_channels(TimeTrendChannel(id=name, label=name) for name in self.channel_names))
 
 	def _get_selected_primary_channels(self):
-		return [chan.id for chan in self.primary_channels if chan.checked]
+		return [chan.id for chan in self.channelobjs if chan.checked]
 
 	def _set_selected_primary_channels(self, value):
 		value = set(value) # to speed up membership tests
-		for chan in self.primary_channels:
+		for chan in self.channelobjs:
 			if chan.id in value:
 				chan.checked = True
 			else:
@@ -229,8 +245,8 @@ class TimeTrendGUI(SubplotGUI):
 				gui.support.Message.file_open_failed(self.filename, parent=self.context.uiparent)
 				self.filename = ''
 				return False
-			self.channels = list(self.data.iterchannelnames())
-			self.primary_channels[0].checked = False # the TableEditor checks the first checkbox...
+			self.channel_names = list(self.data.iterchannelnames())
+			self.channelobjs[0].checked = self.channelobjs[0].checked2 = False # the TableEditor checks the first checkbox...
 			self.settings_changed()
 			return True
 		return False
@@ -280,24 +296,23 @@ class TimeTrendGUI(SubplotGUI):
 		)
 
 	left_yaxis_group = Group(
-		Item('primary_channels', editor=TimeTrendChannelListEditor()),
+		Item('channelobjs', label='Channels', editor=TimeTrendChannelListEditor()),
 		Item('ylimits', style='custom', label='Limits'),
 		show_border=True,
-		label='Left y-axis'
+		label='Y-axis'
 	)
 
 	def traits_view(self):
 		return gui.support.PanelView(
 			self.get_general_view_group(),
-			Include('left_yaxis_group'),
+			Include('yaxis_group'),
 			Include('relativistic_group'),
 		)
 
 
 class DoubleTimeTrendGUI(TimeTrendGUI):
 	plotfactory = subplots.DoubleMultiTrend
-	secondary_channels = Property(List(TimeTrendChannel), depends_on='channels')
-	selected_secondary_channels = Property(depends_on='secondary_channels.checked')
+	selected_secondary_channels = Property(depends_on='channelobjs.checked2')
 
 	ylimits2 = Instance(gui.support.LogAxisLimits, args=())
 	yauto2 = DelegatesTo('ylimits2', 'auto')
@@ -307,31 +322,21 @@ class DoubleTimeTrendGUI(TimeTrendGUI):
 
 	traits_saved = 'selected_secondary_channels', 'yauto2', 'ymin2', 'ymax2', 'ylog2'
 
-
-	@on_trait_change('filename, reload')
-	def load_file(self):
-		if super(DoubleTimeTrendGUI, self).load_file():
-			self.secondary_channels[0].checked = False
-
 	def _plot_default(self):
 		plot = self.plotfactory()
 		plot.set_ylim_callback(self.ylim_callback)
 		return plot
 
-	@cached_property
-	def _get_secondary_channels(self):
-		return list(self.filter_channels(TimeTrendChannel(id=name, label=name) for name in self.channels))
-
 	def _get_selected_secondary_channels(self):
-		return [chan.id for chan in self.secondary_channels if chan.checked]
+		return [chan.id for chan in self.channelobjs if chan.checked2]
 
 	def _set_selected_secondary_channels(self, value):
 		value = set(value) # to speed up membership tests
-		for chan in self.secondary_channels:
+		for chan in self.channelobjs:
 			if chan.id in value:
-				chan.checked = True
+				chan.checked2 = True
 			else:
-				chan.checked = False
+				chan.checked2 = False
 
 	def ylim_callback(self, ax):
 		if ax is self.plot.axes:
@@ -373,18 +378,18 @@ class DoubleTimeTrendGUI(TimeTrendGUI):
 		)
 		self.rebuild()
 
-	right_yaxis_group = Group(
-		Item('secondary_channels', editor=TimeTrendChannelListEditor()),
-		Item('ylimits2', style='custom', label='Limits'),
+	yaxis_group = Group(
+		Item('channelobjs', label='Channels', editor=DoubleTimeTrendChannelListEditor()),
+		Item('ylimits', style='custom', label='Left limits'),
+		Item('ylimits2', style='custom', label='Right limits'),
 		show_border=True,
-		label='Right y-axis'
+		label='Y-axes'
 	)
 
 	def traits_view(self):
 		return gui.support.PanelView(
 			self.get_general_view_group(),
-			Include('left_yaxis_group'),
-			Include('right_yaxis_group'),
+			Include('yaxis_group'),
 			Include('relativistic_group'),
 		)
 
@@ -433,7 +438,7 @@ class CSVGUI(DoubleTimeTrendGUI):
 	time_custom = Property(depends_on='time_type')
 	time_format = Str('%Y-%m-%d %H:%M:%S')
 	time_column = Str('auto')
-	time_column_options = Property(depends_on='channels')
+	time_column_options = Property(depends_on='channel_names')
 
 	traits_saved = 'time_type', 'time_format', 'time_column'
 
@@ -452,10 +457,10 @@ class CSVGUI(DoubleTimeTrendGUI):
 
 	@cached_property
 	def _get_time_column_options(self):
-		return gui.support.EnumMapping([('auto', '(auto)')] + self.channels)
+		return gui.support.EnumMapping([('auto', '(auto)')] + self.channel_names)
 
 	def _time_column_changed(self):
-		self.channels = list(self.channels) # trigger rebuild of primary_channels and secondary_channels
+		self.channel_names = list(self.channel_names) # trigger rebuild of traits depending on channel_names
 
 	@on_trait_change('selected_primary_channels, selected_secondary_channels, time_type, time_format, time_column')
 	def settings_changed(self):
@@ -464,7 +469,7 @@ class CSVGUI(DoubleTimeTrendGUI):
 		if self.time_column == 'auto':
 			self.data.time_column = 'auto'
 		else:
-			self.data.time_column = self.channels.index(self.time_column)
+			self.data.time_column = self.channel_names.index(self.time_column)
 		if self.time_custom:
 			self.data.time_type = 'strptime'
 			self.data.time_strptime = self.time_format
@@ -482,8 +487,7 @@ class CSVGUI(DoubleTimeTrendGUI):
 				label='Time data',
 				show_border=True,
 			),
-			Include('left_yaxis_group'),
-			Include('right_yaxis_group'),
+			Include('yaxis_group'),
 			Include('relativistic_group'),
 		)
 

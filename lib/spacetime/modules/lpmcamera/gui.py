@@ -219,7 +219,7 @@ class CameraTrendGUI(DoubleTimeTrendGUI, CameraGUI, XlimitsGUI):
 	direction = Enum(1, 2, 3)
 
 	xaxis_type = Str('time')
-	xaxis_type_options = Property(depends_on='channels')
+	xaxis_type_options = Property(depends_on='channel_names')
 	prev_xaxis_type = None
 	fft = Property(depends_on='xaxis_type')
 	not_fft = Property(depends_on='fft')
@@ -238,7 +238,7 @@ class CameraTrendGUI(DoubleTimeTrendGUI, CameraGUI, XlimitsGUI):
 
 	@cached_property
 	def _get_xaxis_type_options(self):
-		return support.EnumMapping([('time', 'Time'), ('fft', 'Frequency (FFT)')] + [(i, 'Channel {0}'.format(i)) for i in self.channels])
+		return support.EnumMapping([('time', 'Time'), ('fft', 'Frequency (FFT)')] + [(i, 'Channel {0}'.format(i)) for i in self.channel_names])
 
 	def reset_autoscale(self):
 		DoubleTimeTrendGUI.reset_autoscale(self)
@@ -258,7 +258,7 @@ class CameraTrendGUI(DoubleTimeTrendGUI, CameraGUI, XlimitsGUI):
 				support.Message.file_open_failed(self.filename, parent=self.context.uiparent)
 				self.filename = ''
 				return
-			self.channels = list(self.data.iterchannelnames())
+			self.channel_names = list(self.data.iterchannelnames())
 			self.framecount = self.data.getframecount() - 1
 			self.lastframe = min(self.framecount, 25)
 			self.settings_changed()
@@ -294,7 +294,7 @@ class CameraTrendGUI(DoubleTimeTrendGUI, CameraGUI, XlimitsGUI):
 
 		y1 = data.selectchannels(lambda chan: chan.id in self.selected_primary_channels)
 		y2 = data.selectchannels(lambda chan: chan.id in self.selected_secondary_channels)
-		if self.xaxis_type in self.channels:
+		if self.xaxis_type in self.channel_names:
 			self.plot.set_data(y1, y2, data.selectchannels(lambda chan: chan.id == self.xaxis_type))
 		else:
 			self.plot.set_data(y1, y2)
@@ -320,7 +320,6 @@ class CameraTrendGUI(DoubleTimeTrendGUI, CameraGUI, XlimitsGUI):
 			show_border=True,
 			label='X-axis',
 		),
-		Include('left_yaxis_group'),
-		Include('right_yaxis_group'),
+		Include('yaxis_group'),
 		Include('relativistic_group'),
 	)

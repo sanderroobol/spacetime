@@ -27,7 +27,7 @@ from . import subplots, datasources
 
 class NormalizationGUI(HasTraits):
 	normalize_channel = Str('none')
-	normalize_channel_options = Property(depends_on='channels')
+	normalize_channel_options = Property(depends_on='channel_names')
 	normalize_factor = Float(1.)
 
 	filter = 'Quadera ASCII files (*.asc)', '*.asc'
@@ -40,7 +40,7 @@ class NormalizationGUI(HasTraits):
 
 	@cached_property
 	def _get_normalize_channel_options(self):
-		return gui.support.EnumMapping([('none', 'Disable')] + self.channels)
+		return gui.support.EnumMapping([('none', 'Disable')] + self.channel_names)
 
 	@on_trait_change('normalize_channel, normalize_factor')
 	def normalization_changed(self):
@@ -68,7 +68,7 @@ class QuaderaMIDGUI(NormalizationGUI, TimeTrendGUI):
 				show_border=True,
 				label='Normalization',
 			),
-			Include('left_yaxis_group'),
+			Include('axis_group'),
 			Include('relativistic_group'),
 		)
 
