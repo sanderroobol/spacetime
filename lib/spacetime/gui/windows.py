@@ -72,7 +72,7 @@ class PanelSelector(HasTraits):
 
 	def _root_default(self):
 		modules = []
-		for name, panels in self.moduleloader.panels_by_module.iteritems():
+		for name, panels in self.moduleloader.guis_by_module.iteritems():
 			treepanels = [PanelTreePanel(id=panel.id, label=panel.label, desc=panel.desc) for panel in panels]
 			treepanels.sort(key=lambda x:x.label)
 			if treepanels:
@@ -116,7 +116,7 @@ class PanelSelector(HasTraits):
 
 class GraphManager(HasTraits):
 	mainwindow = Instance(HasTraits)
-	tabs = List(Instance(modules.generic.panels.Tab))
+	tabs = List(Instance(modules.generic.gui.Tab))
 	tab_labels = Property(depends_on='tabs')
 	selected = Int(-1)
 	selected_any = Property(depends_on='selected')

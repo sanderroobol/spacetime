@@ -18,11 +18,11 @@
 
 from enthought.traits.api import *
 
-from ..generic.panels import DoubleTimeTrendPanel
+from ..generic.gui import DoubleTimeTrendGUI
 
 from . import subplots, datasources
 
-class GasCabinetPanel(DoubleTimeTrendPanel):
+class GasCabinetGUI(DoubleTimeTrendGUI):
 	id = 'lpmgascabinet'
 	label = 'LPM Gas Cabinet'
 	desc = 'Reads logs from LPM Gas Cabinet control software.'

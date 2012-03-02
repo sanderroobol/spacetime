@@ -23,14 +23,14 @@ from enthought.traits.ui.api import *
 
 import matplotlib.cm
 
-from ..generic.panels import SubplotPanel, DoubleTimeTrendPanel, XlimitsPanel
+from ..generic.gui import SubplotGUI, DoubleTimeTrendGUI, XlimitsGUI
 from ..generic.subplots import Image
 from ...gui import support
 
 from . import datasources, subplots, filters
 
 
-class CameraPanel(SubplotPanel):
+class CameraGUI(SubplotGUI):
 	data = Instance(datasources.Camera)
 
 	firstframe = Int(0)
@@ -46,7 +46,7 @@ class CameraPanel(SubplotPanel):
 		self.rebuild()
 
 
-class CameraFramePanelHandler(Handler):
+class CameraFrameGUIHandler(Handler):
 	def object_mode_changed(self, info):
 		if info.mode.value == 'single frame':
 			info.firstframe.label_control.SetLabel('Frame:')
@@ -54,7 +54,7 @@ class CameraFramePanelHandler(Handler):
 			info.firstframe.label_control.SetLabel('First frame:')
 
 
-class CameraFramePanel(CameraPanel):
+class CameraFrameGUI(CameraGUI):
 	id = 'camera'
 	label = 'Camera'
 	desc = 'Reads Camera RAW files and plots one or more images.'
@@ -83,7 +83,7 @@ class CameraFramePanel(CameraPanel):
 	traits_saved = 'channel', 'filter', 'clip', 'colormap', 'interpolation', 'rotate', 'mode'
 	
 	def __init__(self, *args, **kwargs):
-		super(CameraFramePanel, self).__init__(*args, **kwargs)
+		super(CameraFrameGUI, self).__init__(*args, **kwargs)
 		self.colormap = 'afmhot'
 
 	def _get_is_singleframe(self):
@@ -181,7 +181,7 @@ class CameraFramePanel(CameraPanel):
 			label='Filters',
 		),
 		Include('relativistic_group'),
-		handler=CameraFramePanelHandler()
+		handler=CameraFrameGUIHandler()
 	)
 
 	def animate(self):
@@ -207,7 +207,7 @@ class CameraFramePanel(CameraPanel):
 	))
 
 
-class CameraTrendPanel(DoubleTimeTrendPanel, CameraPanel, XlimitsPanel):
+class CameraTrendGUI(DoubleTimeTrendGUI, CameraGUI, XlimitsGUI):
 	id = 'cameratrend'
 	label = 'Camera Trend'
 	desc = 'Reads Camera RAW files and makes graphs of one or more channels as a function of time, frequency (performing FFT) or versus another channel.'
@@ -241,11 +241,11 @@ class CameraTrendPanel(DoubleTimeTrendPanel, CameraPanel, XlimitsPanel):
 		return support.EnumMapping([('time', 'Time'), ('fft', 'Frequency (FFT)')] + [(i, 'Channel {0}'.format(i)) for i in self.channels])
 
 	def reset_autoscale(self):
-		DoubleTimeTrendPanel.reset_autoscale(self)
-		XlimitsPanel.reset_autoscale(self)
+		DoubleTimeTrendGUI.reset_autoscale(self)
+		XlimitsGUI.reset_autoscale(self)
 
 	def _plot_default(self):
-		plot = super(CameraTrendPanel, self)._plot_default()
+		plot = super(CameraTrendGUI, self)._plot_default()
 		plot.set_xlim_callback(self.xlim_callback)
 		return plot
 

@@ -41,7 +41,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class MainTab(modules.generic.panels.SerializableTab):
+class MainTab(modules.generic.gui.SerializableTab):
 	version = Property()
 	# the combination of an InstanceEditor with DelegatedTo traits and trait_set(trait_change_notify=False)
 	# seems to be special: the GUI will be updated but no event handlers will be called
@@ -444,7 +444,7 @@ class App(HasTraits):
 	_tabs_modified = Bool(False)
 	project_modified = Property(depends_on='_tabs_modified, tabs._modified')
 
-	tabs = List(Instance(modules.generic.panels.Tab))
+	tabs = List(Instance(modules.generic.gui.Tab))
 
 	def on_figure_resize(self, event):
 		logger.info('on_figure_resize called')
@@ -532,7 +532,7 @@ class App(HasTraits):
 	def save_project(self, path):
 		data = [('general', self.tabs[0].get_serialized())]
 		for tab in self.tabs:
-			if isinstance(tab, modules.generic.panels.SubplotPanel):
+			if isinstance(tab, modules.generic.gui.SubplotGUI):
 				data.append((self.moduleloader.get_id_by_instance(tab), tab.get_serialized()))
 		with open(path, 'wb') as fp:
 			fp.write('Spacetime\nJSON\n')
@@ -553,7 +553,7 @@ class App(HasTraits):
 
 	def rebuild_figure(self):
 		self.plot.clear()
-		[self.plot.add_subplot(tab.plot) for tab in self.tabs if isinstance(tab, modules.generic.panels.SubplotPanel) and tab.visible]
+		[self.plot.add_subplot(tab.plot) for tab in self.tabs if isinstance(tab, modules.generic.gui.SubplotGUI) and tab.visible]
 		self.plot.setup()
 		self.plot.draw()
 		with self.context.callbacks.general_blockade():

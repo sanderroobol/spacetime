@@ -88,7 +88,7 @@ class SerializableTab(Tab):
 		self._modified = True
 
 
-class SubplotPanel(SerializableTab):
+class SubplotGUI(SerializableTab):
 	# required attributes: id, label
 	desc = '' # not required
 	filename = File
@@ -118,7 +118,7 @@ class SubplotPanel(SerializableTab):
 	)
 
 	def __init__(self, *args, **kwargs):
-		super(SubplotPanel, self).__init__(*args, **kwargs)
+		super(SubplotGUI, self).__init__(*args, **kwargs)
 		self.__class__.number += 1
 		if self.__class__.number != 1:
 			self.label = '{0} {1}'.format(self.label, self.__class__.number)
@@ -175,7 +175,7 @@ class TimeTrendChannel(HasTraits):
 		return HasTraits.__repr__(self) + self.id + self.label + str(self.checked)
 
 
-class TimeTrendPanel(SubplotPanel):
+class TimeTrendGUI(SubplotGUI):
 	plotfactory = subplots.MultiTrend
 	legend = Enum('auto', 'off', 'upper right', 'upper left', 'lower left', 'lower right', 'center left', 'center right', 'lower center', 'upper center', 'center')
 	ylimits = Instance(gui.support.LogAxisLimits, args=())
@@ -255,7 +255,7 @@ class TimeTrendPanel(SubplotPanel):
 		self.redraw()
 
 	def reset_autoscale(self):
-		super(TimeTrendPanel, self).reset_autoscale()
+		super(TimeTrendGUI, self).reset_autoscale()
 		self.yauto = True
 
 	def _legend_changed(self):
@@ -294,7 +294,7 @@ class TimeTrendPanel(SubplotPanel):
 		)
 
 
-class DoubleTimeTrendPanel(TimeTrendPanel):
+class DoubleTimeTrendGUI(TimeTrendGUI):
 	plotfactory = subplots.DoubleMultiTrend
 	secondary_channels = Property(List(TimeTrendChannel), depends_on='channels')
 	selected_secondary_channels = Property(depends_on='secondary_channels.checked')
@@ -310,7 +310,7 @@ class DoubleTimeTrendPanel(TimeTrendPanel):
 
 	@on_trait_change('filename, reload')
 	def load_file(self):
-		if super(DoubleTimeTrendPanel, self).load_file():
+		if super(DoubleTimeTrendGUI, self).load_file():
 			self.secondary_channels[0].checked = False
 
 	def _plot_default(self):
@@ -360,7 +360,7 @@ class DoubleTimeTrendPanel(TimeTrendPanel):
 		self.redraw()
 
 	def reset_autoscale(self):
-		super(DoubleTimeTrendPanel, self).reset_autoscale()
+		super(DoubleTimeTrendGUI, self).reset_autoscale()
 		self.yauto2 = True
 
 	@on_trait_change('selected_primary_channels, selected_secondary_channels')
@@ -389,7 +389,7 @@ class DoubleTimeTrendPanel(TimeTrendPanel):
 		)
 
 
-class XlimitsPanel(HasTraits):
+class XlimitsGUI(HasTraits):
 	xlimits = Instance(gui.support.LogAxisLimits, args=())
 	xauto = DelegatesTo('xlimits', 'auto')
 	xmin = DelegatesTo('xlimits', 'min')
@@ -421,7 +421,7 @@ class XlimitsPanel(HasTraits):
 		self.xauto = True
 
 
-class CSVPanel(DoubleTimeTrendPanel):
+class CSVGUI(DoubleTimeTrendGUI):
 	id = 'csv'
 	label = 'Plain text (experimental)'
 	desc = 'Flexible reader for CSV / tab separated / ASCII files.\n\nAccepts times as unix timestamp (seconds sinds 1970-1-1 00:00:00 UTC), Labview timestamp (seconds since since 1904-1-1 00:00:00 UTC), Matplotlib timestamps (days since 0001-01-01 UTC, plus 1) or arbitrary strings (strptime format).'
@@ -470,7 +470,7 @@ class CSVPanel(DoubleTimeTrendPanel):
 			self.data.time_strptime = self.time_format
 		else:
 			self.data.time_type = self.time_type
-		super(CSVPanel, self).settings_changed()
+		super(CSVGUI, self).settings_changed()
 
 	def traits_view(self):
 		return gui.support.PanelView(
@@ -488,7 +488,7 @@ class CSVPanel(DoubleTimeTrendPanel):
 		)
 
 
-class Time2DPanel(TimeTrendPanel):
+class Time2DGUI(TimeTrendGUI):
 	colormap = Enum(sorted((m for m in matplotlib.cm.datad if not m.endswith("_r")), key=string.lower))
 	interpolation = Enum('nearest', 'bilinear', 'bicubic')
 
@@ -504,7 +504,7 @@ class Time2DPanel(TimeTrendPanel):
 
 	def __init__(self, *args, **kwargs):
 		self.trait_set(trait_change_notify=False, colormap='spectral')
-		super(Time2DPanel, self).__init__(*args, **kwargs)
+		super(Time2DGUI, self).__init__(*args, **kwargs)
 
 	def _colormap_changed(self):
 		self.plot.set_colormap(self.colormap)
@@ -521,7 +521,7 @@ class Time2DPanel(TimeTrendPanel):
 
 	@on_trait_change('filename, reload')
 	def load_file(self):
-		super(Time2DPanel, self).load_file()
+		super(Time2DGUI, self).load_file()
 		self.plot.set_data(self.data)
 		self.rebuild()
 

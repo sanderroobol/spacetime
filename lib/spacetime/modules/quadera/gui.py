@@ -19,13 +19,13 @@
 from enthought.traits.api import *
 from enthought.traits.ui.api import *
 
-from ..generic.panels import TimeTrendPanel, Time2DPanel
+from ..generic.gui import TimeTrendGUI, Time2DGUI
 from ... import gui
 
 from . import subplots, datasources
 
 
-class NormalizationPanel(HasTraits):
+class NormalizationGUI(HasTraits):
 	normalize_channel = Str('none')
 	normalize_channel_options = Property(depends_on='channels')
 	normalize_factor = Float(1.)
@@ -35,7 +35,7 @@ class NormalizationPanel(HasTraits):
 	traits_saved = 'normalize_channel', 'normalize_factor'
 
 	def __init__(self, *args, **kwargs):
-		super(NormalizationPanel, self).__init__(*args, **kwargs)
+		super(NormalizationGUI, self).__init__(*args, **kwargs)
 		self.ylog = True
 
 	@cached_property
@@ -51,7 +51,7 @@ class NormalizationPanel(HasTraits):
 		self.rebuild()
 
 
-class QuaderaMIDPanel(NormalizationPanel, TimeTrendPanel):
+class QuaderaMIDGUI(NormalizationGUI, TimeTrendGUI):
 	id = 'quadera_mid'
 	label = 'Quadera MID'
 	desc = 'Reads ASCII exported Quadera MID projects from a Pfeiffer PrismaPlus quadrupole mass spectrometer.'
@@ -73,7 +73,7 @@ class QuaderaMIDPanel(NormalizationPanel, TimeTrendPanel):
 		)
 
 
-class QuaderaScanPanel(QuaderaMIDPanel):
+class QuaderaScanGUI(QuaderaMIDGUI):
 	id = 'quadera_scan'
 	label = 'Quadera Scan'
 	desc = 'Reads ASCII exported Quadera Scan projects from a Pfeiffer PrismaPlus quadrupole mass spectrometer.'
@@ -82,7 +82,7 @@ class QuaderaScanPanel(QuaderaMIDPanel):
 	datafactory = datasources.QuaderaScan
 
 
-class Quadera2DScanPanel(NormalizationPanel, Time2DPanel):
+class Quadera2DScanGUI(NormalizationGUI, Time2DGUI):
 	id = 'quadera_scan2d'
 	label = 'Quadera Scan 2D (experimental)'
 	desc = 'Reads ASCII exported Quadera Scan projects from a Pfeiffer PrismaPlus quadrupole mass spectrometer, makes pretty 2D plots.'

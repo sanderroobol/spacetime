@@ -16,12 +16,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from .generic.panels import SubplotPanel
+from .generic.gui import SubplotGUI
 import os, glob
 
 class Loader(object):
 	def __init__(self):
-		self.panels_by_module = {}
+		self.guis_by_module = {}
 		self.modules = {}
 		self._list_classes = []
 		self._detect_modules()
@@ -32,29 +32,29 @@ class Loader(object):
 		for klass in self._list_classes:
 			if klass.id in self.mapping_id_class:
 				old = self.mapping_id_class[klass.id]
-				raise ValueError("panel id '{0.id}' conflict: {0.__module__}.{0.__name__} and {1.__module__}.{1.__name__}".format(klass, old))
+				raise ValueError("gui id '{0.id}' conflict: {0.__module__}.{0.__name__} and {1.__module__}.{1.__name__}".format(klass, old))
 			self.mapping_id_class[klass.id] = klass
 			self.mapping_classobjectid_id[id(klass)] = klass.id
 
 	def _detect_modules(self):
-		# this function looks in spacetime.modules.*.panels.* for any class that
-        # 1. inherits from SubplotPanel
+		# this function looks in spacetime.modules.*.gui.* for any class that
+        # 1. inherits from SubplotGUI
 		# 2. has a id attribute
 		# 3. is found in the same module where it is defined (suppose
-		#    modules.A.panels imports modules.B.panels.B, than B will be ignored
-		#    a when looking through A.panels.*)
+		#    modules.A.gui imports modules.B.gui.B, than B will be ignored
+		#    a when looking through A.gui.*)
 		
 		mdir = os.path.dirname(__file__)
-		panel_files = glob.glob(os.path.join(mdir, '*', 'panels.py'))
-		modules = [os.path.split(os.path.split(f)[0])[1] for f in panel_files]
+		gui_files = glob.glob(os.path.join(mdir, '*', 'gui.py'))
+		modules = [os.path.split(os.path.split(f)[0])[1] for f in gui_files]
 		for mname in modules:
 			self.modules[mname] = getattr(__import__('spacetime.modules', globals(), locals(), [mname], -1), mname)
-			module = __import__('spacetime.modules.{0}'.format(mname), globals(), locals(), ['panels'], -1)
-			self.panels_by_module[mname] = []
-			for i in dir(module.panels):
-				obj = getattr(module.panels, i)
-				if isinstance(obj, type) and issubclass(obj, SubplotPanel) and hasattr(obj, 'id') and obj.id and obj.__module__ == 'spacetime.modules.{0}.panels'.format(mname):
-					self.panels_by_module[mname].append(obj)
+			module = __import__('spacetime.modules.{0}'.format(mname), globals(), locals(), ['gui'], -1)
+			self.guis_by_module[mname] = []
+			for i in dir(module.gui):
+				obj = getattr(module.gui, i)
+				if isinstance(obj, type) and issubclass(obj, SubplotGUI) and hasattr(obj, 'id') and obj.id and obj.__module__ == 'spacetime.modules.{0}.gui'.format(mname):
+					self.guis_by_module[mname].append(obj)
 					self._list_classes.append(obj)
 
 	def list_classes(self):

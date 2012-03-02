@@ -19,9 +19,9 @@
 from enthought.traits.api import *
 from enthought.traits.ui.api import *
 
-from ..generic.panels import DoubleTimeTrendPanel
+from ..generic.gui import DoubleTimeTrendGUI
 from ..generic.datasources import CSVFactory
-from ..lpmcamera.panels import CameraTrendPanel
+from ..lpmcamera.gui import CameraTrendGUI
 from ..lpmcamera.datasources import Camera as CameraDataSource
 from ..lpmgascabinet import subplots as lpmsubplots
 from ...gui import support
@@ -30,7 +30,7 @@ from . import subplots
 from . import datasources
 
 
-class TPDirkPanel(DoubleTimeTrendPanel):
+class TPDirkGUI(DoubleTimeTrendGUI):
 	id = 'tpdirk'
 	label = 'TPDirk'
 	desc = 'Simple temperature/pressure readout for Dirk and the VT STM.'
@@ -40,7 +40,7 @@ class TPDirkPanel(DoubleTimeTrendPanel):
 	filter = 'Dirk\'s ASCII files (*.txt)', '*.txt'
 
 	def __init__(self, *args, **kwargs):
-		super(TPDirkPanel, self).__init__(*args, **kwargs)
+		super(TPDirkGUI, self).__init__(*args, **kwargs)
 		self.ylog = True
 
 	@on_trait_change('filename, reload')
@@ -75,7 +75,7 @@ class TPDirkPanel(DoubleTimeTrendPanel):
 		)
 
 
-class OldGasCabinetPanel(DoubleTimeTrendPanel):
+class OldGasCabinetGUI(DoubleTimeTrendGUI):
 	id = 'prototypegascabinet'
 	label = 'Prototype gas cabinet'
 	desc = 'Reads the data of the ReactorSTM gas cabinet.'
@@ -85,7 +85,7 @@ class OldGasCabinetPanel(DoubleTimeTrendPanel):
 	filter = 'ASCII text files (*.txt)', '*.txt',
 
 
-class ReactorEnvironmentPanel(DoubleTimeTrendPanel):
+class ReactorEnvironmentGUI(DoubleTimeTrendGUI):
 	id = 'reactorenvironment'
 	label = 'Reactor Environment logger'
 	desc = 'Reads the log of the pressure, temperature and heater control for the ReactorAFM.'
