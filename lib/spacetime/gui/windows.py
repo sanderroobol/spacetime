@@ -26,7 +26,7 @@ from .figure import MPLFigureEditor
 from .. import modules, version
 
 
-class PanelTreePanel(HasTraits):
+class GUIModuleTreeGUI(HasTraits):
 	id = Str
 	label = Str
 	desc = Str
@@ -41,10 +41,10 @@ class PanelTreePanel(HasTraits):
 	)
 
 
-class PanelTreeModule(HasTraits):
+class GUIModuleTreeModule(HasTraits):
 	label = Str
 	desc = Str
-	panels = List(PanelTreePanel)
+	guis = List(GUIModuleTreeGUI)
 
 	traits_view = View(VGroup(
 			Item('label', style='readonly', emphasized=True),
@@ -55,40 +55,40 @@ class PanelTreeModule(HasTraits):
 	)
 
 
-class PanelTreeRoot(HasTraits):
-	modules = List(PanelTreeModule)
+class GUIModuleTreeRoot(HasTraits):
+	modules = List(Module)
 	traits_view = View()
 
 
-class PanelSelectorHandler(Controller):
+class GUIModuleSelectorHandler(Controller):
 	def on_dclick(self, obj):
 		self.info.ui.control.Close()
 
 
-class PanelSelector(HasTraits):
+class GUIModuleSelector(HasTraits):
 	moduleloader = Instance(modules.Loader)
 	selected = List()
-	root = Instance(PanelTreeRoot)
+	root = Instance(GUIModuleTreeRoot)
 
 	def _root_default(self):
 		modules = []
-		for name, panels in self.moduleloader.guis_by_module.iteritems():
-			treepanels = [PanelTreePanel(id=panel.id, label=panel.label, desc=panel.desc) for panel in panels]
-			treepanels.sort(key=lambda x:x.label)
-			if treepanels:
+		for name, guis in self.moduleloader.guis_by_module.iteritems():
+			treeguis = [GUIModuleTreeGUI(id=gui.id, label=gui.label, desc=gui.desc) for gui in guis]
+			treeguis.sort(key=lambda x:x.label)
+			if treeguis:
 				module = self.moduleloader.get_module_by_name(name)
-				modules.append(PanelTreeModule(label=module.label, desc=module.desc, panels=treepanels))
+				modules.append(GUIModuleTreeModule(label=module.label, desc=module.desc, guis=treeguis))
 		modules.sort(key=lambda x: x.label)
-		return PanelTreeRoot(modules=modules)
+		return GUIModuleTreeRoot(modules=modules)
 
 	def iter_selected(self):
 		for s in self.selected:
-			if isinstance(s, PanelTreePanel):
+			if isinstance(s, GUIModuleTreeGUI):
 				yield s.id
 
 	@classmethod
 	def run_static(cls, context, live=True):
-		ps = PanelSelector(moduleloader=context.app.moduleloader)
+		ps = GUIModuleSelector(moduleloader=context.app.moduleloader)
 		ps.edit_traits(parent=context.uiparent, scrollable=False)
 		tabs = [context.app.get_new_tab(context.app.moduleloader.get_class_by_id(id)) for id in ps.iter_selected()]
 		if live:
@@ -98,9 +98,9 @@ class PanelSelector(HasTraits):
 	traits_view = View(
 		Group(
 			Item('root', editor=TreeEditor(editable=True, on_dclick='handler.on_dclick', selection_mode='extended', selected='selected', hide_root=True, nodes=[
-				TreeNode(node_for=[PanelTreeRoot], auto_open=True, children='modules', label='label'),
-				TreeNode(node_for=[PanelTreeModule], auto_open=True, children='panels', label='label'),
-				TreeNode(node_for=[PanelTreePanel], label='label'),
+				TreeNode(node_for=[GUIModuleTreeRoot], auto_open=True, children='modules', label='label'),
+				TreeNode(node_for=[GUIModuleTreeModule], auto_open=True, children='guis', label='label'),
+				TreeNode(node_for=[GUIModuleTreeGUI], label='label'),
 			])),
 			show_labels=False,
 			padding=5,
@@ -110,7 +110,7 @@ class PanelSelector(HasTraits):
 		width=600,
 		buttons=OKCancelButtons,
 		kind='livemodal',
-		handler=PanelSelectorHandler()
+		handler=GUIModuleSelectorHandler()
 	)
 
 

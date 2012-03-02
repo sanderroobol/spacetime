@@ -202,7 +202,7 @@ class MainWindowHandler(Handler):
 		return False
 
 	def do_add(self, info):
-		windows.PanelSelector.run_static(info.ui.context['object'].context)
+		windows.GUIModuleSelector.run_static(info.ui.context['object'].context)
 
 	def do_python(self, info):
 		windows.PythonWindow.run_static(info.ui.context['object'].context)
