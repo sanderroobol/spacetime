@@ -26,16 +26,20 @@ class GasCabinetFormatter(MultiTrendFormatter):
 		super(GasCabinetFormatter, self).reset()
 
 	def __call__(self, data):
-		if data.parameter == 'set point':
-			linestyle = '--' # dashed
-		elif data.parameter == 'valve output':
-			linestyle = ':'
+		linestyle = '-'
+
+		if data.type == 'controller':
+			if data.parameter == 'set point':
+				linestyle = '--' # dashed
+			elif data.parameter == 'valve output':
+				linestyle = ':'
+
+			if self.prevcontroller != data.controller:
+				self.increase_counter()
+				self.prevcontroller = data.controller
 		else:
-			linestyle = '-' # solid
-	
-		if self.prevcontroller != data.controller:
 			self.increase_counter()
-			self.prevcontroller = data.controller
+			self.prevcontroller = None
 
 		return self.colors[self.counter] + linestyle
 

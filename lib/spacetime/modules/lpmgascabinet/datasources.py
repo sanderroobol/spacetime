@@ -41,10 +41,10 @@ class GasCabinet(CSV):
 		if i < len(self.controllers)*len(self.parameters):
 			c = self.controllers[i // len(self.parameters)]
 			p = self.parameters[i % len(self.parameters)]
-			return dict(id='{0} {1}'.format(c, p), parameter=p, controller=c)
+			return dict(id='{0} {1}'.format(c, p), type='controller', parameter=p, controller=c)
 		else:
 			v = self.valves[i - len(self.controllers)*len(self.parameters) - 1]
-			return dict(id='{0} valve'.format(v), valve=v)
+			return dict(id='{0} valve'.format(v), type='valve', valve=v)
 
 	def verify_data(self, data):
 		assert data.shape[1] == len(self.controllers) * len(self.parameters) + 1 + len(self.valves)

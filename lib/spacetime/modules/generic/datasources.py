@@ -30,7 +30,7 @@ class DataObject(object):
 		self.__dict__.update(kwargs)
 
 
-class DataChannel(object):
+class DataChannel(DataObject):
 	id = None
 	time = None
 	value = None

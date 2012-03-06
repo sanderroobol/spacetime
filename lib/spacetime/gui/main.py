@@ -738,7 +738,6 @@ class App(HasTraits):
 	def parseargs(self):
 		from optparse import OptionParser
 		parser = OptionParser(usage="usage: %prog [options] [project file]")
-		parser.add_option("--presentation", dest="presentation", action='store_true', help="start in presentation (two window) mode")
 		parser.add_option("--debug", dest="debug", action="store_true", help="print debugging statements")
 
 		return parser.parse_args()
@@ -753,9 +752,6 @@ class App(HasTraits):
 		logging.basicConfig(level=loglevel)
 
 		app = wx.PySimpleApp()
-
-		if options.presentation:
-			self._open_presentation_mode()
 
 		self.ui = self.edit_traits()
 		self.context.uiparent = self.ui.control
