@@ -296,7 +296,7 @@ class TimeTrendGUI(SubplotGUI):
 			label='General',
 		)
 
-	left_yaxis_group = Group(
+	yaxis_group = Group(
 		Item('channelobjs', label='Channels', editor=TimeTrendChannelListEditor()),
 		Item('ylimits', style='custom', label='Limits'),
 		show_border=True,

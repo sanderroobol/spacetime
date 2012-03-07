@@ -68,7 +68,7 @@ class QuaderaMIDGUI(NormalizationGUI, TimeTrendGUI):
 				show_border=True,
 				label='Normalization',
 			),
-			Include('axis_group'),
+			Include('yaxis_group'),
 			Include('relativistic_group'),
 		)
 
