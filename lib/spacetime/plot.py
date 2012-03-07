@@ -65,7 +65,12 @@ class AbsoluteGridSpec(matplotlib.gridspec.GridSpecBase):
 		width, height = fig.get_size_inches()
 		mtop, mright, mbottom, mleft = self._margins
 		hspace, vspace = self._spacing
-		figBottoms, figTops = self._divide_into_cells(height, self._nrows, mbottom, mtop, vspace, self._row_height_ratios)
+		if self._row_height_ratios:
+			# plot numbering should start at top, but y-coordinates start at bottom
+			height_ratios = self._row_height_ratios[::-1]
+		else:
+			height_ratios = None
+		figBottoms, figTops = self._divide_into_cells(height, self._nrows, mbottom, mtop, vspace, height_ratios)
 		figLefts, figRights = self._divide_into_cells(width,  self._ncols, mleft, mright, hspace, self._col_width_ratios)
 		return figBottoms[::-1], figTops[::-1], figLefts, figRights
 
@@ -190,7 +195,7 @@ class Plot(object):
 				total, 1,
 				margins=(.2, .75, .75, .75),
 				spacing=(.2, .2),
-				ratios=(None, tuple(1./r.size for (p, r) in req))
+				ratios=(None, tuple(r.size for (p, r) in req))
 		)
 		for i, (p, r) in enumerate(req):
 			if r.independent_x:
