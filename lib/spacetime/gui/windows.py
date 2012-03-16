@@ -351,7 +351,7 @@ class MovieDialogMainTab(HasTraits):
 	label = Str('General')
 	format = Str('mp4')
 	codec = Str('libx264')
-	ffmpeg_options = Str('-x264opts crf=12 -preset medium')
+	ffmpeg_options = Str('-x264opts crf=12 -preset medium -profile main -threads 0')
 
 	frame_width = Int(800)
 	frame_height = Int(600)
