@@ -10,6 +10,7 @@ TODO for 1.0
 * Enh: reduce number of digits in FloatEditors
 * Bug: zoom to fit / autoscale doesn't work for Camera Images
 * Enh: Factor out generic ImageGUI code from CameraGUI
+* Bug: canvas doesn't update after Export
 
 Unprioritized
 =============
@@ -32,7 +33,7 @@ Unprioritized
 * Two (or more) phase Panels: Initialization phase (no graph yet: select file and essential parameters for reading/interpreting), Plotting phase (any change is live!)
 * Dual-plot/semi-clone presentation mode!
 * Open frame in external editor (link to WSxM/Gwyddion/Camera)
-* General raster-image plotting (or even Gwyddion file modules? Timestamp selection based on: exif, Gwyddion metadata field, filename pattern matching, filename datestamp)
+* General raster-image plotting (or even Gwyddion file modules? Timestamp selection based on: exif, Gwyddion metadata field, filename pattern matching, filename datestamp; movie import)
 
 Known bugs / limitations in the Enthought Traits UI toolkit
 ===========================================================

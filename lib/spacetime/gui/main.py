@@ -36,6 +36,7 @@ import itertools
 import sys
 import shutil
 import traceback
+import copy
 
 import logging
 logger = logging.getLogger(__name__)
@@ -230,16 +231,17 @@ class MainWindowHandler(Handler):
 		if dlg.ShowModal() == wx.ID_OK:
 			context.prefs.set_path('export', dlg.GetDirectory())
 			path = dlg.GetPath()
+			oldfig = context.plot.figure
+			newfig = matplotlib.figure.Figure(exportdialog.figsize, exportdialog.dpi)
+			canvas = FigureCanvasAgg(newfig)
 			try:
-				newfig = matplotlib.figure.Figure(exportdialog.figsize, exportdialog.dpi)
-				canvas = FigureCanvasAgg(newfig)
 				context.plot.relocate(newfig)
 				context.app.rebuild_figure()
 				newfig.savefig(path, dpi=exportdialog.dpi, format=exportdialog.extension)
 			except:
 				support.Message.file_save_failed(path, parent=info.ui.control)
 			finally:
-				context.plot.relocate(context.app.figure)
+				context.plot.relocate(oldfig)
 				context.app.rebuild_figure()
 
 	def do_movie(self, info):
@@ -420,6 +422,11 @@ class Context(HasTraits):
 	callbacks = Instance(CallbackLoopManager, args=())
 	prefs = Instance(prefs.Storage)
 	uiparent = Any
+
+	def fork(self, **kwargs):
+		clone = copy.copy(self)
+		clone.__dict__.update(kwargs)
+		return clone
 
 
 class App(HasTraits):

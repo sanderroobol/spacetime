@@ -65,10 +65,13 @@ class GUIModuleSelectorHandler(Controller):
 		self.info.ui.control.Close()
 
 
-class GUIModuleSelector(HasTraits):
+class GUIModuleSelector(support.UtilityWindow):
 	moduleloader = Instance(modules.Loader)
 	selected = List()
 	root = Instance(GUIModuleTreeRoot)
+
+	def _moduleloader_default(self):
+		return self.context.app.moduleloader
 
 	def _root_default(self):
 		modules = []
@@ -88,9 +91,11 @@ class GUIModuleSelector(HasTraits):
 
 	@classmethod
 	def run_static(cls, context, live=True):
-		ps = GUIModuleSelector(moduleloader=context.app.moduleloader)
-		ps.edit_traits(parent=context.uiparent, scrollable=False)
-		tabs = [context.app.get_new_tab(context.app.moduleloader.get_class_by_id(id)) for id in ps.iter_selected()]
+		gms = cls(context=context)
+		if gms.run().result:
+			tabs = [context.app.get_new_tab(gms.moduleloader.get_class_by_id(id)) for id in gms.iter_selected()]
+		else:
+			tabs = []
 		if live:
 			context.app.tabs.extend(tabs)
 		return tabs
@@ -114,18 +119,29 @@ class GUIModuleSelector(HasTraits):
 	)
 
 
-class GraphManager(HasTraits):
-	mainwindow = Instance(HasTraits)
+class GraphManagerHandler(Handler):
+	# this handler is required in order to set the GraphManager window as
+	# parent when launching the GUIModuleSelector window
+	add = Button
+	# the other buttons can be dealt with in the GraphManager model
+
+	def handler_add_changed(self, info):
+		gm = info.ui.context['object']
+		gm.tabs.extend(GUIModuleSelector.run_static(gm.context.fork(uiparent=info.ui.control), live=False))
+		gm.selected = len(gm.tab_labels) - 1
+
+
+class GraphManager(support.UtilityWindow):
 	tabs = List(Instance(modules.generic.gui.Tab))
 	tab_labels = Property(depends_on='tabs')
 	selected = Int(-1)
 	selected_any = Property(depends_on='selected')
 	selected_not_first = Property(depends_on='selected')
 	selected_not_last = Property(depends_on='selected, tab_labels')
-	add = Event
-	remove = Event
-	move_up = Event
-	move_down = Event
+
+	remove = Button
+	move_up = Button
+	move_down = Button
 
 	@cached_property
 	def _get_tab_labels(self):
@@ -139,10 +155,6 @@ class GraphManager(HasTraits):
 
 	def _get_selected_not_last(self):
 		return 0 <= self.selected < len(self.tab_labels) - 1
-
-	def _add_fired(self):
-		self.tabs.extend(PanelSelector.run(self.mainwindow, live=False))
-		self.selected = len(self.tab_labels) - 1
 
 	def _remove_fired(self):
 		del self.tabs[self.selected + 1]
@@ -163,7 +175,7 @@ class GraphManager(HasTraits):
 		gm = cls(context=context)
 		gm.tabs = [t for t in context.app.tabs]
 		with context.canvas.hold():
-			if gm.edit_traits(parent=context.uiparent).result:
+			if gm.run().result:
 				context.app.tabs = gm.tabs
 
 	traits_view = View(
@@ -171,13 +183,13 @@ class GraphManager(HasTraits):
 			Item('tab_labels', editor=ListStrEditor(editable=False, selected_index='selected')),
 			VGroup(
 				Group(
-					Item('add', editor=ButtonEditor()),
-					Item('remove', editor=ButtonEditor(), enabled_when='selected_any'),
+					Item('handler.add'),
+					Item('remove', enabled_when='selected_any'),
 					show_labels=False,
 				),
 				Group(
-					Item('move_up', editor=ButtonEditor(), enabled_when='selected_not_first'),
-					Item('move_down', editor=ButtonEditor(), enabled_when='selected_not_last'),
+					Item('move_up', enabled_when='selected_not_first'),
+					Item('move_down', enabled_when='selected_not_last'),
 					show_labels=False,
 				),
 			),
@@ -188,6 +200,7 @@ class GraphManager(HasTraits):
 		title='Manage graphs',
 		kind='livemodal',
 		buttons=OKCancelButtons,
+		handler=GraphManagerHandler(),
 	)
 
 
