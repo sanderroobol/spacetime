@@ -24,6 +24,7 @@ import matplotlib.figure
 from . import support
 from .figure import MPLFigureEditor
 from .. import modules, version
+from ..modules import loader
 
 
 class GUIModuleTreeGUI(HasTraits):
@@ -66,7 +67,7 @@ class GUIModuleSelectorHandler(Controller):
 
 
 class GUIModuleSelector(support.UtilityWindow):
-	moduleloader = Instance(modules.Loader)
+	moduleloader = Instance(loader.Loader)
 	selected = List()
 	root = Instance(GUIModuleTreeRoot)
 

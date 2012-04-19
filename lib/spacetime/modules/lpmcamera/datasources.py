@@ -24,7 +24,7 @@ import numpy
 
 from camera.formats import raw
 
-from ... import util
+from ... import util, mathutil
 
 # Camera class for image mode and trend mode
 class Camera(MultiTrend):
@@ -69,7 +69,7 @@ class Camera(MultiTrend):
 				tend = tstart + image.size * 2 / frameinfo.pixelclock_kHz / 1000 * frameinfo.samplesPerPoint / 86400
 
 			if self.fft:
-				freq, power = util.easyfft(image.flatten(), frameinfo.pixelclock_kHz * 1000 / frameinfo.samplesPerPoint)
+				freq, power = mathutil.easyfft(image.flatten(), frameinfo.pixelclock_kHz * 1000 / frameinfo.samplesPerPoint)
 				data.append(power)
 				time.append(freq)
 			else:

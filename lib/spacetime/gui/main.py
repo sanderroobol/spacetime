@@ -22,6 +22,7 @@ from __future__ import division
 from .figure import MPLFigureEditor, DrawManager, CallbackLoopManager
 
 from .. import plot, modules, version, prefs, util
+from ..modules import loader
 from . import support, windows
 
 from enthought.traits.api import *
@@ -434,7 +435,7 @@ class App(HasTraits):
 	maintab = Instance(MainTab)
 	status = DelegatesTo('maintab')
 	drawmgr = Instance(DrawManager)
-	moduleloader = Instance(modules.Loader, args=())
+	moduleloader = Instance(modules.loader.Loader, args=())
 	frame = Instance(Frame)
 	figurewindowui = None
 	figure_fullscreen = Bool(False)

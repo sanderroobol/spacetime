@@ -16,9 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import matplotlib.dates
 import datetime, pytz
-import scipy.fftpack, numpy
+import numpy
 import subprocess
 import threading, Queue
 
@@ -33,32 +32,89 @@ class SharedXError(Exception):
 localtz = pytz.timezone(detect_timezone())
 utctz = pytz.utc
 
+
+# Borrowed from matplotlib.cbook
+def iterable(obj):
+	'return true if *obj* is iterable'
+	try:
+		len(obj)
+	except:
+		return False
+	return True
+
+
+# Borrowed from matplotlib.dates
+HOURS_PER_DAY = 24.
+MINUTES_PER_DAY  = 60.*HOURS_PER_DAY
+SECONDS_PER_DAY =  60.*MINUTES_PER_DAY
+MUSECONDS_PER_DAY = 1e6*SECONDS_PER_DAY
+def _to_ordinalf(dt):
+	"""
+	Convert :mod:`datetime` to the Gregorian date as UTC float days,
+	preserving hours, minutes, seconds and microseconds.  Return value
+	is a :func:`float`.
+	"""
+
+	if hasattr(dt, 'tzinfo') and dt.tzinfo is not None:
+		delta = dt.tzinfo.utcoffset(dt)
+		if delta is not None:
+			dt -= delta
+
+	base =  float(dt.toordinal())
+	if hasattr(dt, 'hour'):
+		base += (dt.hour/HOURS_PER_DAY + dt.minute/MINUTES_PER_DAY +
+				 dt.second/SECONDS_PER_DAY + dt.microsecond/MUSECONDS_PER_DAY
+				 )
+	return base
+
+
+# Borrowed from matplotlib.dates
+def _from_ordinalf(x, tz):
+	"""
+	Convert Gregorian float of the date, preserving hours, minutes,
+	seconds and microseconds.  Return value is a :class:`datetime`.
+	"""
+	ix = int(x)
+	dt = datetime.datetime.fromordinal(ix)
+	remainder = float(x) - ix
+	hour, remainder = divmod(24*remainder, 1)
+	minute, remainder = divmod(60*remainder, 1)
+	second, remainder = divmod(60*remainder, 1)
+	microsecond = int(1e6*remainder)
+	if microsecond<10: microsecond=0 # compensate for rounding errors
+	dt = datetime.datetime(
+		dt.year, dt.month, dt.day, int(hour), int(minute), int(second),
+		microsecond, tzinfo=utctz).astimezone(tz)
+
+	if microsecond>999990:  # compensate for rounding errors
+		dt += datetime.timedelta(microseconds=1e6-microsecond)
+
+	return dt
+
+
 def mpldtfromtimestamp(ts, tz=localtz):
-	return matplotlib.dates.date2num(tz.localize(datetime.datetime.fromtimestamp(ts)))
+	return mpldtfromdatetime(tz.localize(datetime.datetime.fromtimestamp(ts)))
+
 
 def mpldtfromdatetime(dt):
 	assert dt.tzinfo is not None
-	return matplotlib.dates.date2num(dt)
+	# based on matplotlib.date2num
+	if iterable(dt):
+		return numpy.asarray([_to_ordinalf(val) for val in dt])
+	else:
+		return _to_ordinalf(dt)
+
 
 def datetimefrommpldt(num, tz=localtz):
-	return matplotlib.dates.num2date(num, tz)
+	# based on matplotlib.num2date
+	if iterable(num):
+		return [_from_ordinalf(val, tz) for val in num]
+	else:
+		return _from_ordinalf(num, tz)
+
 
 def mpldtstrptime(str, format, tz=localtz):
 	return mpldtfromdatetime(tz.localize(datetime.datetime.strptime(str, format)))
-
-
-def easyfft(data, sample_frequency):
-	N = len(data)
-	z = scipy.fftpack.fft(data) / N
-
-	if N % 2 == 0:
-		freq = numpy.linspace(0, sample_frequency / 2., N/2+1)
-		zpos = z[0:N/2+1]
-	else:
-		freq = numpy.linspace(0, sample_frequency / 2., (N+1)/2)
-		zpos = z[0:(N+1)/2]
-
-	return freq, abs(zpos)**2
 
 
 class ContextManager(object):
@@ -137,3 +193,8 @@ class FFmpegEncode(object):
 
 	def __exit__(self, exc_type, exc_value, traceback):
 		self.close()
+
+
+# decorator function, for stuff to be delegated to the soon-to-be pypy subprocess
+def pypy(func):
+	return func
