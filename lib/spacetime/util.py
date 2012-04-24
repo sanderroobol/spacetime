@@ -23,6 +23,7 @@ import threading, Queue
 
 from .superstruct import Struct
 from .detect_timezone import detect_timezone
+from . import pypymanager
 
 
 class SharedXError(Exception):
@@ -195,6 +196,9 @@ class FFmpegEncode(object):
 		self.close()
 
 
-# decorator function, for stuff to be delegated to the soon-to-be pypy subprocess
+# decorator function, for stuff to be delegated to the pypy subprocess
 def pypy(func):
-	return func
+	def wrapper(*args, **kwargs):
+		return pypymanager.run(func, *args, **kwargs)
+	wrapper.__name__ = func.__name__
+	return wrapper

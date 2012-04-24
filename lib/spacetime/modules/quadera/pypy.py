@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import division
 import numpy
 
 from ... import util
@@ -123,7 +122,7 @@ def loadmid(filename):
 			d = util.Struct()
 			d.mass = mass
 			d.id = str(mass)
-			d.time = rawdata[:,2*i]/86400 + header.starttime
+			d.time = rawdata[:,2*i]/86400. + header.starttime
 			d.value = rawdata[:,2*i+1]
 			channels.append(d)
 

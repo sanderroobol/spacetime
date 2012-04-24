@@ -21,7 +21,7 @@ from __future__ import division
 # keep this import at top to ensure proper matplotlib backend selection
 from .figure import MPLFigureEditor, DrawManager, CallbackLoopManager
 
-from .. import plot, modules, version, prefs, util
+from .. import plot, modules, version, prefs, util, pypymanager
 from ..modules import loader
 from . import support, windows
 
@@ -747,6 +747,7 @@ class App(HasTraits):
 		from optparse import OptionParser
 		parser = OptionParser(usage="usage: %prog [options] [project file]")
 		parser.add_option("--debug", dest="debug", action="store_true", help="print debugging statements")
+		parser.add_option("--pypy", dest="pypy", action="store_true", help="use pypy acceleration (experimental)")
 
 		return parser.parse_args()
 
@@ -759,20 +760,27 @@ class App(HasTraits):
 			loglevel = logging.WARNING
 		logging.basicConfig(level=loglevel)
 
-		app = wx.PySimpleApp()
+		if options.pypy:
+			pypymanager.start('python')
+			pypymanager.launch_delegate()
 
-		self.ui = self.edit_traits()
-		self.context.uiparent = self.ui.control
-		self.context.plot = self.plot
-		self.prefs.restore_window('main', self.ui)
-		self.init_recent_menu()
+		try:
+			app = wx.PySimpleApp()
 
-		if args:
-			# passing in 'self' for the info argument is a bit of a hack, but fortunately self.ui.context seems to be working fine
-			self.ui.handler.do_open(self, args[0])
-			# silently ignore multiple projects for Windows Explorer integration
+			self.ui = self.edit_traits()
+			self.context.uiparent = self.ui.control
+			self.context.plot = self.plot
+			self.prefs.restore_window('main', self.ui)
+			self.init_recent_menu()
 
-		app.MainLoop()
+			if args:
+				# passing in 'self' for the info argument is a bit of a hack, but fortunately self.ui.context seems to be working fine
+				self.ui.handler.do_open(self, args[0])
+				# silently ignore multiple projects for Windows Explorer integration
+
+			app.MainLoop()
+		finally:
+			pypymanager.shutdown()
 
 if __name__ == '__main__':
 	app = App()
