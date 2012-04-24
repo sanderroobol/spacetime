@@ -761,7 +761,7 @@ class App(HasTraits):
 		logging.basicConfig(level=loglevel)
 
 		if options.pypy:
-			pypymanager.start('python')
+			pypymanager.set_executable('pypy')
 			pypymanager.launch_delegate()
 
 		try:
