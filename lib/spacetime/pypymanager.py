@@ -98,14 +98,11 @@ def run(func, *args, **kwargs):
 	return func(*args, **kwargs)
 
 def put(pipe, obj):
-	p = pickle.dumps(obj, pickle.HIGHEST_PROTOCOL)
-	pipe.write(struct.pack('<q', len(p))) # 64 bit integer, let's be prepared for the future!
-	pipe.write(p)
+	pickle.dump(obj, pipe, pickle.HIGHEST_PROTOCOL)
 	pipe.flush()
 
 def get(pipe):
-	length = struct.unpack('<q', pipe.read(8))[0]
-	return pickle.loads(pipe.read(length))
+	return pickle.load(pipe)
 
 
 # this is where the delegate process (pypy!) enters
