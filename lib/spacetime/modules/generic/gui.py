@@ -246,8 +246,13 @@ class TimeTrendGUI(SubplotGUI):
 				gui.support.Message.file_open_failed(self.filename, parent=self.context.uiparent)
 				self.filename = ''
 				return False
+			if self.channel_names:
+				uncheck = False
+			else:
+				uncheck = True
 			self.channel_names = list(self.data.iterchannelnames())
-			self.channelobjs[0].checked = self.channelobjs[0].checked2 = False # the TableEditor checks the first checkbox...
+			if uncheck:
+				self.channelobjs[0].checked = False # the TableEditor checks the first checkbox when it's initialized...
 			self.settings_changed()
 			return True
 		return False
