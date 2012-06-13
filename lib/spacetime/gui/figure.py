@@ -250,6 +250,7 @@ class CallbackLoopManager(object):
 				if not callbacks.is_avoiding(*objs):
 					with callbacks.avoid(*objs):
 						return func(self, *args, **kwargs)
+			_decorated.original = func
 			_decorated.__name__ = func.__name__
 			return _decorated
 		return _decorator

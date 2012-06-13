@@ -358,8 +358,15 @@ class DoubleTimeTrendGUI(TimeTrendGUI):
 				self.yauto2 = False
 			logger.info('%s.ylim_callback secondary: %s', self.__class__.__name__, self.ylimits2)
 
+	# extend the callback protection to include ylimits2 as well
+	@on_trait_change('ymin, ymax, yauto')
+	@gui.figure.CallbackLoopManager.decorator('ylimits', 'ylimits2')
+	def ylim_changed(self):
+		# we cannot call ylim_changed directly, because it is protected by the CallbackloopManager
+		super(DoubleTimeTrendGUI, self).ylim_changed.original(self)
+
 	@on_trait_change('ymin2, ymax2, yauto2')
-	@gui.figure.CallbackLoopManager.decorator('ylimits2')
+	@gui.figure.CallbackLoopManager.decorator('ylimits', 'ylimits2')
 	def ylim2_changed(self):
 		logger.info('%s.ylim2_changed: %s', self.__class__.__name__, self.ylimits2)
 		self.ymin2, self.ymax2 = self.plot.set_ylim2(self.ylimits2.min, self.ylimits2.max, self.ylimits2.auto)
