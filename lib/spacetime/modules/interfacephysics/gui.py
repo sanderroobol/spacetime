@@ -96,7 +96,7 @@ class ReactorEnvironmentGUI(DoubleTimeTrendGUI):
 	def filter_channels(self, channels):
 		return (chan for chan in channels if chan.id != 'Time')
 
-def PLLMonitor(ReactorEnvironmentGUI):
+class PLLMonitor(ReactorEnvironmentGUI):
 	id = 'pllmonitor'
 	label = 'PLL monitor'
 	desc = 'Monitors resonance frequency and noise of the quartz tuning fork of the ReactorAFM.'
