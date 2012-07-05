@@ -26,25 +26,85 @@ class GasCabinet(CSV):
 	time_columns = 'auto'
 	time_type = 'labview'
 
-	controllers = ['NO', 'H2', 'O2', 'CO', 'Ar', 'Shunt', 'BPC1', 'BPC2']
-	parameters = ['time', 'measure', 'set point', 'valve output']
-	valves = ['MIX', 'MRS', 'INJ', 'OUT', 'Pump'] 
+	controllers = ['NO', 'H2', 'O2', 'CO', 'Ar', 'Shunt', 'Reactor', 'Pulse']
+	controller_parameters = ['time', 'measure', 'setpoint', 'valve position']
+
+	controller_aliases = {
+		'BPC1': 'Reactor',
+		'BPC2': 'Pulse',
+	}
+	controller_parameter_aliases = {
+		'set point': 'setpoint',
+		'valve output': 'valve position',
+	}
+
+	valves = ['MIX', 'MRS', 'INJ', 'OUT', 'Pump']
+	valve_aliases = {}
+	valve_parameters = ['position']
+	valve_parameter_aliases = {
+		'valve': 'position'
+	}
 
 	def set_header(self, line):
-		self.channel_labels = ['{0} {1}'.format(c, p) for (c, p) in itertools.product(self.controllers, self.parameters)] + \
-			['Valves time'] + ['{0} valve'.format(v) for v in self.valves]
-
-	def get_time_columns(self):
-		return [len(self.parameters) * i for i in range(len(self.controllers))] + [len(self.controllers) * len(self.parameters)] 
+		labels = line.split('\t')
+		self.channel_kwargs = []
+		self.channel_labels = []
+		for l in labels:
+			info = self.channel_mapping[l.lower()]
+			self.channel_kwargs.append(info)
+			self.channel_labels.append(info['id'])
 
 	def get_channel_kwargs(self, label, i):
-		if i < len(self.controllers)*len(self.parameters):
-			c = self.controllers[i // len(self.parameters)]
-			p = self.parameters[i % len(self.parameters)]
-			return dict(id='{0} {1}'.format(c, p), type='controller', parameter=p, controller=c)
-		else:
-			v = self.valves[i - len(self.controllers)*len(self.parameters) - 1]
-			return dict(id='{0} valve'.format(v), type='valve', valve=v)
+		return self.channel_kwargs[i]
 
 	def verify_data(self, data):
-		assert data.shape[1] == len(self.controllers) * len(self.parameters) + 1 + len(self.valves)
+		assert len(self.channel_labels) == data.shape[1]
+
+	def make_channel_mapping(self):
+		# construct mapping with all possible names that we might encounter
+		self.channel_mapping = {}
+
+		controllers = dict((c, c) for c in self.controllers)
+		controllers.update(self.controller_aliases)
+		controller_parameters = dict((p, p) for p in self.controller_parameters)
+		controller_parameters.update(self.controller_parameter_aliases)
+		for (ca, c), (pa, p) in itertools.product(controllers.iteritems(), controller_parameters.iteritems()):
+			self.channel_mapping['{0} {1}'.format(ca, pa).lower()] = dict(
+				id = '{0} {1}'.format(c, p),
+				type = 'controller',
+				controller = c,
+				parameter = p,
+			)
+
+		valves = dict((v, v) for v in self.valves)
+		valves.update(self.valve_aliases)
+		valve_parameters = dict((p, p) for p in self.valve_parameters)
+		valve_parameters.update(self.valve_parameter_aliases)
+		for (va, v), (pa, p) in itertools.product(valves.iteritems(), valve_parameters.iteritems()):
+			self.channel_mapping['{0} {1}'.format(va, pa).lower()] = dict(
+				id = '{0} {1}'.format(v, p),
+				type = 'valve',
+				valve = v,
+			)
+
+		self.channel_mapping['time'] = dict(id='time')
+		self.channel_mapping['valves time'] = dict(id='Valves time')
+
+	# replace CSV.__init__() with some custom logic
+	def __init__(self, *args, **kwargs):
+		super(CSV, self).__init__(*args, **kwargs)
+		self.make_channel_mapping()
+
+		with open(self.filename) as fp:
+			line1 = fp.readline()
+			line2 = fp.readline()
+			fp.seek(len(line1)) # line2 contains real data, we want to read this again later on
+			if len(line1.split('\t')) == 29 and len(line2.split('\t')) == 38:
+				# support the buggy header from some versions of the LabVIEW gas cabinet control software
+				self.set_header('\t'.join(['{0} {1}'.format(c, p) for (c, p) in itertools.product(self.controllers, self.controller_parameters)] + \
+					['Valves time'] + ['{0} valve'.format(v) for v in self.valves]))
+				self.get_time_columns = lambda: [len(self.controller_parameters) * i for i in range(len(self.controllers))] + [len(self.controllers) * len(self.controller_parameters)] 
+			else:
+				self.set_header(line1.strip())
+			self.data = numpy.loadtxt(fp)
+		self.verify_data(self.data)

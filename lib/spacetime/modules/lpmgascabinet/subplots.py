@@ -29,9 +29,9 @@ class GasCabinetFormatter(MultiTrendFormatter):
 		linestyle = '-'
 
 		if data.type == 'controller':
-			if data.parameter == 'set point':
+			if data.parameter == 'setpoint':
 				linestyle = '--' # dashed
-			elif data.parameter == 'valve output':
+			elif data.parameter == 'valve position':
 				linestyle = ':'
 
 			if self.prevcontroller != data.controller:
