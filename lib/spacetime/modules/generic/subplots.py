@@ -389,6 +389,18 @@ class ImageBase(Subplot):
 				# NOTE: it seems that a single instance of mpl.colors.Normalize isn't meant to be used for multiple images
 				image.norm = self.get_clim_norm()
 
+	def set_clim_callback(self, func):
+		self.clim_callback_ext = func
+
+	def clim_callback(self):
+		if self.clim_auto and self.axes and self.axes.images:
+			self.clim_min = +numpy.inf
+			self.clim_max = -numpy.inf
+			for image in self.axes.images:
+				self.clim_min = min(image._A.min(), self.clim_min)
+				self.clim_max = max(image._A.max(), self.clim_max)
+			self.clim_callback_ext(self.clim_min, self.clim_max)
+
 	def get_clim_norm(self):
 		if self.clim_auto:
 			min = max = None
@@ -412,6 +424,7 @@ class Time2D(YAxisHandling, ImageBase):
 				cmap=self.colormap, interpolation=self.interpolation, norm=self.get_clim_norm()
 			)
 
+		self.clim_callback()
 		self.ylim_rescale()
 
 	def clear(self, quick=False):
@@ -474,13 +487,15 @@ class Image(ImageBase):
 				image = d.image[::-1,:]
 				if self.rotate:
 					image = numpy.rot90(image, 3)
-				self.axes.imshow(image, aspect='equal', cmap=self.colormap, interpolation=self.interpolation)
+				self.axes.imshow(image, aspect='equal', cmap=self.colormap, interpolation=self.interpolation, norm=self.get_clim_norm())
 
 				self.marker = self.parent.markers.add(tstart, tend)
 			else:
 				tendzoom = tstart + (tend - tstart) * self.tzoom
-				self.axes.imshow(numpy.rot90(d.image), extent=(tstart, tendzoom, 0, 1), aspect='auto', cmap=self.colormap, interpolation=self.interpolation)
+				self.axes.imshow(numpy.rot90(d.image), extent=(tstart, tendzoom, 0, 1), aspect='auto', cmap=self.colormap, interpolation=self.interpolation, norm=self.get_clim_norm())
 				self.axes.add_patch(matplotlib.patches.Rectangle((tstart, 0), tendzoom-tstart, 1, linewidth=1, edgecolor='black', fill=False))
+
+		self.clim_callback()
 	
 		# imshow() changes the axes xlim/ylim, so go back to something sensible
 		self.ylim_rescale()

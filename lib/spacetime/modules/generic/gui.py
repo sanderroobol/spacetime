@@ -328,11 +328,6 @@ class DoubleTimeTrendGUI(TimeTrendGUI):
 
 	traits_saved = 'selected_secondary_channels', 'yauto2', 'ymin2', 'ymax2', 'ylog2'
 
-	def _plot_default(self):
-		plot = self.plotfactory()
-		plot.set_ylim_callback(self.ylim_callback)
-		return plot
-
 	def _get_selected_secondary_channels(self):
 		return [chan.id for chan in self.channelobjs if chan.checked2]
 
@@ -505,8 +500,9 @@ class CSVGUI(DoubleTimeTrendGUI):
 		)
 
 
-class Time2DGUI(TimeTrendGUI):
+class FalseColorMap(HasTraits):
 	colormap = Enum(sorted((m for m in matplotlib.cm.datad if not m.endswith("_r")), key=string.lower))
+	default_colormap = 'spectral'
 	interpolation = Enum('nearest', 'bilinear', 'bicubic')
 
 	climits = Instance(gui.support.LogAxisLimits, args=())
@@ -517,11 +513,9 @@ class Time2DGUI(TimeTrendGUI):
 
 	traits_saved = 'colormap', 'interpolation', 'cauto', 'cmin', 'cmax', 'clog'
 
-	plotfactory = subplots.Time2D
-
 	def __init__(self, *args, **kwargs):
-		self.trait_set(trait_change_notify=False, colormap='spectral')
-		super(Time2DGUI, self).__init__(*args, **kwargs)
+		self.trait_set(trait_change_notify=False, colormap=self.default_colormap)
+		super(FalseColorMap, self).__init__(*args, **kwargs)
 
 	def _colormap_changed(self):
 		self.plot.set_colormap(self.colormap)
@@ -531,10 +525,36 @@ class Time2DGUI(TimeTrendGUI):
 		self.plot.set_interpolation(self.interpolation)
 		self.redraw()
 
+	def clim_callback(self, cmin, cmax):
+		self.cmin = cmin
+		self.cmax = cmax
+		logger.info('%s.clim_callback: %s', self.__class__.__name__, self.climits)
+
 	@on_trait_change('cmin, cmax, cauto, clog')
+	@gui.figure.CallbackLoopManager.decorator('climits')
 	def clim_changed(self):
+		logger.info('%s.clim_changed: %s', self.__class__.__name__, self.climits)
 		self.plot.set_clim(self.climits.min, self.climits.max, self.climits.auto, self.climits.log)
 		self.rebuild()
+
+	false_color_group = Group(
+				Item('size'),
+				Item('colormap'),
+				Item('interpolation', editor=EnumEditor(values=gui.support.EnumMapping([('nearest', 'none'), 'bilinear', 'bicubic']))),
+				Item('climits', style='custom', label='Color scale'),
+				show_border=True,
+				label='Display',
+	)
+
+
+class Time2DGUI(FalseColorMap, TimeTrendGUI):
+	plotfactory = subplots.Time2D
+
+	def _plot_default(self):
+		plot = self.plotfactory()
+		plot.set_ylim_callback(self.ylim_callback)
+		plot.set_clim_callback(self.clim_callback)
+		return plot
 
 	@on_trait_change('filename, reload')
 	def load_file(self):
@@ -573,6 +593,14 @@ class Time2DGUI(TimeTrendGUI):
 
 class ImageGUI(SubplotGUI): # FIXME: this should be the base class for the Camera stuff too
 	pass
+
+
+class FalseColorImageGUI(FalseColorMap, ImageGUI):
+	def _plot_default(self):
+		plot = self.plotfactory()
+		plot.set_clim_callback(self.clim_callback)
+		plot.set_colormap(self.colormap)
+		return plot
 
 
 class RGBImageGUI(ImageGUI):

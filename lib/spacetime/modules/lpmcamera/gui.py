@@ -23,7 +23,7 @@ from enthought.traits.ui.api import *
 
 import matplotlib.cm
 
-from ..generic.gui import SubplotGUI, DoubleTimeTrendGUI, XlimitsGUI
+from ..generic.gui import SubplotGUI, DoubleTimeTrendGUI, XlimitsGUI, FalseColorImageGUI
 from ..generic.subplots import Image
 from ...gui import support
 
@@ -54,10 +54,14 @@ class CameraFrameGUIHandler(Handler):
 			info.firstframe.label_control.SetLabel('First frame:')
 
 
-class CameraFrameGUI(CameraGUI):
+class CameraFrameGUI(FalseColorImageGUI, CameraGUI):
 	id = 'camera'
 	label = 'Camera'
 	desc = 'Reads Camera RAW files and plots one or more images.'
+
+	plotfactory = Image
+
+	default_colormap = 'afmhot'
 
 	channel = Int(0)
 	channelcount = Int(0)
@@ -71,8 +75,6 @@ class CameraFrameGUI(CameraGUI):
 	filter = Enum('none', *[i for (i, s, f) in filter_list])
 
 	clip = Float(4.)
-	colormap = Enum(sorted((m for m in matplotlib.cm.datad if not m.endswith("_r")), key=string.lower))
-	interpolation = Enum('nearest', 'bilinear', 'bicubic')
 	rotate = Bool(False)
 
 	mode = Enum('single frame', 'film strip')
@@ -80,11 +82,7 @@ class CameraFrameGUI(CameraGUI):
 	is_singleframe = Property(depends_on='mode')
 	is_filmstrip = Property(depends_on='mode')
 
-	traits_saved = 'channel', 'filter', 'clip', 'colormap', 'interpolation', 'rotate', 'mode'
-	
-	def __init__(self, *args, **kwargs):
-		super(CameraFrameGUI, self).__init__(*args, **kwargs)
-		self.colormap = 'afmhot'
+	traits_saved = 'channel', 'filter', 'clip', 'rotate', 'mode'
 
 	def _get_is_singleframe(self):
 		return self.mode == 'single frame'
@@ -93,23 +91,14 @@ class CameraFrameGUI(CameraGUI):
 		return self.mode == 'film strip'
 
 	def _plot_default(self):
-		p = Image()
+		p = super(CameraFrameGUI, self)._plot_default()
 		p.mode = self.mode
-		p.set_colormap(self.colormap)
 		return p
 
 	def _mode_changed(self):
 		self.plot.mode = self.mode
 		self.select_data()
 		self.rebuild_figure()
-
-	def _colormap_changed(self):
-		self.plot.set_colormap(self.colormap)
-		self.redraw()
-
-	def _interpolation_changed(self):
-		self.plot.set_interpolation(self.interpolation)
-		self.redraw()
 
 	def _filename_changed(self):
 		self.data = datasources.Camera(self.filename)
@@ -139,12 +128,29 @@ class CameraFrameGUI(CameraGUI):
 			data = self.data.selectchannel(self.channel).selectframes(self.firstframe, self.lastframe, self.stepframe)
 		if self.filter in self.filter_map:
 			data = data.apply_filter(self.filter_map[self.filter])
-		if self.clip > 0:
+		if self.cauto and self.clip > 0:
 			data = data.apply_filter(filters.ClipStdDev(self.clip))
 		self.plot.set_data(data)
 		self.plot.tzoom = self.stepframe
 
-	@on_trait_change('channel, filter, clip, lastframe, stepframe')
+	# replace the inherited clim_changed() to make sure select_data() is called before rebuild()
+	@on_trait_change('cmin, cmax, cauto, clog')
+	def clim_changed(self, name, new):
+		# we need callback protection, but cannot use the decorator since we will call the inherited method
+		if self.context.callbacks.is_avoiding(self.climits):
+			return
+		if name == 'cauto':
+			self.select_data()
+		super(CameraFrameGUI, self).clim_changed()
+
+	@on_trait_change('filter, channel') # when these traits change, we want color autoscaling back
+	def settings_changed_rescale(self):
+		if self.cauto:
+			self.settings_changed()
+		else:
+			self.cauto = True # this will also call select_data() and rebuild()
+
+	@on_trait_change('clip, lastframe, stepframe')
 	def settings_changed(self):
 		self.select_data()
 		self.rebuild()
@@ -166,19 +172,12 @@ class CameraFrameGUI(CameraGUI):
 			Item('size'),
 			Item('colormap'),
 			Item('interpolation', editor=EnumEditor(values=support.EnumMapping([('nearest', 'none'), 'bilinear', 'bicubic']))),
-			Group(
-				Item('rotate', label='Rotate image', tooltip='Plot scanlines vertically', enabled_when='is_singleframe'),
-				show_border=True,
-				label='Single frame',
-			),
+			Item('climits', style='custom', label='Color scale'),
+			Item('clip', label='Color clipping', enabled_when='cauto', tooltip='When autoscaling, clip colorscale at <number> standard deviations away from the average (0 to disable)', editor=support.FloatEditor()),
+			Item('rotate', label='Rotate image', tooltip='Plot scanlines vertically (always enabled in film strip mode)', enabled_when='is_singleframe'),
+			Item('filter', label='Filtering', editor=EnumEditor(values=support.EnumMapping([('none', 'none')] + [(i, s) for (i, s, f) in filter_list]))),
 			show_border=True,
 			label='Display',
-		),
-		Group(
-			Item('filter', label='Filtering', editor=EnumEditor(values=support.EnumMapping([('none', 'none')] + [(i, s) for (i, s, f) in filter_list]))),
-			Item('clip', label='Color clipping', tooltip='Clip colorscale at <number> standard deviations away from the average (0 to disable)', editor=support.FloatEditor()),
-			show_border=True,
-			label='Filters',
 		),
 		Include('relativistic_group'),
 		handler=CameraFrameGUIHandler()
