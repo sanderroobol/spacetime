@@ -26,7 +26,7 @@ def multistrptime(s, formats):
 			return util.mpldtstrptime(s, fmt)
 		except ValueError:
 			pass
-	raise ValueError("cannot parse timestamp {0} using format strings {1:r}".format(s, formats))
+	raise ValueError("cannot parse timestamp {0} using format strings {1!r}".format(s, formats))
 	
 def parseDT(s):
 	return multistrptime(s, ('%m/%d/%Y %I:%M:%S %p', '%m/%d/%Y %H:%M:%S'))
@@ -67,7 +67,7 @@ def loadscan(filename):
 			scan_data = numpy.array(scan_data)
 			masses = scan_data[:, 0]
 			if not ion_data:
-				masses = numpy.array(masses) # copy
+				global_masses = numpy.array(masses) # copy
 			ion_data.append(scan_data[:, 1])
 			scan_lengths.add(len(masses))
 			
@@ -86,14 +86,14 @@ def loadscan(filename):
 		ion_data = numpy.array(ion_data)
 
 		channels = []
-		for i, m in enumerate(masses):
+		for i, m in enumerate(global_masses):
 			d = util.Struct()
 			d.id = str(m)
 			d.time = time_data
 			d.value = ion_data[:, i]
 			channels.append(d)
 
-		return masses, time_data, ion_data, channels
+		return global_masses, time_data, ion_data, channels
 
 @util.pypy
 def loadmid(filename):

@@ -50,6 +50,13 @@ class NormalizationGUI(HasTraits):
 			self.plot.set_normalization(self.normalize_factor, self.data.selectchannels(lambda chan: chan.id == self.normalize_channel))
 		self.rebuild()
 
+	normalization_group = Group(
+		Item('normalize_channel', label='Channel', editor=EnumEditor(name='normalize_channel_options')),
+		Item('normalize_factor', label='Factor', editor=gui.support.FloatEditor()),
+		show_border=True,
+		label='Normalization',
+	)
+
 
 class QuaderaMIDGUI(NormalizationGUI, TimeTrendGUI):
 	id = 'quadera_mid'
@@ -62,12 +69,7 @@ class QuaderaMIDGUI(NormalizationGUI, TimeTrendGUI):
 	def traits_view(self):
 		return gui.support.PanelView(
 			self.get_general_view_group(),
-			Group(
-				Item('normalize_channel', label='Channel', editor=EnumEditor(name='normalize_channel_options')),
-				Item('normalize_factor', label='Factor', editor=gui.support.FloatEditor()),
-				show_border=True,
-				label='Normalization',
-			),
+			Include('normalization_group'),
 			Include('yaxis_group'),
 			Include('relativistic_group'),
 		)
@@ -82,10 +84,19 @@ class QuaderaScanGUI(QuaderaMIDGUI):
 	datafactory = datasources.QuaderaScan
 
 
-class Quadera2DScanGUI(NormalizationGUI, Time2DGUI):
+class Quadera2DScanGUI(Time2DGUI, NormalizationGUI):
 	id = 'quadera_scan2d'
 	label = 'Quadera Scan 2D (experimental)'
 	desc = 'Reads ASCII exported Quadera Scan projects from a Pfeiffer PrismaPlus quadrupole mass spectrometer, makes pretty 2D plots.'
 
 	plotfactory = subplots.Q2D
 	datafactory = datasources.QuaderaScan
+
+	def traits_view(self):
+		return gui.support.PanelView(
+			self.get_general_view_group(),
+			Include('normalization_group'),
+			Include('false_color_group'),
+			Include('limits_group'),
+			Include('relativistic_group'),
+		)

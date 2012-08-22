@@ -99,10 +99,16 @@ class GasCabinet(CSV):
 			line1 = fp.readline()
 			line2 = fp.readline()
 			fp.seek(len(line1)) # line2 contains real data, we want to read this again later on
-			if len(line1.split('\t')) == 29 and len(line2.split('\t')) == 38:
+			
+			headercount = len(line1.split('\t'))
+			datacount = len(line2.split('\t'))
+			if headercount == 29 and (datacount == 37 or datacount == 38):
 				# support the buggy header from some versions of the LabVIEW gas cabinet control software
-				self.set_header('\t'.join(['{0} {1}'.format(c, p) for (c, p) in itertools.product(self.controllers, self.controller_parameters)] + \
-					['Valves time'] + ['{0} valve'.format(v) for v in self.valves]))
+				columns = ['{0} {1}'.format(c, p) for (c, p) in itertools.product(self.controllers, self.controller_parameters)] + \
+					['Valves time'] + ['{0} valve'.format(v) for v in self.valves]
+				if datacount == 37:
+					columns.pop()
+				self.set_header('\t'.join(columns))
 				self.get_time_columns = lambda: [len(self.controller_parameters) * i for i in range(len(self.controllers))] + [len(self.controllers) * len(self.controller_parameters)] 
 			else:
 				self.set_header(line1.strip())

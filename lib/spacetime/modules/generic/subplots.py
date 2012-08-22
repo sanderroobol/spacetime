@@ -419,8 +419,10 @@ class Time2D(YAxisHandling, ImageBase):
 			return
 
 		for image in self.data.iterimages():
+			tstart = self.time_factor * image.tstart + self.time_offset / 86400.
+			tend = self.time_factor * image.tend + self.time_offset / 86400.
 			self.axes.imshow(self.get_imdata(image), 
-				origin='lower', extent=(image.tstart, image.tend, image.ybottom, image.ytop), aspect='auto',
+				origin='lower', extent=(tstart, tend, image.ybottom, image.ytop), aspect='auto',
 				cmap=self.colormap, interpolation=self.interpolation, norm=self.get_clim_norm()
 			)
 

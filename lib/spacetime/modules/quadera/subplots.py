@@ -44,4 +44,4 @@ class Q2D(Normalization, Time2D):
 		self.axes.set_ylabel('Mass (a.m.u.)')
 
 	def get_imdata(self, imdata):
-		return imdata.data# * self.normalization_factor / self.normalization_channel
+		return imdata.data * self.normalization_factor / self.normalization_channel

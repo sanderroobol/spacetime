@@ -547,7 +547,7 @@ class FalseColorMap(HasTraits):
 	)
 
 
-class Time2DGUI(FalseColorMap, TimeTrendGUI):
+class Time2DGUI(TimeTrendGUI, FalseColorMap):
 	plotfactory = subplots.Time2D
 
 	def _plot_default(self):
@@ -565,33 +565,40 @@ class Time2DGUI(FalseColorMap, TimeTrendGUI):
 	def settings_changed(self):
 		pass
 
+	def get_general_view_group(self):
+		return Group(
+			Item('visible'),
+			Item('filename', editor=gui.support.FileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),
+			Item('reload', show_label=False),
+			show_border=True,
+			label='General',
+		)
+
+	false_color_group = Group(
+		Item('size'),
+		Item('colormap'),
+		Item('interpolation', editor=EnumEditor(values=gui.support.EnumMapping([('nearest', 'none'), 'bilinear', 'bicubic']))),
+		show_border=True,
+		label='Display',
+	)
+
+	limits_group = Group(
+		Item('ylimits', style='custom', label='Y scale'),
+		Item('climits', style='custom', label='Color scale'),
+		show_border=True,
+		label='Limits',
+	)
+
 	def traits_view(self):
 		return gui.support.PanelView(
-			Group(
-				Item('visible'),
-				Item('filename', editor=gui.support.FileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),
-				Item('reload', show_label=False),
-				show_border=True,
-				label='General',
-			),
-			Group(
-				Item('size'),
-				Item('colormap'),
-				Item('interpolation', editor=EnumEditor(values=gui.support.EnumMapping([('nearest', 'none'), 'bilinear', 'bicubic']))),
-				show_border=True,
-				label='Display',
-			),
-			Group(
-				Item('ylimits', style='custom', label='Y scale'),
-				Item('climits', style='custom', label='Color scale'),
-				show_border=True,
-				label='Limits',
-			),
-			# FIXME Include('relativistic_group'),
+			self.get_general_view_group(),
+			Include('false_color_group'),
+			Include('limits_group'),
+			Include('relativistic_group'),
 		)
 
 
-class ImageGUI(SubplotGUI): # FIXME: this should be the base class for the Camera stuff too
+class ImageGUI(SubplotGUI):
 	pass
 
 
