@@ -16,8 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from enthought.traits.api import *
-from enthought.traits.ui.api import *
+import enthought.traits.api as traits
+import enthought.traits.ui.api as traitsui
 from enthought.traits.ui.table_column import ObjectColumn
 from enthought.traits.ui.extras.checkbox_column import CheckboxColumn
 
@@ -36,24 +36,24 @@ from . import subplots
 from . import datasources
 
 
-class Tab(HasTraits):
+class Tab(traits.HasTraits):
 	pass
 
 
-class TraitsSavedMeta(HasTraits.__metaclass__):
+class TraitsSavedMeta(traits.HasTraits.__metaclass__):
 	def __new__(mcs, name, bases, dict):
 		if 'traits_saved' not in dict:
 			dict['traits_saved'] = ()
 		for base in bases:
 			if 'traits_saved' in base.__dict__:
 				dict['traits_saved'] = tuple(i for i in base.__dict__['traits_saved'] if 'traits_not_saved' not in dict or i not in dict['traits_not_saved']) + dict['traits_saved']
-		return HasTraits.__metaclass__.__new__(mcs, name, bases, dict)
+		return traits.HasTraits.__metaclass__.__new__(mcs, name, bases, dict)
 
 
 class SerializableTab(Tab):
 	__metaclass__ = TraitsSavedMeta
-	context = Instance(HasTraits)
-	_modified = Bool(False)
+	context = traits.Instance(traits.HasTraits)
+	_modified = traits.Bool(False)
 
 	def __init__(self, *args, **kwargs):
 		super(SerializableTab, self).__init__(*args, **kwargs)
@@ -97,14 +97,14 @@ class SerializableTab(Tab):
 class SubplotGUI(SerializableTab):
 	# required attributes: id, label
 	desc = '' # not required
-	filename = File
-	reload = Button
-	simultaneity_offset = Float(0.)
-	time_dilation_factor = Float(1.)
+	filename = traits.File
+	reload = traits.Button
+	simultaneity_offset = traits.Float(0.)
+	time_dilation_factor = traits.Float(1.)
 
-	plot = Instance(subplots.Subplot)
-	visible = Bool(True)
-	size = Range(1, 10)
+	plot = traits.Instance(subplots.Subplot)
+	visible = traits.Bool(True)
+	size = traits.Range(1, 10)
 	number = 0
 
 	# Magic attribute with "class level" "extension inheritance". Does this make any sense?
@@ -116,9 +116,9 @@ class SubplotGUI(SerializableTab):
 	traits_saved = 'visible', 'filename', 'simultaneity_offset', 'time_dilation_factor', 'size'
 	# traits_not_saved = ... can be used to specify parameters that should not be copied in a derived classes
 
-	relativistic_group = Group(
-		Item('simultaneity_offset', label='Simultaneity offset (s)', editor=gui.support.FloatEditor()),
-		Item('time_dilation_factor', editor=RangeEditor(low=.999, high=1.001)),
+	relativistic_group = traitsui.Group(
+		traitsui.Item('simultaneity_offset', label='Simultaneity offset (s)', editor=gui.support.FloatEditor()),
+		traitsui.Item('time_dilation_factor', editor=traitsui.RangeEditor(low=.999, high=1.001)),
 		show_border=True,
 		label='Relativistic corrections',
 	)
@@ -146,7 +146,7 @@ class SubplotGUI(SerializableTab):
 	def _visible_changed(self):
 		self.rebuild_figure()
 
-	@on_trait_change('simultaneity_offset, time_dilation_factor')
+	@traits.on_trait_change('simultaneity_offset, time_dilation_factor')
 	def relativistics_changed(self):
 		self.plot.adjust_time(self.simultaneity_offset, self.time_dilation_factor)
 		self.rebuild()
@@ -160,7 +160,7 @@ class SubplotGUI(SerializableTab):
 
 
 def TimeTrendChannelListEditor():
-	return TableEditor(
+	return traitsui.TableEditor(
 		sortable = True,
 		configurable = False,
 		show_column_labels = False,
@@ -173,7 +173,7 @@ def TimeTrendChannelListEditor():
 
 
 def DoubleTimeTrendChannelListEditor():
-	return TableEditor(
+	return traitsui.TableEditor(
 		sortable = True,
 		configurable = False,
 		auto_size = False,
@@ -185,25 +185,25 @@ def DoubleTimeTrendChannelListEditor():
 	)
 
 
-class TimeTrendChannel(HasTraits):
-	id = Str
-	label = Str
-	checked = Bool(False)
-	checked2 = Bool(False)
+class TimeTrendChannel(traits.HasTraits):
+	id = traits.Str
+	label = traits.Str
+	checked = traits.Bool(False)
+	checked2 = traits.Bool(False)
 
 
 class TimeTrendGUI(SubplotGUI):
 	plotfactory = subplots.MultiTrend
-	legend = Enum('auto', 'off', 'upper right', 'upper left', 'lower left', 'lower right', 'center left', 'center right', 'lower center', 'upper center', 'center')
-	ylimits = Instance(gui.support.LogAxisLimits, args=())
-	yauto = DelegatesTo('ylimits', 'auto')
-	ymin = DelegatesTo('ylimits', 'min')
-	ymax = DelegatesTo('ylimits', 'max')
-	ylog = DelegatesTo('ylimits', 'log')
-	channel_names = List(Str)
-	channelobjs = Property(List(TimeTrendChannel), depends_on='channel_names')
-	selected_primary_channels = Property(depends_on='channelobjs.checked')
-	data = Instance(datasources.DataSource)
+	legend = traits.Enum('auto', 'off', 'upper right', 'upper left', 'lower left', 'lower right', 'center left', 'center right', 'lower center', 'upper center', 'center')
+	ylimits = traits.Instance(gui.support.LogAxisLimits, args=())
+	yauto = traits.DelegatesTo('ylimits', 'auto')
+	ymin = traits.DelegatesTo('ylimits', 'min')
+	ymax = traits.DelegatesTo('ylimits', 'max')
+	ylog = traits.DelegatesTo('ylimits', 'log')
+	channel_names = traits.List(traits.Str)
+	channelobjs = traits.Property(traits.List(TimeTrendChannel), depends_on='channel_names')
+	selected_primary_channels = traits.Property(depends_on='channelobjs.checked')
+	data = traits.Instance(datasources.DataSource)
 
 	traits_saved = 'legend', 'yauto', 'ymin', 'ymax', 'ylog', 'selected_primary_channels'
 
@@ -215,7 +215,7 @@ class TimeTrendGUI(SubplotGUI):
 	def filter_channels(self, channels):
 		return channels
 
-	@cached_property
+	@traits.cached_property
 	def _get_channelobjs(self):
 		return list(self.filter_channels(TimeTrendChannel(id=name, label=name) for name in self.channel_names))
 
@@ -237,7 +237,7 @@ class TimeTrendGUI(SubplotGUI):
 			self.yauto = False
 		logger.info('%s.ylim_callback: %s', self.__class__.__name__, self.ylimits)
 
-	@on_trait_change('filename, reload')
+	@traits.on_trait_change('filename, reload')
 	def load_file(self):
 		if self.filename:
 			try:
@@ -257,14 +257,14 @@ class TimeTrendGUI(SubplotGUI):
 			return True
 		return False
 
-	@on_trait_change('selected_primary_channels')
+	@traits.on_trait_change('selected_primary_channels')
 	def settings_changed(self):
 		if not self.data:
 			return
 		self.plot.set_data(self.data.selectchannels(lambda chan: chan.id in self.selected_primary_channels))
 		self.rebuild()
 
-	@on_trait_change('ymin, ymax, yauto')
+	@traits.on_trait_change('ymin, ymax, yauto')
 	@gui.figure.CallbackLoopManager.decorator('ylimits')
 	def ylim_changed(self):
 		logger.info('%s.ylim_changed: %s', self.__class__.__name__, self.ylimits)
@@ -291,19 +291,19 @@ class TimeTrendGUI(SubplotGUI):
 		self.redraw()
 
 	def get_general_view_group(self):
-		return Group(
-			Item('visible'),
-			Item('filename', editor=gui.support.FileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),
-			Item('reload', show_label=False),
-			Item('legend'),
-			Item('size'),
+		return traitsui.Group(
+			traitsui.Item('visible'),
+			traitsui.Item('filename', editor=gui.support.FileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),
+			traitsui.Item('reload', show_label=False),
+			traitsui.Item('legend'),
+			traitsui.Item('size'),
 			show_border=True,
 			label='General',
 		)
 
-	yaxis_group = Group(
-		Item('channelobjs', label='Channels', editor=TimeTrendChannelListEditor()),
-		Item('ylimits', style='custom', label='Limits'),
+	yaxis_group = traitsui.Group(
+		traitsui.Item('channelobjs', label='Channels', editor=TimeTrendChannelListEditor()),
+		traitsui.Item('ylimits', style='custom', label='Limits'),
 		show_border=True,
 		label='Y-axis'
 	)
@@ -311,20 +311,20 @@ class TimeTrendGUI(SubplotGUI):
 	def traits_view(self):
 		return gui.support.PanelView(
 			self.get_general_view_group(),
-			Include('yaxis_group'),
-			Include('relativistic_group'),
+			traitsui.Include('yaxis_group'),
+			traitsui.Include('relativistic_group'),
 		)
 
 
 class DoubleTimeTrendGUI(TimeTrendGUI):
 	plotfactory = subplots.DoubleMultiTrend
-	selected_secondary_channels = Property(depends_on='channelobjs.checked2')
+	selected_secondary_channels = traits.Property(depends_on='channelobjs.checked2')
 
-	ylimits2 = Instance(gui.support.LogAxisLimits, args=())
-	yauto2 = DelegatesTo('ylimits2', 'auto')
-	ymin2 = DelegatesTo('ylimits2', 'min')
-	ymax2 = DelegatesTo('ylimits2', 'max')
-	ylog2 = DelegatesTo('ylimits2', 'log')
+	ylimits2 = traits.Instance(gui.support.LogAxisLimits, args=())
+	yauto2 = traits.DelegatesTo('ylimits2', 'auto')
+	ymin2 = traits.DelegatesTo('ylimits2', 'min')
+	ymax2 = traits.DelegatesTo('ylimits2', 'max')
+	ylog2 = traits.DelegatesTo('ylimits2', 'log')
 
 	traits_saved = 'selected_secondary_channels', 'yauto2', 'ymin2', 'ymax2', 'ylog2'
 
@@ -354,13 +354,13 @@ class DoubleTimeTrendGUI(TimeTrendGUI):
 			logger.info('%s.ylim_callback secondary: %s', self.__class__.__name__, self.ylimits2)
 
 	# extend the callback protection to include ylimits2 as well
-	@on_trait_change('ymin, ymax, yauto')
+	@traits.on_trait_change('ymin, ymax, yauto')
 	@gui.figure.CallbackLoopManager.decorator('ylimits', 'ylimits2')
 	def ylim_changed(self):
 		# we cannot call ylim_changed directly, because it is protected by the CallbackloopManager
 		super(DoubleTimeTrendGUI, self).ylim_changed.original(self)
 
-	@on_trait_change('ymin2, ymax2, yauto2')
+	@traits.on_trait_change('ymin2, ymax2, yauto2')
 	@gui.figure.CallbackLoopManager.decorator('ylimits', 'ylimits2')
 	def ylim2_changed(self):
 		logger.info('%s.ylim2_changed: %s', self.__class__.__name__, self.ylimits2)
@@ -376,7 +376,7 @@ class DoubleTimeTrendGUI(TimeTrendGUI):
 		super(DoubleTimeTrendGUI, self).reset_autoscale()
 		self.yauto2 = True
 
-	@on_trait_change('selected_primary_channels, selected_secondary_channels')
+	@traits.on_trait_change('selected_primary_channels, selected_secondary_channels')
 	def settings_changed(self):
 		if not self.data:
 			return
@@ -386,10 +386,10 @@ class DoubleTimeTrendGUI(TimeTrendGUI):
 		)
 		self.rebuild()
 
-	yaxis_group = Group(
-		Item('channelobjs', label='Channels', editor=DoubleTimeTrendChannelListEditor()),
-		Item('ylimits', style='custom', label='Left limits'),
-		Item('ylimits2', style='custom', label='Right limits'),
+	yaxis_group = traitsui.Group(
+		traitsui.Item('channelobjs', label='Channels', editor=DoubleTimeTrendChannelListEditor()),
+		traitsui.Item('ylimits', style='custom', label='Left limits'),
+		traitsui.Item('ylimits2', style='custom', label='Right limits'),
 		show_border=True,
 		label='Y-axes'
 	)
@@ -397,21 +397,21 @@ class DoubleTimeTrendGUI(TimeTrendGUI):
 	def traits_view(self):
 		return gui.support.PanelView(
 			self.get_general_view_group(),
-			Include('yaxis_group'),
-			Include('relativistic_group'),
+			traitsui.Include('yaxis_group'),
+			traitsui.Include('relativistic_group'),
 		)
 
 
-class XlimitsGUI(HasTraits):
-	xlimits = Instance(gui.support.LogAxisLimits, args=())
-	xauto = DelegatesTo('xlimits', 'auto')
-	xmin = DelegatesTo('xlimits', 'min')
-	xmax = DelegatesTo('xlimits', 'max')
-	xlog = DelegatesTo('xlimits', 'log')
+class XlimitsGUI(traits.HasTraits):
+	xlimits = traits.Instance(gui.support.LogAxisLimits, args=())
+	xauto = traits.DelegatesTo('xlimits', 'auto')
+	xmin = traits.DelegatesTo('xlimits', 'min')
+	xmax = traits.DelegatesTo('xlimits', 'max')
+	xlog = traits.DelegatesTo('xlimits', 'log')
 
 	traits_saved = 'xauto', 'xmin', 'xmax', 'xlog'
 
-	@on_trait_change('xmin, xmax, xauto')
+	@traits.on_trait_change('xmin, xmax, xauto')
 	@gui.figure.CallbackLoopManager.decorator('xlimits')
 	def xlim_changed(self):
 		logger.info('%s.xlim_changed: %s', self.__class__.__name__, self.xlimits)
@@ -442,11 +442,11 @@ class CSVGUI(DoubleTimeTrendGUI):
 	datafactory = datasources.CSV
 	filter = 'ASCII text files (*.txt, *.csv, *.tab)', '*.txt;*.csv;*.tab',
 
-	time_type = Enum('unix', 'labview', 'matplotlib', 'custom')
-	time_custom = Property(depends_on='time_type')
-	time_format = Str('%Y-%m-%d %H:%M:%S')
-	time_column = Str('auto')
-	time_column_options = Property(depends_on='channel_names')
+	time_type = traits.Enum('unix', 'labview', 'matplotlib', 'custom')
+	time_custom = traits.Property(depends_on='time_type')
+	time_format = traits.Str('%Y-%m-%d %H:%M:%S')
+	time_column = traits.Str('auto')
+	time_column_options = traits.Property(depends_on='channel_names')
 
 	traits_saved = 'time_type', 'time_format', 'time_column'
 
@@ -463,14 +463,14 @@ class CSVGUI(DoubleTimeTrendGUI):
 			check = set([self.time_column])
 		return (chan for chan in channels if chan.id not in check)
 
-	@cached_property
+	@traits.cached_property
 	def _get_time_column_options(self):
 		return gui.support.EnumMapping([('auto', '(auto)')] + self.channel_names)
 
 	def _time_column_changed(self):
 		self.channel_names = list(self.channel_names) # trigger rebuild of traits depending on channel_names
 
-	@on_trait_change('selected_primary_channels, selected_secondary_channels, time_type, time_format, time_column')
+	@traits.on_trait_change('selected_primary_channels, selected_secondary_channels, time_type, time_format, time_column')
 	def settings_changed(self):
 		if not self.data:
 			return
@@ -488,28 +488,28 @@ class CSVGUI(DoubleTimeTrendGUI):
 	def traits_view(self):
 		return gui.support.PanelView(
 			self.get_general_view_group(),
-			Group(
-				Item('time_type', label='Type'),
-				Item('time_format', label='Format string', enabled_when='time_custom'),
-				Item('time_column', label='Column', editor=EnumEditor(name='time_column_options')),
+			traitsui.Group(
+				traitsui.Item('time_type', label='Type'),
+				traitsui.Item('time_format', label='Format string', enabled_when='time_custom'),
+				traitsui.Item('time_column', label='Column', editor=traitsui.EnumEditor(name='time_column_options')),
 				label='Time data',
 				show_border=True,
 			),
-			Include('yaxis_group'),
-			Include('relativistic_group'),
+			traitsui.Include('yaxis_group'),
+			traitsui.Include('relativistic_group'),
 		)
 
 
-class FalseColorMap(HasTraits):
-	colormap = Enum(sorted((m for m in matplotlib.cm.datad if not m.endswith("_r")), key=string.lower))
+class FalseColorMap(traits.HasTraits):
+	colormap = traits.Enum(sorted((m for m in matplotlib.cm.datad if not m.endswith("_r")), key=string.lower))
 	default_colormap = 'spectral'
-	interpolation = Enum('nearest', 'bilinear', 'bicubic')
+	interpolation = traits.Enum('nearest', 'bilinear', 'bicubic')
 
-	climits = Instance(gui.support.LogAxisLimits, args=())
-	cauto = DelegatesTo('climits', 'auto')
-	cmin = DelegatesTo('climits', 'min')
-	cmax = DelegatesTo('climits', 'max')
-	clog = DelegatesTo('climits', 'log')
+	climits = traits.Instance(gui.support.LogAxisLimits, args=())
+	cauto = traits.DelegatesTo('climits', 'auto')
+	cmin = traits.DelegatesTo('climits', 'min')
+	cmax = traits.DelegatesTo('climits', 'max')
+	clog = traits.DelegatesTo('climits', 'log')
 
 	traits_saved = 'colormap', 'interpolation', 'cauto', 'cmin', 'cmax', 'clog'
 
@@ -530,18 +530,18 @@ class FalseColorMap(HasTraits):
 		self.cmax = cmax
 		logger.info('%s.clim_callback: %s', self.__class__.__name__, self.climits)
 
-	@on_trait_change('cmin, cmax, cauto, clog')
+	@traits.on_trait_change('cmin, cmax, cauto, clog')
 	@gui.figure.CallbackLoopManager.decorator('climits')
 	def clim_changed(self):
 		logger.info('%s.clim_changed: %s', self.__class__.__name__, self.climits)
 		self.plot.set_clim(self.climits.min, self.climits.max, self.climits.auto, self.climits.log)
 		self.rebuild()
 
-	false_color_group = Group(
-				Item('size'),
-				Item('colormap'),
-				Item('interpolation', editor=EnumEditor(values=gui.support.EnumMapping([('nearest', 'none'), 'bilinear', 'bicubic']))),
-				Item('climits', style='custom', label='Color scale'),
+	false_color_group = traitsui.Group(
+				traitsui.Item('size'),
+				traitsui.Item('colormap'),
+				traitsui.Item('interpolation', editor=traitsui.EnumEditor(values=gui.support.EnumMapping([('nearest', 'none'), 'bilinear', 'bicubic']))),
+				traitsui.Item('climits', style='custom', label='Color scale'),
 				show_border=True,
 				label='Display',
 	)
@@ -556,7 +556,7 @@ class Time2DGUI(TimeTrendGUI, FalseColorMap):
 		plot.set_clim_callback(self.clim_callback)
 		return plot
 
-	@on_trait_change('filename, reload')
+	@traits.on_trait_change('filename, reload')
 	def load_file(self):
 		super(Time2DGUI, self).load_file()
 		self.plot.set_data(self.data)
@@ -566,25 +566,25 @@ class Time2DGUI(TimeTrendGUI, FalseColorMap):
 		pass
 
 	def get_general_view_group(self):
-		return Group(
-			Item('visible'),
-			Item('filename', editor=gui.support.FileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),
-			Item('reload', show_label=False),
+		return traitsui.Group(
+			traitsui.Item('visible'),
+			traitsui.Item('filename', editor=gui.support.FileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),
+			traitsui.Item('reload', show_label=False),
 			show_border=True,
 			label='General',
 		)
 
-	false_color_group = Group(
-		Item('size'),
-		Item('colormap'),
-		Item('interpolation', editor=EnumEditor(values=gui.support.EnumMapping([('nearest', 'none'), 'bilinear', 'bicubic']))),
+	false_color_group = traitsui.Group(
+		traitsui.Item('size'),
+		traitsui.Item('colormap'),
+		traitsui.Item('interpolation', editor=traitsui.EnumEditor(values=gui.support.EnumMapping([('nearest', 'none'), 'bilinear', 'bicubic']))),
 		show_border=True,
 		label='Display',
 	)
 
-	limits_group = Group(
-		Item('ylimits', style='custom', label='Y scale'),
-		Item('climits', style='custom', label='Color scale'),
+	limits_group = traitsui.Group(
+		traitsui.Item('ylimits', style='custom', label='Y scale'),
+		traitsui.Item('climits', style='custom', label='Color scale'),
 		show_border=True,
 		label='Limits',
 	)
@@ -592,9 +592,9 @@ class Time2DGUI(TimeTrendGUI, FalseColorMap):
 	def traits_view(self):
 		return gui.support.PanelView(
 			self.get_general_view_group(),
-			Include('false_color_group'),
-			Include('limits_group'),
-			Include('relativistic_group'),
+			traitsui.Include('false_color_group'),
+			traitsui.Include('limits_group'),
+			traitsui.Include('relativistic_group'),
 		)
 
 
@@ -614,12 +614,12 @@ class RGBImageGUI(ImageGUI):
 	id = 'rgbimage'
 	label = 'Image'
 	desc = 'Any bitmap image (PNG, JPEG, TIFF, BMP, ...)'
-	filenames = List(Str)
-	filename_count = Property(Int, depends_on='filenames')
-	short_filenames = Property(List(Str), depends_on='filenames')
-	select_files = Button
-	selected_filename = Str
-	selected_index = Int
+	filenames = traits.List(traits.Str)
+	filename_count = traits.Property(traits.Int, depends_on='filenames')
+	short_filenames = traits.Property(traits.List(traits.Str), depends_on='filenames')
+	select_files = traits.Button
+	selected_filename = traits.Str
+	selected_index = traits.Int
 
 	traits_saved = 'filenames', 'selected_index'
 	traits_not_saved = 'filename',
@@ -632,7 +632,7 @@ class RGBImageGUI(ImageGUI):
 		plot.mode = 'single frame'
 		return plot
 
-	@cached_property
+	@traits.cached_property
 	def _get_short_filenames(self):
 		return [os.path.basename(i) for i in self.filenames]
 
@@ -642,7 +642,7 @@ class RGBImageGUI(ImageGUI):
 	def _selected_filename_changed(self):
 		self.selected_index = self.short_filenames.index(self.selected_filename)
 
-	@on_trait_change('reload, selected_index')
+	@traits.on_trait_change('reload, selected_index')
 	def file_changed(self):
 		if self.selected_index >= self.filename_count:
 			self.selected_index = self.filename_count - 1
@@ -668,12 +668,12 @@ class RGBImageGUI(ImageGUI):
 
 	def traits_view(self):
 		return gui.support.PanelView(
-			Group(
-				Item('visible'),
-				Item('select_files', show_label=False),
-				Item('selected_filename', label='File', editor=EnumEditor(name='short_filenames')),
-				Item('selected_index', label='Number', editor=RangeEditor(low=0, high_name='filename_count', mode='spinner')),
-				Item('reload', show_label=False),
+			traitsui.Group(
+				traitsui.Item('visible'),
+				traitsui.Item('select_files', show_label=False),
+				traitsui.Item('selected_filename', label='File', editor=traitsui.EnumEditor(name='short_filenames')),
+				traitsui.Item('selected_index', label='Number', editor=traitsui.RangeEditor(low=0, high_name='filename_count', mode='spinner')),
+				traitsui.Item('reload', show_label=False),
 				show_border=True,
 				label='General',
 			),

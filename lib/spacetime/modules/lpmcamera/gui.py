@@ -18,8 +18,8 @@
 
 import string
 
-from enthought.traits.api import *
-from enthought.traits.ui.api import *
+import enthought.traits.api as traits
+import enthought.traits.ui.api as traitsui
 
 import matplotlib.cm
 
@@ -31,13 +31,13 @@ from . import datasources, subplots, filters
 
 
 class CameraGUI(SubplotGUI):
-	data = Instance(datasources.Camera)
+	data = traits.Instance(datasources.Camera)
 
-	firstframe = Int(0)
-	lastframe = Int(0)
-	stepframe = Range(1, 1000000000)
-	framecount = Int(0)
-	direction = Enum(1, 2)
+	firstframe = traits.Int(0)
+	lastframe = traits.Int(0)
+	stepframe = traits.Range(1, 1000000000)
+	framecount = traits.Int(0)
+	direction = traits.Enum(1, 2)
 
 	traits_saved = 'firstframe', 'lastframe', 'stepframe', 'direction'
 
@@ -46,7 +46,7 @@ class CameraGUI(SubplotGUI):
 		self.rebuild()
 
 
-class CameraFrameGUIHandler(Handler):
+class CameraFrameGUIHandler(traitsui.Handler):
 	def object_mode_changed(self, info):
 		if info.mode.value == 'single frame':
 			info.firstframe.label_control.SetLabel('Frame:')
@@ -63,8 +63,8 @@ class CameraFrameGUI(FalseColorImageGUI, CameraGUI):
 
 	default_colormap = 'afmhot'
 
-	channel = Int(0)
-	channelcount = Int(0)
+	channel = traits.Int(0)
+	channelcount = traits.Int(0)
 
 	filter_list = (
 		('bgs_line-by-line', 'line-by-line background subtraction', filters.array(filters.bgs_line_by_line)),
@@ -72,15 +72,15 @@ class CameraFrameGUI(FalseColorImageGUI, CameraGUI):
 		('diff_line',        'line-by-line differential',           filters.array(filters.diff_line)),
 	)
 	filter_map = dict((i, f) for (i, s, f) in filter_list)
-	filter = Enum('none', *[i for (i, s, f) in filter_list])
+	filter = traits.Enum('none', *[i for (i, s, f) in filter_list])
 
-	clip = Float(4.)
-	rotate = Bool(False)
+	clip = traits.Float(4.)
+	rotate = traits.Bool(False)
 
-	mode = Enum('single frame', 'film strip')
+	mode = traits.Enum('single frame', 'film strip')
 
-	is_singleframe = Property(depends_on='mode')
-	is_filmstrip = Property(depends_on='mode')
+	is_singleframe = traits.Property(depends_on='mode')
+	is_filmstrip = traits.Property(depends_on='mode')
 
 	traits_saved = 'channel', 'filter', 'clip', 'rotate', 'mode'
 
@@ -134,7 +134,7 @@ class CameraFrameGUI(FalseColorImageGUI, CameraGUI):
 		self.plot.tzoom = self.stepframe
 
 	# replace the inherited clim_changed() to make sure select_data() is called before rebuild()
-	@on_trait_change('cmin, cmax, cauto, clog')
+	@traits.on_trait_change('cmin, cmax, cauto, clog')
 	def clim_changed(self, name, new):
 		# we need callback protection, but cannot use the decorator since we will call the inherited method
 		if self.context.callbacks.is_avoiding(self.climits):
@@ -143,43 +143,43 @@ class CameraFrameGUI(FalseColorImageGUI, CameraGUI):
 			self.select_data()
 		super(CameraFrameGUI, self).clim_changed()
 
-	@on_trait_change('filter, channel') # when these traits change, we want color autoscaling back
+	@traits.on_trait_change('filter, channel') # when these traits change, we want color autoscaling back
 	def settings_changed_rescale(self):
 		if self.cauto:
 			self.settings_changed()
 		else:
 			self.cauto = True # this will also call select_data() and rebuild()
 
-	@on_trait_change('clip, lastframe, stepframe')
+	@traits.on_trait_change('clip, lastframe, stepframe')
 	def settings_changed(self):
 		self.select_data()
 		self.rebuild()
 
 	traits_view = support.PanelView(
-		Group(
-			Item('visible'),
-			Item('filename', editor=support.FileEditor(filter=['Camera RAW files (*.raw)', '*.raw', 'All files', '*'], entries=0)),
-			Item('channel', editor=RangeEditor(low=0, high_name='channelcount', mode='spinner')),
-			Item('mode', style='custom'),
-			Item('firstframe', label='First frame', editor=RangeEditor(low=0, high_name='framecount', mode='spinner')),
-			Item('lastframe', label='Last frame', enabled_when='is_filmstrip', editor=RangeEditor(low=0, high_name='framecount', mode='spinner')),
-			Item('stepframe', label='Key frame mode', enabled_when='is_filmstrip'),
-			Item('direction', editor=EnumEditor(values=support.EnumMapping([(1, 'L2R'), (2, 'R2L')]))),
+		traitsui.Group(
+			traitsui.Item('visible'),
+			traitsui.Item('filename', editor=support.FileEditor(filter=['Camera RAW files (*.raw)', '*.raw', 'All files', '*'], entries=0)),
+			traitsui.Item('channel', editor=traitsui.RangeEditor(low=0, high_name='channelcount', mode='spinner')),
+			traitsui.Item('mode', style='custom'),
+			traitsui.Item('firstframe', label='First frame', editor=traitsui.RangeEditor(low=0, high_name='framecount', mode='spinner')),
+			traitsui.Item('lastframe', label='Last frame', enabled_when='is_filmstrip', editor=traitsui.RangeEditor(low=0, high_name='framecount', mode='spinner')),
+			traitsui.Item('stepframe', label='Key frame mode', enabled_when='is_filmstrip'),
+			traitsui.Item('direction', editor=traitsui.EnumEditor(values=support.EnumMapping([(1, 'L2R'), (2, 'R2L')]))),
 			show_border=True,
 			label='General',
 		),
-		Group(
-			Item('size'),
-			Item('colormap'),
-			Item('interpolation', editor=EnumEditor(values=support.EnumMapping([('nearest', 'none'), 'bilinear', 'bicubic']))),
-			Item('climits', style='custom', label='Color scale'),
-			Item('clip', label='Color clipping', enabled_when='cauto', tooltip='When autoscaling, clip colorscale at <number> standard deviations away from the average (0 to disable)', editor=support.FloatEditor()),
-			Item('rotate', label='Rotate image', tooltip='Plot scanlines vertically (always enabled in film strip mode)', enabled_when='is_singleframe'),
-			Item('filter', label='Filtering', editor=EnumEditor(values=support.EnumMapping([('none', 'none')] + [(i, s) for (i, s, f) in filter_list]))),
+		traitsui.Group(
+			traitsui.Item('size'),
+			traitsui.Item('colormap'),
+			traitsui.Item('interpolation', editor=traitsui.EnumEditor(values=support.EnumMapping([('nearest', 'none'), 'bilinear', 'bicubic']))),
+			traitsui.Item('climits', style='custom', label='Color scale'),
+			traitsui.Item('clip', label='Color clipping', enabled_when='cauto', tooltip='When autoscaling, clip colorscale at <number> standard deviations away from the average (0 to disable)', editor=support.FloatEditor()),
+			traitsui.Item('rotate', label='Rotate image', tooltip='Plot scanlines vertically (always enabled in film strip mode)', enabled_when='is_singleframe'),
+			traitsui.Item('filter', label='Filtering', editor=traitsui.EnumEditor(values=support.EnumMapping([('none', 'none')] + [(i, s) for (i, s, f) in filter_list]))),
 			show_border=True,
 			label='Display',
 		),
-		Include('relativistic_group'),
+		traitsui.Include('relativistic_group'),
 		handler=CameraFrameGUIHandler()
 	)
 
@@ -189,17 +189,17 @@ class CameraFrameGUI(FalseColorImageGUI, CameraGUI):
 			self.firstframe = i
 			yield
 
-	animation_firstframe = Int(0)
-	animation_lastframe = Int(0)
-	animation_framecount = Property(depends_on='animation_firstframe, animation_lastframe')
+	animation_firstframe = traits.Int(0)
+	animation_lastframe = traits.Int(0)
+	animation_framecount = traits.Property(depends_on='animation_firstframe, animation_lastframe')
 
 	def _get_animation_framecount(self):
 		return self.animation_lastframe - self.animation_firstframe + 1
 
-	animation_view = View(Group(
-		Group(
-			Item('animation_firstframe', label='First', editor=RangeEditor(low=0, high_name='framecount', mode='spinner')),
-			Item('animation_lastframe', label='Last', editor=RangeEditor(low=0, high_name='framecount', mode='spinner')),
+	animation_view = traitsui.View(traitsui.Group(
+		traitsui.Group(
+			traitsui.Item('animation_firstframe', label='First', editor=traitsui.RangeEditor(low=0, high_name='framecount', mode='spinner')),
+			traitsui.Item('animation_lastframe', label='Last', editor=traitsui.RangeEditor(low=0, high_name='framecount', mode='spinner')),
 			label='Frames',
 			show_border=True,
 		)
@@ -214,15 +214,15 @@ class CameraTrendGUI(DoubleTimeTrendGUI, CameraGUI, XlimitsGUI):
 	filter = 'Camera RAW files (*.raw)', '*.raw'
 	plotfactory = subplots.CameraTrend
 
-	averaging = Bool(True)
-	direction = Enum(1, 2, 3)
+	averaging = traits.Bool(True)
+	direction = traits.Enum(1, 2, 3)
 
-	xaxis_type = Str('time')
-	xaxis_type_options = Property(depends_on='channel_names')
+	xaxis_type = traits.Str('time')
+	xaxis_type_options = traits.Property(depends_on='channel_names')
 	prev_xaxis_type = None
-	fft = Property(depends_on='xaxis_type')
-	not_fft = Property(depends_on='fft')
-	independent_x = Property(depends_on='xaxis_type')
+	fft = traits.Property(depends_on='xaxis_type')
+	not_fft = traits.Property(depends_on='fft')
+	independent_x = traits.Property(depends_on='xaxis_type')
 
 	traits_saved = 'averaging', 'xaxis_type'
 
@@ -235,7 +235,7 @@ class CameraTrendGUI(DoubleTimeTrendGUI, CameraGUI, XlimitsGUI):
 	def _get_independent_x(self):
 		return self.xaxis_type != 'time'
 
-	@cached_property
+	@traits.cached_property
 	def _get_xaxis_type_options(self):
 		return support.EnumMapping([('time', 'Time'), ('fft', 'Frequency (FFT)')] + [(i, 'Channel {0}'.format(i)) for i in self.channel_names])
 
@@ -248,7 +248,7 @@ class CameraTrendGUI(DoubleTimeTrendGUI, CameraGUI, XlimitsGUI):
 		plot.set_xlim_callback(self.xlim_callback)
 		return plot
 
-	@on_trait_change('filename')
+	@traits.on_trait_change('filename')
 	def load_file(self):
 		if self.filename:
 			try:
@@ -279,7 +279,7 @@ class CameraTrendGUI(DoubleTimeTrendGUI, CameraGUI, XlimitsGUI):
 		else:
 			self.settings_changed()
 
-	@on_trait_change('averaging, lastframe, stepframe, selected_primary_channels, selected_secondary_channels')
+	@traits.on_trait_change('averaging, lastframe, stepframe, selected_primary_channels, selected_secondary_channels')
 	def settings_changed(self):
 		if not self.data:
 			return
@@ -300,25 +300,25 @@ class CameraTrendGUI(DoubleTimeTrendGUI, CameraGUI, XlimitsGUI):
 		self.rebuild()
 
 	traits_view = support.PanelView(
-		Group(
-			Item('visible'),
-			Item('filename', editor=support.FileEditor(filter=['Camera RAW files (*.raw)', '*.raw', 'All files', '*'], entries=0)),
-			Item('firstframe', label='First frame', editor=RangeEditor(low=0, high_name='framecount', mode='spinner')),
-			Item('lastframe', label='Last frame', editor=RangeEditor(low=0, high_name='framecount', mode='spinner'), enabled_when='not_fft'),
-			Item('stepframe', label='Key frame mode', enabled_when='not_fft'),
-			Item('direction', editor=EnumEditor(values=support.EnumMapping([(1, 'L2R'), (2, 'R2L'), (3, 'both')]))),
-			Item('averaging', tooltip='Per-line averaging', enabled_when='not_fft'),
-			Item('legend'),
-			Item('size'),
+		traitsui.Group(
+			traitsui.Item('visible'),
+			traitsui.Item('filename', editor=support.FileEditor(filter=['Camera RAW files (*.raw)', '*.raw', 'All files', '*'], entries=0)),
+			traitsui.Item('firstframe', label='First frame', editor=traitsui.RangeEditor(low=0, high_name='framecount', mode='spinner')),
+			traitsui.Item('lastframe', label='Last frame', editor=traitsui.RangeEditor(low=0, high_name='framecount', mode='spinner'), enabled_when='not_fft'),
+			traitsui.Item('stepframe', label='Key frame mode', enabled_when='not_fft'),
+			traitsui.Item('direction', editor=traitsui.EnumEditor(values=support.EnumMapping([(1, 'L2R'), (2, 'R2L'), (3, 'both')]))),
+			traitsui.Item('averaging', tooltip='Per-line averaging', enabled_when='not_fft'),
+			traitsui.Item('legend'),
+			traitsui.Item('size'),
 			show_border=True,
 			label='General',
 		),
-		Group(
-			Item('xaxis_type', label='Data', editor=EnumEditor(name='xaxis_type_options')),
-			Item('xlimits', style='custom', label='Limits', enabled_when='independent_x'),
+		traitsui.Group(
+			traitsui.Item('xaxis_type', label='Data', editor=traitsui.EnumEditor(name='xaxis_type_options')),
+			traitsui.Item('xlimits', style='custom', label='Limits', enabled_when='independent_x'),
 			show_border=True,
 			label='X-axis',
 		),
-		Include('yaxis_group'),
-		Include('relativistic_group'),
+		traitsui.Include('yaxis_group'),
+		traitsui.Include('relativistic_group'),
 	)

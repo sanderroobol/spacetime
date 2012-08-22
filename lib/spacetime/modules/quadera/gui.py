@@ -16,8 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from enthought.traits.api import *
-from enthought.traits.ui.api import *
+import enthought.traits.api as traits
+import enthought.traits.ui.api as traitsui
 
 from ..generic.gui import TimeTrendGUI, Time2DGUI
 from ... import gui
@@ -25,10 +25,10 @@ from ... import gui
 from . import subplots, datasources
 
 
-class NormalizationGUI(HasTraits):
-	normalize_channel = Str('none')
-	normalize_channel_options = Property(depends_on='channel_names')
-	normalize_factor = Float(1.)
+class NormalizationGUI(traits.HasTraits):
+	normalize_channel = traits.Str('none')
+	normalize_channel_options = traits.Property(depends_on='channel_names')
+	normalize_factor = traits.Float(1.)
 
 	filter = 'Quadera ASCII files (*.asc)', '*.asc'
 
@@ -38,11 +38,11 @@ class NormalizationGUI(HasTraits):
 		super(NormalizationGUI, self).__init__(*args, **kwargs)
 		self.ylog = True
 
-	@cached_property
+	@traits.cached_property
 	def _get_normalize_channel_options(self):
 		return gui.support.EnumMapping([('none', 'Disable')] + self.channel_names)
 
-	@on_trait_change('normalize_channel, normalize_factor')
+	@traits.on_trait_change('normalize_channel, normalize_factor')
 	def normalization_changed(self):
 		if self.normalize_channel == 'none':
 			self.plot.set_normalization(self.normalize_factor)
@@ -50,9 +50,9 @@ class NormalizationGUI(HasTraits):
 			self.plot.set_normalization(self.normalize_factor, self.data.selectchannels(lambda chan: chan.id == self.normalize_channel))
 		self.rebuild()
 
-	normalization_group = Group(
-		Item('normalize_channel', label='Channel', editor=EnumEditor(name='normalize_channel_options')),
-		Item('normalize_factor', label='Factor', editor=gui.support.FloatEditor()),
+	normalization_group = traitsui.Group(
+		traitsui.Item('normalize_channel', label='Channel', editor=traitsui.EnumEditor(name='normalize_channel_options')),
+		traitsui.Item('normalize_factor', label='Factor', editor=gui.support.FloatEditor()),
 		show_border=True,
 		label='Normalization',
 	)
@@ -69,9 +69,9 @@ class QuaderaMIDGUI(NormalizationGUI, TimeTrendGUI):
 	def traits_view(self):
 		return gui.support.PanelView(
 			self.get_general_view_group(),
-			Include('normalization_group'),
-			Include('yaxis_group'),
-			Include('relativistic_group'),
+			traitsui.Include('normalization_group'),
+			traitsui.Include('yaxis_group'),
+			traitsui.Include('relativistic_group'),
 		)
 
 
@@ -95,8 +95,8 @@ class Quadera2DScanGUI(Time2DGUI, NormalizationGUI):
 	def traits_view(self):
 		return gui.support.PanelView(
 			self.get_general_view_group(),
-			Include('normalization_group'),
-			Include('false_color_group'),
-			Include('limits_group'),
-			Include('relativistic_group'),
+			traitsui.Include('normalization_group'),
+			traitsui.Include('false_color_group'),
+			traitsui.Include('limits_group'),
+			traitsui.Include('relativistic_group'),
 		)

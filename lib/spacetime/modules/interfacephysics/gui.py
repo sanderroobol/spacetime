@@ -16,8 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from enthought.traits.api import *
-from enthought.traits.ui.api import *
+import enthought.traits.api as traits
+import enthought.traits.ui.api as traitsui
 
 from ..generic.gui import DoubleTimeTrendGUI
 from ..generic.datasources import CSVFactory
@@ -43,7 +43,7 @@ class TPDirkGUI(DoubleTimeTrendGUI):
 		super(TPDirkGUI, self).__init__(*args, **kwargs)
 		self.ylog = True
 
-	@on_trait_change('filename, reload')
+	@traits.on_trait_change('filename, reload')
 	def load_file(self):
 		if self.filename:
 			try:
@@ -57,21 +57,21 @@ class TPDirkGUI(DoubleTimeTrendGUI):
 
 	def traits_view(self):
 		return support.PanelView(
-			Group(
-				Item('visible'),
-				Item('filename', editor=support.FileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),
-				Item('reload', show_label=False),
-				Item('legend'),
+			traitsui.Group(
+				traitsui.Item('visible'),
+				traitsui.Item('filename', editor=support.FileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),
+				traitsui.Item('reload', show_label=False),
+				traitsui.Item('legend'),
 				show_border=True,
 				label='General',
 			),
-			Group(
-				Item('ylimits', style='custom', label='Left limits'),
-				Item('ylimits2', style='custom', label='Right limits'),
+			traitsui.Group(
+				traitsui.Item('ylimits', style='custom', label='Left limits'),
+				traitsui.Item('ylimits2', style='custom', label='Right limits'),
 				show_border=True,
 				label='Y axes'
 			),
-			Include('relativistic_group'),
+			traitsui.Include('relativistic_group'),
 		)
 
 
