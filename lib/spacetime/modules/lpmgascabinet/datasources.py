@@ -20,7 +20,6 @@ import itertools
 import numpy
 
 from ..generic.datasources import CSV
-from ...util import Struct
 
 class GasCabinet(CSV):
 	time_columns = 'auto'
@@ -92,7 +91,7 @@ class GasCabinet(CSV):
 
 	# replace CSV.__init__() with some custom logic
 	def __init__(self, *args, **kwargs):
-		super(CSV, self).__init__(*args, **kwargs)
+		super(GasCabinet, self).__init__(*args, **kwargs)
 		self.make_channel_mapping()
 
 		with open(self.filename) as fp:

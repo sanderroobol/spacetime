@@ -17,7 +17,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import itertools
-import time
 import os.path
 import numpy
 import PIL.Image, matplotlib.image

@@ -20,6 +20,7 @@ from __future__ import division
 
 import datetime
 import numpy
+import re
 
 from ..generic.datasources import MultiTrend
 from ...util import Struct, mpldtfromdatetime, mpldtstrptime, localtz
@@ -60,7 +61,6 @@ class OldGasCabinet(MultiTrend):
 		self.data = numpy.loadtxt(self.filename)
 		# FIXME: this is an ugly hack to determine the date. the fileformat should be
 		# modified such that date information is stored INSIDE the file
-		import re
 		y, m, d = re.search('(20[0-9]{2})([0-9]{2})([0-9]{2})', self.filename).groups()
 		self.offset = mpldtfromdatetime(localtz.localize(datetime.datetime(int(y), int(m), int(d))))
 

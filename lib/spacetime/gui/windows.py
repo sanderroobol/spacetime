@@ -319,23 +319,23 @@ class ExportDialog(support.UtilityWindow):
 
 	def _canvas_unit_changed(self, old, new):
 		if old == 'px' and new == 'inch':
-				self.canvas_width  /= self.dpi
-				self.canvas_height /= self.dpi
+			self.canvas_width  /= self.dpi
+			self.canvas_height /= self.dpi
 		elif old == 'px' and new == 'cm':
-				self.canvas_width  /= self.dpi / 2.54
-				self.canvas_height /= self.dpi / 2.54
+			self.canvas_width  /= self.dpi / 2.54
+			self.canvas_height /= self.dpi / 2.54
 		elif old == 'cm' and new == 'inch':
-				self.canvas_width  /= 2.54
-				self.canvas_height /= 2.54
+			self.canvas_width  /= 2.54
+			self.canvas_height /= 2.54
 		elif old == 'inch' and new == 'px':
-				self.canvas_width  *= self.dpi
-				self.canvas_height *= self.dpi
+			self.canvas_width  *= self.dpi
+			self.canvas_height *= self.dpi
 		elif old == 'cm' and new == 'px':
-				self.canvas_width  *= self.dpi / 2.54
-				self.canvas_height *= self.dpi / 2.54
+			self.canvas_width  *= self.dpi / 2.54
+			self.canvas_height *= self.dpi / 2.54
 		elif old == 'inch' and new == 'cm':
-				self.canvas_width  *= 2.54
-				self.canvas_height *= 2.54
+			self.canvas_width  *= 2.54
+			self.canvas_height *= 2.54
 
 	def run(self):
 		mplcanvas = self.context.plot.figure.canvas

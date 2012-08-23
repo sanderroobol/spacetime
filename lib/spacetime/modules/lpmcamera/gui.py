@@ -16,12 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import string
-
 import enthought.traits.api as traits
 import enthought.traits.ui.api as traitsui
-
-import matplotlib.cm
 
 from ..generic.gui import SubplotGUI, DoubleTimeTrendGUI, XlimitsGUI, FalseColorImageGUI
 from ..generic.subplots import Image
