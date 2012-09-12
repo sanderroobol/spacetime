@@ -117,6 +117,7 @@ class GUIModuleSelector(support.UtilityWindow):
 		buttons=traitsui.OKCancelButtons,
 		kind='livemodal',
 		handler=GUIModuleSelectorHandler()
+		close_result=False,
 	)
 
 
@@ -202,6 +203,7 @@ class GraphManager(support.UtilityWindow):
 		kind='livemodal',
 		buttons=traitsui.OKCancelButtons,
 		handler=GraphManagerHandler(),
+		close_result=False,
 	)
 
 
@@ -359,6 +361,7 @@ class ExportDialog(support.UtilityWindow):
 		title='Export',
 		resizable=False,
 		kind='livemodal',
+		close_result=False,
 	)
 
 class MovieDialogMainTab(traits.HasTraits):
@@ -428,4 +431,5 @@ class MovieDialog(support.UtilityWindow):
 		width=400,
 		kind='livemodal',
 		buttons=traitsui.OKCancelButtons,
+		close_result=False,
 	)
