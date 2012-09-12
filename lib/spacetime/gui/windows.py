@@ -16,8 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from enthought.traits.api import *
-from enthought.traits.ui.api import *
+import enthought.traits.api as traits
+import enthought.traits.ui.api as traitsui
 
 import matplotlib.figure
 
@@ -27,14 +27,14 @@ from .. import modules, version
 from ..modules import loader
 
 
-class GUIModuleTreeGUI(HasTraits):
-	id = Str
-	label = Str
-	desc = Str
+class GUIModuleTreeGUI(traits.HasTraits):
+	id = traits.Str
+	label = traits.Str
+	desc = traits.Str
 
-	traits_view = View(VGroup(
-			Item('label', style='readonly', emphasized=True),
-			Item('desc', style='readonly', resizable=True, editor=TextEditor(multi_line=True)),
+	traits_view = traitsui.View(traitsui.VGroup(
+			traitsui.Item('label', style='readonly', emphasized=True),
+			traitsui.Item('desc', style='readonly', resizable=True, editor=traitsui.TextEditor(multi_line=True)),
 			show_labels=False,
 			scrollable=False,
 		),
@@ -42,34 +42,34 @@ class GUIModuleTreeGUI(HasTraits):
 	)
 
 
-class GUIModuleTreeModule(HasTraits):
-	label = Str
-	desc = Str
-	guis = List(GUIModuleTreeGUI)
+class GUIModuleTreeModule(traits.HasTraits):
+	label = traits.Str
+	desc = traits.Str
+	guis = traits.List(GUIModuleTreeGUI)
 
-	traits_view = View(VGroup(
-			Item('label', style='readonly', emphasized=True),
-			Item('desc', style='readonly', resizable=True, editor=TextEditor(multi_line=True)),
+	traits_view = traitsui.View(traitsui.VGroup(
+			traitsui.Item('label', style='readonly', emphasized=True),
+			traitsui.Item('desc', style='readonly', resizable=True, editor=traitsui.TextEditor(multi_line=True)),
 			show_labels=False,
 		),
 		width=100,
 	)
 
 
-class GUIModuleTreeRoot(HasTraits):
-	modules = List(Module)
-	traits_view = View()
+class GUIModuleTreeRoot(traits.HasTraits):
+	modules = traits.List(traits.Module)
+	traits_view = traitsui.View()
 
 
-class GUIModuleSelectorHandler(Controller):
+class GUIModuleSelectorHandler(traitsui.Controller):
 	def on_dclick(self, obj):
 		self.info.ui.control.Close()
 
 
 class GUIModuleSelector(support.UtilityWindow):
-	moduleloader = Instance(loader.Loader)
-	selected = List()
-	root = Instance(GUIModuleTreeRoot)
+	moduleloader = traits.Instance(loader.Loader)
+	selected = traits.List()
+	root = traits.Instance(GUIModuleTreeRoot)
 
 	def _moduleloader_default(self):
 		return self.context.app.moduleloader
@@ -101,12 +101,12 @@ class GUIModuleSelector(support.UtilityWindow):
 			context.app.tabs.extend(tabs)
 		return tabs
 
-	traits_view = View(
-		Group(
-			Item('root', editor=TreeEditor(editable=True, on_dclick='handler.on_dclick', selection_mode='extended', selected='selected', hide_root=True, nodes=[
-				TreeNode(node_for=[GUIModuleTreeRoot], auto_open=True, children='modules', label='label'),
-				TreeNode(node_for=[GUIModuleTreeModule], auto_open=True, children='guis', label='label'),
-				TreeNode(node_for=[GUIModuleTreeGUI], label='label'),
+	traits_view = traitsui.View(
+		traitsui.Group(
+			traitsui.Item('root', editor=traitsui.TreeEditor(editable=True, on_dclick='handler.on_dclick', selection_mode='extended', selected='selected', hide_root=True, nodes=[
+				traitsui.TreeNode(node_for=[GUIModuleTreeRoot], auto_open=True, children='modules', label='label'),
+				traitsui.TreeNode(node_for=[GUIModuleTreeModule], auto_open=True, children='guis', label='label'),
+				traitsui.TreeNode(node_for=[GUIModuleTreeGUI], label='label'),
 			])),
 			show_labels=False,
 			padding=5,
@@ -114,16 +114,16 @@ class GUIModuleSelector(support.UtilityWindow):
 		title='Select subgraph type',
 		height=400,
 		width=600,
-		buttons=OKCancelButtons,
+		buttons=traitsui.OKCancelButtons,
 		kind='livemodal',
 		handler=GUIModuleSelectorHandler()
 	)
 
 
-class GraphManagerHandler(Handler):
+class GraphManagerHandler(traitsui.Handler):
 	# this handler is required in order to set the GraphManager window as
 	# parent when launching the GUIModuleSelector window
-	add = Button
+	add = traits.Button
 	# the other buttons can be dealt with in the GraphManager model
 
 	def handler_add_changed(self, info):
@@ -133,18 +133,18 @@ class GraphManagerHandler(Handler):
 
 
 class GraphManager(support.UtilityWindow):
-	tabs = List(Instance(modules.generic.gui.Tab))
-	tab_labels = Property(depends_on='tabs')
-	selected = Int(-1)
-	selected_any = Property(depends_on='selected')
-	selected_not_first = Property(depends_on='selected')
-	selected_not_last = Property(depends_on='selected, tab_labels')
+	tabs = traits.List(traits.Instance(modules.generic.gui.Tab))
+	tab_labels = traits.Property(depends_on='tabs')
+	selected = traits.Int(-1)
+	selected_any = traits.Property(depends_on='selected')
+	selected_not_first = traits.Property(depends_on='selected')
+	selected_not_last = traits.Property(depends_on='selected, tab_labels')
 
-	remove = Button
-	move_up = Button
-	move_down = Button
+	remove = traits.Button
+	move_up = traits.Button
+	move_down = traits.Button
 
-	@cached_property
+	@traits.cached_property
 	def _get_tab_labels(self):
 		return [t.label for t in self.tabs[1:]]
 
@@ -179,18 +179,18 @@ class GraphManager(support.UtilityWindow):
 			if gm.run().result:
 				context.app.tabs = gm.tabs
 
-	traits_view = View(
-		HGroup(
-			Item('tab_labels', editor=ListStrEditor(editable=False, selected_index='selected')),
-			VGroup(
-				Group(
-					Item('handler.add'),
-					Item('remove', enabled_when='selected_any'),
+	traits_view = traitsui.View(
+		traitsui.HGroup(
+			traitsui.Item('tab_labels', editor=traitsui.ListStrEditor(editable=False, selected_index='selected')),
+			traitsui.VGroup(
+				traitsui.Group(
+					traitsui.Item('handler.add'),
+					traitsui.Item('remove', enabled_when='selected_any'),
 					show_labels=False,
 				),
-				Group(
-					Item('move_up', enabled_when='selected_not_first'),
-					Item('move_down', enabled_when='selected_not_last'),
+				traitsui.Group(
+					traitsui.Item('move_up', enabled_when='selected_not_first'),
+					traitsui.Item('move_down', enabled_when='selected_not_last'),
 					show_labels=False,
 				),
 			),
@@ -200,16 +200,16 @@ class GraphManager(support.UtilityWindow):
 		resizable=True,
 		title='Manage graphs',
 		kind='livemodal',
-		buttons=OKCancelButtons,
+		buttons=traitsui.OKCancelButtons,
 		handler=GraphManagerHandler(),
 	)
 
 
 class PythonWindow(support.PersistantGeometryWindow):
 	prefs_id = 'python'
-	shell = PythonValue({})
-	traits_view = View(
-		Item('shell', show_label=False, editor=ShellEditor(share=False)),
+	shell = traits.PythonValue({})
+	traits_view = traitsui.View(
+		traitsui.Item('shell', show_label=False, editor=traitsui.ShellEditor(share=False)),
 		title='Python console',
 		height=600,
 		width=500,
@@ -219,8 +219,8 @@ class PythonWindow(support.PersistantGeometryWindow):
 
 
 class AboutWindow(support.UtilityWindow):
-	title = Str("{0} {1}".format(version.name, version.version))
-	desc = Str("""Copyright 2010-2012 Leiden University.
+	title = traits.Str("{0} {1}".format(version.name, version.version))
+	desc = traits.Str("""Copyright 2010-2012 Leiden University.
 Written by Sander Roobol <roobol@physics.leidenuniv.nl>.
 
 Spacetime is free software: you can redistribute it and/or modify it under the terms of the 
@@ -229,22 +229,22 @@ GNU General Public License as published by the Free Software Foundation, either 
 
 The Spacetime logo contains STM data by Kees Herbschleb, Catal. Today 154, 61 (2010).""")
 
-	traits_view = View(
-		HGroup(
-			Group(
-				Item('none', editor=ImageEditor(image=support.GetIcon('spacetime-logo'))),
+	traits_view = traitsui.View(
+		traitsui.HGroup(
+			traitsui.Group(
+				traitsui.Item('none', editor=traitsui.ImageEditor(image=support.GetIcon('spacetime-logo'))),
 				show_labels=False,
 				padding=5,
 			),
-			Group(
-				Item('title', emphasized=True, style='readonly'),
-				Item('desc', style='readonly', editor=TextEditor(multi_line=True)),
+			traitsui.Group(
+				traitsui.Item('title', emphasized=True, style='readonly'),
+				traitsui.Item('desc', style='readonly', editor=traitsui.TextEditor(multi_line=True)),
 				show_labels=False,
 				padding=5,
 			),
 		),
 		title='About {0}'.format(version.name),
-		buttons=[OKButton],
+		buttons=[traitsui.OKButton],
 		kind='modal',
 	)
 
@@ -260,18 +260,18 @@ class FigureWindowHandler(support.PersistantGeometryHandler):
 class FigureWindow(support.PersistantGeometryWindow):
 	prefs_id = 'figure'
 
-	app = Instance(HasTraits)
-	figure = Instance(matplotlib.figure.Figure, args=())
-	status = DelegatesTo('app')
+	app = traits.Instance(traits.HasTraits)
+	figure = traits.Instance(matplotlib.figure.Figure, args=())
+	status = traits.DelegatesTo('app')
 
-	traits_view = View(
-		Group(
-			Item('figure', editor=MPLFigureEditor(status='status')),
+	traits_view = traitsui.View(
+		traitsui.Group(
+			traitsui.Item('figure', editor=MPLFigureEditor(status='status')),
 			show_labels=False,
 		),
 		resizable=True,
 		height=600, width=800,
-		buttons=NoButtons,
+		buttons=traitsui.NoButtons,
 		title=version.name,
 		statusbar='status',
 		icon=support.GetIcon('spacetime-icon'),
@@ -280,21 +280,21 @@ class FigureWindow(support.PersistantGeometryWindow):
 	)
 
 class ExportDialog(support.UtilityWindow):
-	filetype = Str('Portable Network Graphics (*.png)')
-	extension = Property(depends_on='filetype')
-	wxfilter = Property(depends_on='filetype') 
+	filetype = traits.Str('Portable Network Graphics (*.png)')
+	extension = traits.Property(depends_on='filetype')
+	wxfilter = traits.Property(depends_on='filetype') 
 
-	filetypes = List(Str)
-	extensions = List(Str)
-	wxfilters = List(Str)
+	filetypes = traits.List(traits.Str)
+	extensions = traits.List(traits.Str)
+	wxfilters = traits.List(traits.Str)
 
-	dpi = Range(low=1, high=10000000, value=72)
-	rasterize = Property(depends_on='filetype')
+	dpi = traits.Range(low=1, high=10000000, value=72)
+	rasterize = traits.Property(depends_on='filetype')
 
-	canvas_width = Float(800)
-	canvas_height = Float(600)
-	canvas_unit = Enum('px', 'cm', 'inch')
-	figsize = Property(depends_on='canvas_width, canvas_height, canvas_unit')
+	canvas_width = traits.Float(800)
+	canvas_height = traits.Float(600)
+	canvas_unit = traits.Enum('px', 'cm', 'inch')
+	figsize = traits.Property(depends_on='canvas_width, canvas_height, canvas_unit')
 
 	def _get_rasterize(self):
 		ft = self.filetype.lower()
@@ -345,46 +345,46 @@ class ExportDialog(support.UtilityWindow):
 		self.wxfilters = ['|'.join(i) for i in zip(self.filetypes, filetypes.split('|')[1::2])]
 		return super(ExportDialog, self).run()
 
-	traits_view = View(
-		Item('filetype', editor=EnumEditor(name='filetypes')),
-		Item('dpi', enabled_when='rasterize'),
-		Group(
-			Item('canvas_width', label='Width'),
-			Item('canvas_height', label='Height'),
-			Item('canvas_unit', label='Unit'),
+	traits_view = traitsui.View(
+		traitsui.Item('filetype', editor=traitsui.EnumEditor(name='filetypes')),
+		traitsui.Item('dpi', enabled_when='rasterize'),
+		traitsui.Group(
+			traitsui.Item('canvas_width', label='Width'),
+			traitsui.Item('canvas_height', label='Height'),
+			traitsui.Item('canvas_unit', label='Unit'),
 			label='Canvas size',
 			show_border=True,
 		),
-		buttons=OKCancelButtons,
+		buttons=traitsui.OKCancelButtons,
 		title='Export',
 		resizable=False,
 		kind='livemodal',
 	)
 
-class MovieDialogMainTab(HasTraits):
-	label = Str('General')
-	format = Str('mp4')
-	codec = Str('libx264')
-	ffmpeg_options = Str('-x264opts crf=12 -preset medium -profile main -threads 0')
+class MovieDialogMainTab(traits.HasTraits):
+	label = traits.Str('General')
+	format = traits.Str('mp4')
+	codec = traits.Str('libx264')
+	ffmpeg_options = traits.Str('-x264opts crf=12 -preset medium -profile main -threads 0')
 
-	frame_width = Int(800)
-	frame_height = Int(600)
-	dpi = Range(low=1, high=10000000, value=72)
-	frame_rate = Int(2)
+	frame_width = traits.Int(800)
+	frame_height = traits.Int(600)
+	dpi = traits.Range(low=1, high=10000000, value=72)
+	frame_rate = traits.Int(2)
 
-	animation_view = View(Group(
-		Group(
-			Item('frame_width', label='Width'),
-			Item('frame_height', label='Height'),
-			Item('dpi', enabled_when='rasterize'),
+	animation_view = traitsui.View(traitsui.Group(
+		traitsui.Group(
+			traitsui.Item('frame_width', label='Width'),
+			traitsui.Item('frame_height', label='Height'),
+			traitsui.Item('dpi', enabled_when='rasterize'),
 			label='Dimensions',
 			show_border=True,
 		),
-		Group(
-			Item('frame_rate'),
-			Item('format'),
-			Item('codec'),
-			Item('ffmpeg_options', label='Extra options', tooltip='Extra options to be passed to the ffmpeg executable'),
+		traitsui.Group(
+			traitsui.Item('frame_rate'),
+			traitsui.Item('format'),
+			traitsui.Item('codec'),
+			traitsui.Item('ffmpeg_options', label='Extra options', tooltip='Extra options to be passed to the ffmpeg executable'),
 			label='Movie options',
 			show_border=True,
 		),
@@ -392,16 +392,16 @@ class MovieDialogMainTab(HasTraits):
 
 
 class MovieDialog(support.UtilityWindow):
-	maintab = Instance(MovieDialogMainTab, args=())
-	tabs = List(HasTraits)
+	maintab = traits.Instance(MovieDialogMainTab, args=())
+	tabs = traits.List(traits.HasTraits)
 
-	format = DelegatesTo('maintab')
-	codec = DelegatesTo('maintab')
-	ffmpeg_options = DelegatesTo('maintab')
-	frame_width = DelegatesTo('maintab')
-	frame_height = DelegatesTo('maintab')
-	dpi = DelegatesTo('maintab')
-	frame_rate = DelegatesTo('maintab')
+	format = traits.DelegatesTo('maintab')
+	codec = traits.DelegatesTo('maintab')
+	ffmpeg_options = traits.DelegatesTo('maintab')
+	frame_width = traits.DelegatesTo('maintab')
+	frame_height = traits.DelegatesTo('maintab')
+	dpi = traits.DelegatesTo('maintab')
+	frame_rate = traits.DelegatesTo('maintab')
 
 	def get_animate_functions(self):
 		return tuple(getattr(tab, 'animate') for tab in self.tabs[1:])
@@ -418,14 +418,14 @@ class MovieDialog(support.UtilityWindow):
 			raise RuntimeError('None of the graphs support animation.')
 		return super(MovieDialog, self).run()
 
-	traits_view = View(
-		Group(
-			Item('tabs', style='custom', editor=ListEditor(use_notebook=True, page_name='.label', view='animation_view')),
+	traits_view = traitsui.View(
+		traitsui.Group(
+			traitsui.Item('tabs', style='custom', editor=traitsui.ListEditor(use_notebook=True, page_name='.label', view='animation_view')),
 			show_labels=False,
 		),
 		title='Movie',
 		resizable=False,
 		width=400,
 		kind='livemodal',
-		buttons=OKCancelButtons,
+		buttons=traitsui.OKCancelButtons,
 	)

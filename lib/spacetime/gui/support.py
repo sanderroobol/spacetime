@@ -23,8 +23,8 @@ import numpy
 
 from .. import prefs, util
 
-from enthought.traits.api import *
-from enthought.traits.ui.api import *
+import enthought.traits.api as traits
+import enthought.traits.ui.api as traitsui
 from enthought.pyface.api import ImageResource
 
 import enthought.traits.ui.basic_editor_factory
@@ -37,22 +37,22 @@ def GetIcon(id):
 	return ImageResource(id, search_path=ICON_PATH)
 
 
-class Message(HasTraits):
-	message = Str
-	desc = Str
-	bt = Str
-	title = Str
-	buttons = List([OKButton])
+class Message(traits.HasTraits):
+	message = traits.Str
+	desc = traits.Str
+	bt = traits.Str
+	title = traits.Str
+	buttons = traits.List([traitsui.OKButton])
 
 	def traits_view(self):
 		items = [
-			Item('message', emphasized=True, style='readonly'),
-			Item('desc', style='readonly', editor=TextEditor(multi_line=True)),
+			traitsui.Item('message', emphasized=True, style='readonly'),
+			traitsui.Item('desc', style='readonly', editor=traitsui.TextEditor(multi_line=True)),
 		]
 		if self.bt:
-			items.append(Item('bt', style='custom', width=500, height=200))
-		return View(
-			Group(
+			items.append(traitsui.Item('bt', style='custom', width=500, height=200))
+		return traitsui.View(
+			traitsui.Group(
 				*items, 
 				show_labels=False,
 				padding=5
@@ -131,7 +131,7 @@ class FileEditorImplementation(enthought.traits.ui.wx.file_editor.SimpleEditor):
 				self.update_editor()
 
 
-class FileEditor(enthought.traits.ui.basic_editor_factory.BasicEditorFactory, FileEditor):
+class FileEditor(enthought.traits.ui.basic_editor_factory.BasicEditorFactory, traitsui.FileEditor):
 	klass = FileEditorImplementation
 
 
@@ -143,21 +143,21 @@ class TimeEditorImplementation(enthought.traits.ui.wx.time_editor.SimpleEditor):
 		wx.EVT_TEXT_ENTER(parent, self.control.GetId(), self.time_updated)
 
 
-class TimeEditor(enthought.traits.ui.basic_editor_factory.BasicEditorFactory, TimeEditor):
+class TimeEditor(enthought.traits.ui.basic_editor_factory.BasicEditorFactory, traitsui.TimeEditor):
 	klass = TimeEditorImplementation
 
 
 def FloatEditor(**kwargs):
-	return TextEditor(auto_set=False, enter_set=True, evaluate=float, **kwargs)
+	return traitsui.TextEditor(auto_set=False, enter_set=True, evaluate=float, **kwargs)
 
 
-class AxisLimits(HasTraits):
-	min = Float(0)
-	max = Float(1)
-	auto = Bool(True)
+class AxisLimits(traits.HasTraits):
+	min = traits.Float(0)
+	max = traits.Float(1)
+	auto = traits.Bool(True)
 
-	not_auto = Property(depends_on='auto')
-	auto_list = Property(depends_on='auto')
+	not_auto = traits.Property(depends_on='auto')
+	auto_list = traits.Property(depends_on='auto')
 
 	def _get_not_auto(self):
 		return not self.auto
@@ -174,17 +174,17 @@ class AxisLimits(HasTraits):
 	def __str__(self):
 		return "({0:e}, {1:e}) {2}".format(self.min, self.max, 'auto' if self.auto else 'manual')
 
-	traits_view = View(HGroup(
-		Item('auto_list', style='custom', editor=CheckListEditor(values=['Auto'])),
-		Item('min', enabled_when='not_auto', editor=FloatEditor()),
-		Item('max', enabled_when='not_auto', editor=FloatEditor()),
+	traits_view = traitsui.View(traitsui.HGroup(
+		traitsui.Item('auto_list', style='custom', editor=traitsui.CheckListEditor(values=['Auto'])),
+		traitsui.Item('min', enabled_when='not_auto', editor=FloatEditor()),
+		traitsui.Item('max', enabled_when='not_auto', editor=FloatEditor()),
 		show_labels=False,
 	))
 
 
 class LogAxisLimits(AxisLimits):
-	scale = Enum('linear', 'log')
-	log = Property(depends_on='scale')
+	scale = traits.Enum('linear', 'log')
+	log = traits.Property(depends_on='scale')
 
 	def _get_log(self):
 		return self.scale == 'log'
@@ -198,22 +198,22 @@ class LogAxisLimits(AxisLimits):
 	def __str__(self):
 		return "({0:e}, {1:e}) {2} {3}".format(self.min, self.max, self.scale, 'auto' if self.auto else 'manual')
 
-	traits_view = View(HGroup(
-		Item('auto_list', style='custom', editor=CheckListEditor(values=['Auto'])),
-		Item('min', enabled_when='not_auto', editor=FloatEditor()),
-		Item('max', enabled_when='not_auto', editor=FloatEditor()),
-		Item('scale'),
+	traits_view = traitsui.View(traitsui.HGroup(
+		traitsui.Item('auto_list', style='custom', editor=traitsui.CheckListEditor(values=['Auto'])),
+		traitsui.Item('min', enabled_when='not_auto', editor=FloatEditor()),
+		traitsui.Item('max', enabled_when='not_auto', editor=FloatEditor()),
+		traitsui.Item('scale'),
 		show_labels=False,
 	))
 
 
-class DateTimeSelector(HasTraits):
-	date = Date(datetime.date.today())
-	time = Time(datetime.time())
-	datetime = Property(depends_on='date, time')
-	mpldt = Property(depends_on='datetime')
+class DateTimeSelector(traits.HasTraits):
+	date = traits.Date(datetime.date.today())
+	time = traits.Time(datetime.time())
+	datetime = traits.Property(depends_on='date, time')
+	mpldt = traits.Property(depends_on='datetime')
 
-	@cached_property
+	@traits.cached_property
 	def _get_datetime(self):
 		return util.localtz.localize(datetime.datetime.combine(self.date, self.time))
 
@@ -221,7 +221,7 @@ class DateTimeSelector(HasTraits):
 		self.date = dt.date()
 		self.time = dt.time()
 
-	@cached_property
+	@traits.cached_property
 	def _get_mpldt(self):
 		return util.mpldtfromdatetime(self.datetime)
 
@@ -231,34 +231,34 @@ class DateTimeSelector(HasTraits):
 	def __str__(self):
 		return self.datetime.strftime('%Y-%m-%d %H:%M:%S.%f')
 
-	traits_view = View(
-		HGroup(
-			Item('time', editor=TimeEditor()),
-			Item('date'),
+	traits_view = traitsui.View(
+		traitsui.HGroup(
+			traitsui.Item('time', editor=traitsui.TimeEditor()),
+			traitsui.Item('date'),
 			show_labels=False,
 	))
 
 
-class DateTimeLimits(HasTraits):
-	min = Instance(DateTimeSelector, args=())
-	max = Instance(DateTimeSelector, args=())	
-	min_mpldt = DelegatesTo('min', 'mpldt')
-	max_mpldt = DelegatesTo('max', 'mpldt')
-	auto = Bool(True)
-	not_auto = Property(depends_on='auto')
+class DateTimeLimits(traits.HasTraits):
+	min = traits.Instance(DateTimeSelector, args=())
+	max = traits.Instance(DateTimeSelector, args=())	
+	min_mpldt = traits.DelegatesTo('min', 'mpldt')
+	max_mpldt = traits.DelegatesTo('max', 'mpldt')
+	auto = traits.Bool(True)
+	not_auto = traits.Property(depends_on='auto')
 
 	def _get_not_auto(self):
 		return not self.auto
 
-	traits_view = View(
-		Item('auto', label='Auto'),
-		Item('min', label='Min', style='custom', enabled_when='not_auto'),
-		Item('max', label='Max', style='custom', enabled_when='not_auto'),
+	traits_view = traitsui.View(
+		traitsui.Item('auto', label='Auto'),
+		traitsui.Item('min', label='Min', style='custom', enabled_when='not_auto'),
+		traitsui.Item('max', label='Max', style='custom', enabled_when='not_auto'),
 	)
 
 
-class UtilityWindow(HasTraits):
-	context = Instance(HasTraits)
+class UtilityWindow(traits.HasTraits):
+	context = traits.Instance(traits.HasTraits)
 
 	def run(self):
 		return self.edit_traits(parent=self.context.uiparent)
@@ -278,7 +278,7 @@ class PersistantGeometryWindow(UtilityWindow):
 		return ui
 
 
-class PersistantGeometryHandler(Handler):
+class PersistantGeometryHandler(traitsui.Handler):
 	def close(self, info, is_ok=None):
 		window = info.ui.context['object']
 		if window.prefs_id:
@@ -290,8 +290,8 @@ def PanelView(*args, **kwargs):
 	if 'handler' in kwargs:
 		newkwargs = kwargs.copy()
 		del newkwargs['handler']
-		return View(Group(*args, layout='normal', scrollable=True, **newkwargs), handler=kwargs['handler'])
-	return View(Group(*args, layout='normal', scrollable=True, **kwargs))
+		return traitsui.View(traitsui.Group(*args, layout='normal', scrollable=True, **newkwargs), handler=kwargs['handler'])
+	return traitsui.View(traitsui.Group(*args, layout='normal', scrollable=True, **kwargs))
 
 
 def EnumMapping(items):
