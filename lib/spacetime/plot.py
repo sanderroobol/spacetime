@@ -140,6 +140,10 @@ class Plot(object):
 	subplots = []
 	master_axes = None
 
+	rezero = False
+	rezero_unit = 1.
+	rezero_offset = 0.
+
 	def __init__(self, figure):
 		self.figure = figure
 		self.markers = Markers(self)
@@ -238,23 +242,25 @@ class Plot(object):
 			p.draw()
 
 	def setup_xaxis_labels(self, axes):
-		axes.xaxis_date(tz=util.localtz)
-		
-		# Timezone support is not working properly with xaxis_date(), so override manually
-		locator = matplotlib.dates.AutoDateLocator(tz=util.localtz)
-		axes.xaxis.set_major_locator(locator)
-		axes.xaxis.set_major_formatter(matplotlib.dates.AutoDateFormatter(locator, tz=util.localtz))
+		if not self.rezero:
+			axes.xaxis_date(tz=util.localtz)
+			
+			# Timezone support is not working properly with xaxis_date(), so override manually
+			locator = matplotlib.dates.AutoDateLocator(tz=util.localtz)
+			axes.xaxis.set_major_locator(locator)
+			axes.xaxis.set_major_formatter(matplotlib.dates.AutoDateFormatter(locator, tz=util.localtz))
 
 		if hasattr(axes, 'is_last_row') and axes.is_last_row():
-			for label in axes.get_xticklabels():
-				label.set_ha('right')
-				label.set_rotation(30)
+			if not self.rezero:
+				for label in axes.get_xticklabels():
+					label.set_ha('right')
+					label.set_rotation(30)
 		else:
 			for label in axes.get_xticklabels():
 				label.set_visible(False)
 
 	def shared_xlim_callback(self, ax):
-		self.shared_xmin, self.shared_xmax = ax.get_xlim()
+		self.shared_xmin, self.shared_xmax = self.get_ax_limits(ax)
 		if self.shared_xlim_callback_ext:
 			self.shared_xlim_callback_ext(ax)
 
@@ -286,7 +292,7 @@ class Plot(object):
 		self.shared_xauto = auto
 		self.shared_xlim_rescale()
 		if self.master_axes:
-			return self.master_axes.get_xlim()
+			return self.get_ax_limits(self.master_axes)
 		else:
 			return self.shared_xmin, self.shared_xmax
 
@@ -296,7 +302,7 @@ class Plot(object):
 		if self.shared_xauto:
 			self.autoscale_shared_x()
 		else:
-			self.master_axes.set_xlim(self.shared_xmin, self.shared_xmax)
+			self.master_axes.set_xlim(self.correct_time(self.shared_xmin), self.correct_time(self.shared_xmax))
 			
 	def autoscale_shared_x(self):
 		# NOTE: this is a workaround for matplotlib's internal autoscaling routines. 
@@ -309,3 +315,18 @@ class Plot(object):
 			x0, x1 = bb.intervalx
 			XL = self.master_axes.xaxis.get_major_locator().view_limits(x0, x1)
 			self.master_axes.set_xlim(XL)
+
+	def set_rezero_opts(self, enable, unit, offset):
+		self.rezero = enable
+		self.rezero_unit = unit
+		self.rezero_offset = offset
+
+	def correct_time(self, value):
+		return (value - self.rezero_offset) * self.rezero_unit 
+
+	def correct_time_inverse(self, value):
+		return value / self.rezero_unit + self.rezero_offset
+
+	def get_ax_limits(self, ax):
+		low, up = ax.get_xlim()
+		return self.correct_time_inverse(low), self.correct_time_inverse(up)

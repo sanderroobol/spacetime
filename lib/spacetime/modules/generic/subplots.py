@@ -51,7 +51,7 @@ class Subplot(object):
 
 	def setup(self):
 		# what could possibly go wrong? a lot, but it will do the right thing most of the time
-		if not any(i.independent_x for i in self.get_axes_requirements()):
+		if not self.parent.rezero and not any(i.independent_x for i in self.get_axes_requirements()):
 			self.axes.fmt_xdata = matplotlib.dates.DateFormatter('%Y-%m-%d %H:%M:%S.%f', util.localtz)
 
 	def draw(self):
@@ -93,6 +93,12 @@ class Subplot(object):
 	def adjust_time(self, offset, factor=1.):
 		self.time_offset = offset
 		self.time_factor = factor
+
+	def correct_time(self, value):
+		absolute_time = self.time_factor*value + self.time_offset/86400. # in matplotlib date format
+		if self.parent.rezero:
+			return (absolute_time - self.parent.rezero_offset) * self.parent.rezero_unit
+		return absolute_time
 
 
 class XAxisHandling(object):
@@ -259,7 +265,7 @@ class MultiTrend(YAxisHandling, Subplot):
 		self.axes.callbacks.connect('ylim_changed', self.ylim_callback)
 
 	def get_xdata(self, chandata):
-		return self.time_factor*chandata.time + self.time_offset/86400.
+		return self.correct_time(chandata.time)
 
 	def get_ydata(self, chandata):
 		return chandata.value
@@ -419,8 +425,8 @@ class Time2D(YAxisHandling, ImageBase):
 			return
 
 		for image in self.data.iterimages():
-			tstart = self.time_factor * image.tstart + self.time_offset / 86400.
-			tend = self.time_factor * image.tend + self.time_offset / 86400.
+			tstart = self.correct_time(image.tstart)
+			tend = self.correct_time(image.tend)
 			self.axes.imshow(self.get_imdata(image), 
 				origin='lower', extent=(tstart, tend, image.ybottom, image.ytop), aspect='auto',
 				cmap=self.colormap, interpolation=self.interpolation, norm=self.get_clim_norm()
@@ -478,11 +484,11 @@ class Image(ImageBase):
 			# map the linenunumber to the time axis and the individual points to some arbitrary unit axis
 			# transpose the image data to plot scanlines vertical
 			ysize, xsize = d.image.shape[:2] # support NxM 'greyscale' images, NxMx3 RGB, and NxMx4 RGBA
-			tstart = self.time_factor * d.tstart + self.time_offset / 86400.
+			tstart = self.correct_time(d.tstart)
 			if d.tend is None:
 				tend = None
 			else:
-				tend = self.time_factor * d.tend + self.time_offset / 86400.
+				tend = self.correct_time(d.tend)
 
 			if self.mode == 'single frame':
 				# somehow, origin=upper is not respected here for imshow, fix manually

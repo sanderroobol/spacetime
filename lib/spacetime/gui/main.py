@@ -52,10 +52,16 @@ class MainTab(modules.generic.gui.SerializableTab):
 	xmin_mpldt = DelegatesTo('xlimits', 'min_mpldt')
 	xmax_mpldt = DelegatesTo('xlimits', 'max_mpldt')
 
+	x_rezero = Bool(False)
+	x_auto_origin = Button()
+	x_origin = Instance(support.DateTimeSelector, args=())
+	x_origin_mpldt = DelegatesTo('x_origin', 'mpldt')
+	x_unit = Enum(86400., 1440., 24., 1.)
+
 	label = 'Main'
 	status = Str('')
 
-	traits_saved = 'version', 'xmin_mpldt', 'xmax_mpldt', 'xauto'
+	traits_saved = 'version', 'xmin_mpldt', 'xmax_mpldt', 'xauto', 'x_rezero', 'x_origin_mpldt', 'x_unit'
 
 	def _get_version(self):
 		return version.version
@@ -65,7 +71,7 @@ class MainTab(modules.generic.gui.SerializableTab):
 
 	def xlim_callback(self, ax):
 		with self.context.callbacks.avoid(self.xlimits):
-			self.xmin_mpldt, self.xmax_mpldt = ax.get_xlim()
+			self.xmin_mpldt, self.xmax_mpldt = self.context.plot.get_ax_limits(ax)
 		if not self.context.callbacks.is_avoiding(self.xlimits):
 			self.xauto = False
 		logger.info('%s.xlim_callback: (%s, %s) %s', self.__class__.__name__, self.xlimits.min, self.xlimits.max, 'auto' if self.xauto else 'manual')
@@ -80,12 +86,30 @@ class MainTab(modules.generic.gui.SerializableTab):
 	def reset_autoscale(self):
 		self.xauto = True
 
+	@on_trait_change('x_rezero, x_origin_mpldt, x_unit')
+	def x_rezero_changed(self):
+		if not self.context.callbacks.is_avoiding(self.xlimits):
+			self.context.plot.set_rezero_opts(self.x_rezero, self.x_unit, self.x_origin.mpldt)
+			self.context.canvas.rebuild()
+
+	def _x_auto_origin_fired(self):
+		self.x_origin.mpldt = self.xmin_mpldt
+
 	traits_view = View(Group(
 		Group(
 			Item('xlimits', style='custom'),
 			show_labels=False,
 			label='Time axis limits',
 			show_border=True,
+		),
+		Group(
+			Item('x_rezero', label='Relative time'),
+			Item('x_origin', label='Origin', enabled_when='x_rezero', style='custom'),
+			Item('x_auto_origin', show_label=False, label='Auto origin', enabled_when='x_rezero'),
+			Item('x_unit', label='Unit', enabled_when='x_rezero', editor=EnumEditor(values=support.EnumMapping(((86400., 'seconds'), (1440., 'minutes'), (24., 'hours'), (1., 'days')
+)))),
+			show_border=True,
+			label='Rezero x-axis',
 		),
 		layout='normal',
 	))
