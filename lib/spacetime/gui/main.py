@@ -25,8 +25,9 @@ from .. import plot, modules, version, prefs, util, pypymanager
 from ..modules import loader
 from . import support, windows
 
-from enthought.traits.api import *
-from enthought.traits.ui.api import *
+import enthought.traits.api as traits
+import enthought.traits.ui.api as traitsui
+
 from enthought.pyface.api import ProgressDialog
 import matplotlib.figure
 from matplotlib.backends.backend_agg import FigureCanvasAgg
@@ -44,22 +45,22 @@ logger = logging.getLogger(__name__)
 
 
 class MainTab(modules.generic.gui.SerializableTab):
-	version = Property()
+	version = traits.Property()
 	# the combination of an InstanceEditor with DelegatedTo traits and trait_set(trait_change_notify=False)
 	# seems to be special: the GUI will be updated but no event handlers will be called
-	xlimits = Instance(support.DateTimeLimits, args=())
-	xauto = DelegatesTo('xlimits', 'auto')
-	xmin_mpldt = DelegatesTo('xlimits', 'min_mpldt')
-	xmax_mpldt = DelegatesTo('xlimits', 'max_mpldt')
+	xlimits = traits.Instance(support.DateTimeLimits, args=())
+	xauto = traits.DelegatesTo('xlimits', 'auto')
+	xmin_mpldt = traits.DelegatesTo('xlimits', 'min_mpldt')
+	xmax_mpldt = traits.DelegatesTo('xlimits', 'max_mpldt')
 
-	x_rezero = Bool(False)
-	x_auto_origin = Button()
-	x_origin = Instance(support.DateTimeSelector, args=())
-	x_origin_mpldt = DelegatesTo('x_origin', 'mpldt')
-	x_unit = Enum(86400., 1440., 24., 1.)
+	x_rezero = traits.Bool(False)
+	x_auto_origin = traits.Button()
+	x_origin = traits.Instance(support.DateTimeSelector, args=())
+	x_origin_mpldt = traits.DelegatesTo('x_origin', 'mpldt')
+	x_unit = traits.Enum(86400., 1440., 24., 1.)
 
 	label = 'Main'
-	status = Str('')
+	status = traits.Str('')
 
 	traits_saved = 'version', 'xmin_mpldt', 'xmax_mpldt', 'xauto', 'x_rezero', 'x_origin_mpldt', 'x_unit'
 
@@ -76,7 +77,7 @@ class MainTab(modules.generic.gui.SerializableTab):
 			self.xauto = False
 		logger.info('%s.xlim_callback: (%s, %s) %s', self.__class__.__name__, self.xlimits.min, self.xlimits.max, 'auto' if self.xauto else 'manual')
 
-	@on_trait_change('xmin_mpldt, xmax_mpldt, xauto')
+	@traits.on_trait_change('xmin_mpldt, xmax_mpldt, xauto')
 	@CallbackLoopManager.decorator('xlimits')
 	def xlim_changed(self):
 		logger.info('%s.xlim_changed: (%s, %s) %s', self.__class__.__name__, self.xlimits.min, self.xlimits.max, 'auto' if self.xauto else 'manual')
@@ -86,7 +87,7 @@ class MainTab(modules.generic.gui.SerializableTab):
 	def reset_autoscale(self):
 		self.xauto = True
 
-	@on_trait_change('x_rezero, x_origin_mpldt, x_unit')
+	@traits.on_trait_change('x_rezero, x_origin_mpldt, x_unit')
 	def x_rezero_changed(self):
 		if not self.context.callbacks.is_avoiding(self.xlimits):
 			self.context.plot.set_rezero_opts(self.x_rezero, self.x_unit, self.x_origin.mpldt)
@@ -95,18 +96,18 @@ class MainTab(modules.generic.gui.SerializableTab):
 	def _x_auto_origin_fired(self):
 		self.x_origin.mpldt = self.xmin_mpldt
 
-	traits_view = View(Group(
-		Group(
-			Item('xlimits', style='custom'),
+	traits_view = traitsui.View(traitsui.Group(
+		traitsui.Group(
+			traitsui.Item('xlimits', style='custom'),
 			show_labels=False,
 			label='Time axis limits',
 			show_border=True,
 		),
-		Group(
-			Item('x_rezero', label='Relative time'),
-			Item('x_origin', label='Origin', enabled_when='x_rezero', style='custom'),
-			Item('x_auto_origin', show_label=False, label='Auto origin', enabled_when='x_rezero'),
-			Item('x_unit', label='Unit', enabled_when='x_rezero', editor=EnumEditor(values=support.EnumMapping(((86400., 'seconds'), (1440., 'minutes'), (24., 'hours'), (1., 'days')
+		traitsui.Group(
+			traitsui.Item('x_rezero', label='Relative time'),
+			traitsui.Item('x_origin', label='Origin', enabled_when='x_rezero', style='custom'),
+			traitsui.Item('x_auto_origin', show_label=False, label='Auto origin', enabled_when='x_rezero'),
+			traitsui.Item('x_unit', label='Unit', enabled_when='x_rezero', editor=traitsui.EnumEditor(values=support.EnumMapping(((86400., 'seconds'), (1440., 'minutes'), (24., 'hours'), (1., 'days')
 )))),
 			show_border=True,
 			label='Rezero x-axis',
@@ -115,7 +116,7 @@ class MainTab(modules.generic.gui.SerializableTab):
 	))
 
 
-class MainWindowHandler(Handler):
+class MainWindowHandler(traitsui.Handler):
 	def do_new(self, info):
 		if not self.close_project(info):
 			return False
@@ -408,45 +409,45 @@ class MainWindowHandler(Handler):
 
 
 
-class Frame(HasTraits):
+class Frame(traits.HasTraits):
 	pass
 
 
 class SplitFrame(Frame):
-	app = Instance(HasTraits)
-	figure = Instance(matplotlib.figure.Figure, args=())
-	tabs = DelegatesTo('app')
-	status = DelegatesTo('app')
+	app = traits.Instance(traits.HasTraits)
+	figure = traits.Instance(matplotlib.figure.Figure, args=())
+	tabs = traits.DelegatesTo('app')
+	status = traits.DelegatesTo('app')
 
-	traits_view = View(
-		HSplit(
-			Item('figure', width=600, editor=MPLFigureEditor(status='status'), dock='vertical'),
-			Item('tabs', style='custom', editor=ListEditor(use_notebook=True, page_name='.label')),
+	traits_view = traitsui.View(
+		traitsui.HSplit(
+			traitsui.Item('figure', width=600, editor=MPLFigureEditor(status='status'), dock='vertical'),
+			traitsui.Item('tabs', style='custom', editor=traitsui.ListEditor(use_notebook=True, page_name='.label')),
 			show_labels=False,
 		)
 	)
 
 
 class SimpleFrame(Frame):
-	app = Instance(HasTraits)
-	tabs = DelegatesTo('app')
+	app = traits.Instance(traits.HasTraits)
+	tabs = traits.DelegatesTo('app')
 
-	traits_view = View(
-		Group(
-			Item('tabs', style='custom', editor=ListEditor(use_notebook=True, page_name='.label')),
+	traits_view = traitsui.View(
+		traitsui.Group(
+			traitsui.Item('tabs', style='custom', editor=traitsui.ListEditor(use_notebook=True, page_name='.label')),
 			show_labels=False,
 		)
 	)
 
 
-class Context(HasTraits):
-	app = Instance(HasTraits)
-#	document = Instance(Any)
-	plot = Instance(plot.Plot)
-	canvas = Instance(DrawManager)
-	callbacks = Instance(CallbackLoopManager, args=())
-	prefs = Instance(prefs.Storage)
-	uiparent = Any
+class Context(traits.HasTraits):
+	app = traits.Instance(traits.HasTraits)
+#	document = traits.Instance(Any)
+	plot = traits.Instance(plot.Plot)
+	canvas = traits.Instance(DrawManager)
+	callbacks = traits.Instance(CallbackLoopManager, args=())
+	prefs = traits.Instance(prefs.Storage)
+	uiparent = traits.Any
 
 	def fork(self, **kwargs):
 		clone = copy.copy(self)
@@ -454,29 +455,29 @@ class Context(HasTraits):
 		return clone
 
 
-class App(HasTraits):
-	plot = Instance(plot.Plot)
-	maintab = Instance(MainTab)
-	status = DelegatesTo('maintab')
-	drawmgr = Instance(DrawManager)
-	moduleloader = Instance(modules.loader.Loader, args=())
-	frame = Instance(Frame)
+class App(traits.HasTraits):
+	plot = traits.Instance(plot.Plot)
+	maintab = traits.Instance(MainTab)
+	status = traits.DelegatesTo('maintab')
+	drawmgr = traits.Instance(DrawManager)
+	moduleloader = traits.Instance(modules.loader.Loader, args=())
+	frame = traits.Instance(Frame)
 	figurewindowui = None
-	figure_fullscreen = Bool(False)
-	prefs = Instance(prefs.Storage, args=())
+	figure_fullscreen = traits.Bool(False)
+	prefs = traits.Instance(prefs.Storage, args=())
 
-	context = Instance(Context)
+	context = traits.Instance(Context)
 
-	pan_checked = Bool(False)
-	zoom_checked = Bool(False)
-	presentation_mode = Bool(False)
+	pan_checked = traits.Bool(False)
+	zoom_checked = traits.Bool(False)
+	presentation_mode = traits.Bool(False)
 
-	project_path = Str()
-	project_filename = Property(depends_on='project_path')
-	_tabs_modified = Bool(False)
-	project_modified = Property(depends_on='_tabs_modified, tabs._modified')
+	project_path = traits.Str()
+	project_filename = traits.Property(depends_on='project_path')
+	_tabs_modified = traits.Bool(False)
+	project_modified = traits.Property(depends_on='_tabs_modified, tabs._modified')
 
-	tabs = List(Instance(modules.generic.gui.Tab))
+	tabs = traits.List(traits.Instance(modules.generic.gui.Tab))
 
 	def on_figure_resize(self, event):
 		logger.info('on_figure_resize called')
@@ -523,13 +524,13 @@ class App(HasTraits):
 	def _tabs_default(self):
 		return [self.maintab]
 
-	@cached_property
+	@traits.cached_property
 	def _get_project_filename(self):
 		if not self.project_path:
 			return ''
 		return os.path.basename(self.project_path)
 
-	@cached_property
+	@traits.cached_property
 	def _get_project_modified(self):
 		return self._tabs_modified or True in set(tab._modified for tab in self.tabs)
 
@@ -573,7 +574,7 @@ class App(HasTraits):
 		self.clear_project_modified()
 		return True
 
-	@on_trait_change('project_modified')
+	@traits.on_trait_change('project_modified')
 	def update_title(self):
 		if self.project_filename:
 			self.ui.title = '{0} - {1}{2}'.format(version.name, self.project_filename, '*' if self.project_modified else '')
@@ -682,82 +683,82 @@ class App(HasTraits):
 			first.Enable(False)
 
 
-	menubar =  MenuBar(
-		Menu(
-			Separator(),
-			Action(name='&New', action='do_new', accelerator='Ctrl+N', image=support.GetIcon('new')),
-			Action(name='&Open...', action='do_open', accelerator='Ctrl+O', image=support.GetIcon('open')),
-			Menu(
+	menubar =  traitsui.MenuBar(
+		traitsui.Menu(
+			traitsui.Separator(),
+			traitsui.Action(name='&New', action='do_new', accelerator='Ctrl+N', image=support.GetIcon('new')),
+			traitsui.Action(name='&Open...', action='do_open', accelerator='Ctrl+O', image=support.GetIcon('open')),
+			traitsui.Menu(
 				name='Open &recent',
-				*[Action(name='recent {0}'.format(i), action='do_open_recent_{0}'.format(i)) for i in range(10)]
+				*[traitsui.Action(name='recent {0}'.format(i), action='do_open_recent_{0}'.format(i)) for i in range(10)]
 			),
-			Separator(),
-			Action(name='&Save', action='do_save', accelerator='Ctrl+S', image=support.GetIcon('save')),
-			Action(name='Save &as...', action='do_save_as', accelerator='Shift+Ctrl+S', image=support.GetIcon('save')),
-			Separator(),
-			Action(name='&Quit', action='_on_close', accelerator='Ctrl+Q', image=support.GetIcon('close')),
+			traitsui.Separator(),
+			traitsui.Action(name='&Save', action='do_save', accelerator='Ctrl+S', image=support.GetIcon('save')),
+			traitsui.Action(name='Save &as...', action='do_save_as', accelerator='Shift+Ctrl+S', image=support.GetIcon('save')),
+			traitsui.Separator(),
+			traitsui.Action(name='&Quit', action='_on_close', accelerator='Ctrl+Q', image=support.GetIcon('close')),
 			name='&File',
 		),
-		Menu(
-			Action(name='&Add...', action='do_add', accelerator='Ctrl+A', image=support.GetIcon('add')),
-			Action(name='&Manage...', action='do_graphmanager', image=support.GetIcon('manage')),
+		traitsui.Menu(
+			traitsui.Action(name='&Add...', action='do_add', accelerator='Ctrl+A', image=support.GetIcon('add')),
+			traitsui.Action(name='&Manage...', action='do_graphmanager', image=support.GetIcon('manage')),
 			name='&Graphs',
 		),
-		Menu(
+		traitsui.Menu(
 			'zoom',
-				Action(name='Zoom to &fit', action='do_fit', image=support.GetIcon('fit')),
+				traitsui.Action(name='Zoom to &fit', action='do_fit', image=support.GetIcon('fit')),
 				# checked items cannot have icons
-				Action(name='&Zoom rectangle', action='do_zoom', checked_when='zoom_checked', style='toggle'),
-				Action(name='&Pan', action='do_pan', checked_when='pan_checked', style='toggle'),
+				traitsui.Action(name='&Zoom rectangle', action='do_zoom', checked_when='zoom_checked', style='toggle'),
+				traitsui.Action(name='&Pan', action='do_pan', checked_when='pan_checked', style='toggle'),
 			'presentation mode',
-				Action(name='Presentation &mode', action='do_presentation_mode', checked_when='presentation_mode', style='toggle'),
-				Action(name='Full &screen', action='do_fullscreen', enabled_when='presentation_mode', style='toggle', checked_when='figure_fullscreen', accelerator='F11'),
+				traitsui.Action(name='Presentation &mode', action='do_presentation_mode', checked_when='presentation_mode', style='toggle'),
+				traitsui.Action(name='Full &screen', action='do_fullscreen', enabled_when='presentation_mode', style='toggle', checked_when='figure_fullscreen', accelerator='F11'),
 			name='&View',
 		),
-		Menu(
+		traitsui.Menu(
 			'export',
-				Action(name='&Export image...', action='do_export', accelerator='Ctrl+E', image=support.GetIcon('export')),
-				Action(name='&Export movie...', action='do_movie', accelerator='Ctrl+M', image=support.GetIcon('movie')),
+				traitsui.Action(name='&Export image...', action='do_export', accelerator='Ctrl+E', image=support.GetIcon('export')),
+				traitsui.Action(name='&Export movie...', action='do_movie', accelerator='Ctrl+M', image=support.GetIcon('movie')),
 			'python',
-				Action(name='&Python console...', action='do_python', image=support.GetIcon('python')),
+				traitsui.Action(name='&Python console...', action='do_python', image=support.GetIcon('python')),
 			name='&Tools',
 		),
-		Menu(
-			Action(name='&About...', action='do_about', image=support.GetIcon('about')),
+		traitsui.Menu(
+			traitsui.Action(name='&About...', action='do_about', image=support.GetIcon('about')),
 			name='&Help',
 		)
 	)
 
-	main_toolbar = ToolBar(
+	main_toolbar = traitsui.ToolBar(
 		'main',
-			Action(name='New', action='do_new', tooltip='New project', image=support.GetIcon('new')),
-			Action(name='Open', action='do_open', tooltip='Open project', image=support.GetIcon('open')),
-			Action(name='Save', action='do_save', tooltip='Save project', image=support.GetIcon('save')),
+			traitsui.Action(name='New', action='do_new', tooltip='New project', image=support.GetIcon('new')),
+			traitsui.Action(name='Open', action='do_open', tooltip='Open project', image=support.GetIcon('open')),
+			traitsui.Action(name='Save', action='do_save', tooltip='Save project', image=support.GetIcon('save')),
 		'graphs',
-			Action(name='Add', action='do_add', tooltip='Add graph', image=support.GetIcon('add')),
-			Action(name='Manage', action='do_graphmanager', tooltip='Graph manager', image=support.GetIcon('manage')),
+			traitsui.Action(name='Add', action='do_add', tooltip='Add graph', image=support.GetIcon('add')),
+			traitsui.Action(name='Manage', action='do_graphmanager', tooltip='Graph manager', image=support.GetIcon('manage')),
 		'view',
-			Action(name='Fit', action='do_fit', tooltip='Zoom to fit', image=support.GetIcon('fit')),
-			Action(name='Zoom', action='do_zoom', tooltip='Zoom rectangle', image=support.GetIcon('zoom'), checked_when='zoom_checked', style='toggle'),
-			Action(name='Pan', action='do_pan', tooltip='Pan', image=support.GetIcon('pan'), checked_when='pan_checked', style='toggle'),
+			traitsui.Action(name='Fit', action='do_fit', tooltip='Zoom to fit', image=support.GetIcon('fit')),
+			traitsui.Action(name='Zoom', action='do_zoom', tooltip='Zoom rectangle', image=support.GetIcon('zoom'), checked_when='zoom_checked', style='toggle'),
+			traitsui.Action(name='Pan', action='do_pan', tooltip='Pan', image=support.GetIcon('pan'), checked_when='pan_checked', style='toggle'),
 		'export',
-			Action(name='Export image', action='do_export', tooltip='Export image', image=support.GetIcon('export')),
-			Action(name='Export movie', action='do_movie', tooltip='Export movie', image=support.GetIcon('movie')),
+			traitsui.Action(name='Export image', action='do_export', tooltip='Export image', image=support.GetIcon('export')),
+			traitsui.Action(name='Export movie', action='do_movie', tooltip='Export movie', image=support.GetIcon('movie')),
 		'python', 
-			Action(name='Python', action='do_python', tooltip='Python console', image=support.GetIcon('python')),
+			traitsui.Action(name='Python', action='do_python', tooltip='Python console', image=support.GetIcon('python')),
 		'about',
-			Action(name='About', action='do_about', tooltip='About', image=support.GetIcon('about')),
+			traitsui.Action(name='About', action='do_about', tooltip='About', image=support.GetIcon('about')),
 		show_tool_names=False
 	)
 
-	traits_view = View(
-			Group(
-				Item('frame', style='custom', editor=InstanceEditor()),
+	traits_view = traitsui.View(
+			traitsui.Group(
+				traitsui.Item('frame', style='custom', editor=traitsui.InstanceEditor()),
 				show_labels=False,
 			),
 			resizable=True,
 			height=700, width=1100,
-			buttons=NoButtons,
+			buttons=traitsui.NoButtons,
 			title=version.name,
 			menubar=menubar,
 			toolbar=main_toolbar,
