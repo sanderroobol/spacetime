@@ -117,7 +117,6 @@ class GUIModuleSelector(support.UtilityWindow):
 		buttons=traitsui.OKCancelButtons,
 		kind='livemodal',
 		handler=GUIModuleSelectorHandler(),
-		close_result=False,
 	)
 
 

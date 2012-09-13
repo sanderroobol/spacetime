@@ -32,8 +32,7 @@ logger = logging.getLogger(__name__)
 
 from ... import gui
 
-from . import subplots
-from . import datasources
+from . import subplots, datasources, datasinks
 
 
 class Tab(traits.HasTraits):
@@ -194,6 +193,7 @@ class TimeTrendChannel(traits.HasTraits):
 
 class TimeTrendGUI(SubplotGUI):
 	plotfactory = subplots.MultiTrend
+	sinkfactory = datasinks.MultiTrendTextSink
 	legend = traits.Enum('auto', 'off', 'upper right', 'upper left', 'lower left', 'lower right', 'center left', 'center right', 'lower center', 'upper center', 'center')
 	ylimits = traits.Instance(gui.support.LogAxisLimits, args=())
 	yauto = traits.DelegatesTo('ylimits', 'auto')
@@ -289,6 +289,9 @@ class TimeTrendGUI(SubplotGUI):
 			legend = self.legend
 		self.plot.set_legend(legend)
 		self.redraw()
+
+	def export(self, destdir):
+		return self.sinkfactory().save(self.plot, destdir, self.label)
 
 	def get_general_view_group(self):
 		return traitsui.Group(

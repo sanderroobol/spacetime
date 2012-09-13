@@ -237,7 +237,40 @@ class MainWindowHandler(traitsui.Handler):
 	def do_about(self, info):
 		windows.AboutWindow.run_static(info.ui.context['object'].context)
 
-	def do_export(self, info):
+	def do_export_data(self, info):
+		context = info.ui.context['object'].context
+
+		dlg = wx.FileDialog(
+			info.ui.control,
+			"Export data",
+			context.prefs.get_path('export_data'),
+			"data",
+			"|All files (*.*)|*.*",
+			wx.SAVE
+		)
+
+		if dlg.ShowModal() != wx.ID_OK:
+			return
+
+		context.prefs.set_path('export_data', dlg.GetDirectory())
+		dest = dlg.GetPath()
+
+		try:
+			os.mkdir(dest)
+		except OSError:
+			support.Message.exception(
+				parent=context.uiparent, 
+				message='Export failed', title='Export failed',
+				desc='Cannot create directory {0}'.format(dest),
+			)
+			return
+
+		for tab in context.app.tabs:
+			if hasattr(tab, 'export'):
+				tab.export(dest)
+			
+		
+	def do_export_image(self, info):
 		context = info.ui.context['object'].context
 		mainwindow = context.app
 		
@@ -247,15 +280,15 @@ class MainWindowHandler(traitsui.Handler):
 
 		dlg = wx.FileDialog(
 			info.ui.control,
-			"Export",
-			context.prefs.get_path('export'),
+			"Export image",
+			context.prefs.get_path('export_image'),
 			"image." + exportdialog.extension,
 			exportdialog.wxfilter + "|All files (*.*)|*.*",
 			wx.SAVE|wx.OVERWRITE_PROMPT
 		)
 
 		if dlg.ShowModal() == wx.ID_OK:
-			context.prefs.set_path('export', dlg.GetDirectory())
+			context.prefs.set_path('export_image', dlg.GetDirectory())
 			path = dlg.GetPath()
 			oldfig = context.plot.figure
 			newfig = matplotlib.figure.Figure(exportdialog.figsize, exportdialog.dpi)
@@ -270,7 +303,7 @@ class MainWindowHandler(traitsui.Handler):
 				context.plot.relocate(oldfig)
 				context.app.rebuild_figure()
 
-	def do_movie(self, info):
+	def do_export_movie(self, info):
 		context = info.ui.context['object'].context
 		
 		moviedialog = windows.MovieDialog(context=context)
@@ -284,7 +317,7 @@ class MainWindowHandler(traitsui.Handler):
 		dlg = wx.FileDialog(
 			info.ui.control,
 			"Save movie",
-			context.prefs.get_path('movie'),
+			context.prefs.get_path('export_movie'),
 			"movie." + moviedialog.format,
 			"*.{0}|*.{0}|All files (*.*)|*.*".format(moviedialog.format),
 			wx.SAVE|wx.OVERWRITE_PROMPT
@@ -292,7 +325,7 @@ class MainWindowHandler(traitsui.Handler):
 
 		if dlg.ShowModal() != wx.ID_OK:
 			return
-		context.prefs.set_path('movie', dlg.GetDirectory())
+		context.prefs.set_path('export_movie', dlg.GetDirectory())
 
 		# preparations, no harm is done if something goes wrong here
 		movie = stdout_cb = stdout = None
@@ -717,8 +750,9 @@ class App(traits.HasTraits):
 		),
 		traitsui.Menu(
 			'export',
-				traitsui.Action(name='&Export image...', action='do_export', accelerator='Ctrl+E', image=support.GetIcon('export')),
-				traitsui.Action(name='&Export movie...', action='do_movie', accelerator='Ctrl+M', image=support.GetIcon('movie')),
+				traitsui.Action(name='&Export data...', action='do_export_image', accelerator='Ctrl+D', image=support.GetIcon('export')),
+				traitsui.Action(name='&Export image...', action='do_export_image', accelerator='Ctrl+E', image=support.GetIcon('image')),
+				traitsui.Action(name='&Export movie...', action='do_export_movie', accelerator='Ctrl+M', image=support.GetIcon('movie')),
 			'python',
 				traitsui.Action(name='&Python console...', action='do_python', image=support.GetIcon('python')),
 			name='&Tools',
@@ -742,8 +776,9 @@ class App(traits.HasTraits):
 			traitsui.Action(name='Zoom', action='do_zoom', tooltip='Zoom rectangle', image=support.GetIcon('zoom'), checked_when='zoom_checked', style='toggle'),
 			traitsui.Action(name='Pan', action='do_pan', tooltip='Pan', image=support.GetIcon('pan'), checked_when='pan_checked', style='toggle'),
 		'export',
-			traitsui.Action(name='Export image', action='do_export', tooltip='Export image', image=support.GetIcon('export')),
-			traitsui.Action(name='Export movie', action='do_movie', tooltip='Export movie', image=support.GetIcon('movie')),
+			traitsui.Action(name='Export data', action='do_export_data', tooltip='Export data', image=support.GetIcon('export')),
+			traitsui.Action(name='Export image', action='do_export_image', tooltip='Export image', image=support.GetIcon('image')),
+			traitsui.Action(name='Export movie', action='do_export_movie', tooltip='Export movie', image=support.GetIcon('movie')),
 		'python', 
 			traitsui.Action(name='Python', action='do_python', tooltip='Python console', image=support.GetIcon('python')),
 		'about',
