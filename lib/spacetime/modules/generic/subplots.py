@@ -95,10 +95,10 @@ class Subplot(object):
 		self.time_factor = factor
 
 	def correct_time(self, value):
-		absolute_time = self.time_factor*value + self.time_offset/86400. # in matplotlib date format
 		if self.parent.rezero:
-			return (absolute_time - self.parent.rezero_offset) * self.parent.rezero_unit
-		return absolute_time
+			return (value + self.time_offset/86400. - self.parent.rezero_offset) * self.time_factor * self.parent.rezero_unit
+		else:
+			return self.time_factor*value + self.time_offset/86400.
 
 
 class XAxisHandling(object):
