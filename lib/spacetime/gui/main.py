@@ -584,16 +584,22 @@ class App(traits.HasTraits):
 			if fp.read(15) != 'Spacetime\nJSON\n':
 				raise ValueError('not a valid Spacetime project file')
 			data = json.load(fp)
+
+		progress = ProgressDialog(title="Open", message="Loading project", max=len(data)+1, can_cancel=False, parent=self.context.uiparent)
+		progress.open()
 		with self.context.canvas.hold_delayed():
 			self.tabs[0].from_serialized(data.pop(0)[1])
+			progress.update(1)
 			# FIXME: check version number and emit warning
-			for id, props in data:
+			for p, (id, props) in enumerate(data):
 				try:
 					self.add_tab(self.moduleloader.get_class_by_id(id), props)
 				except KeyError:
 					support.Message.show(title='Warning', message='Warning: incompatible project file', desc='Ignoring unknown graph id "{0}". Project might not be completely functional.'.format(id))
+				progress.update(2+p)
 			self.project_path = path
 			wx.CallAfter(self.clear_project_modified)
+			wx.CallAfter(lambda: progress.update(progress.max), progress.close())
 
 	def save_project(self, path):
 		data = [('general', self.tabs[0].get_serialized())]
