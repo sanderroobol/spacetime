@@ -27,6 +27,14 @@ class DataSink(object):
 
 class MultiTrendTextSink(DataSink):
 	def save(self, plot, destdir, prefix):
-		for i, d in enumerate(plot.data.iterchannels()):
-			path = os.path.join(destdir, '{0} - {1} {2}.txt'.format(prefix, i+1, d.id))
+		channelnamecounts = {}
+		
+		for d in plot.data.iterchannels():
+			if d.id in channelnamecounts:
+				channelnamecounts[d.id] += 1
+				label = '{0} {1}'.format(d.id, channelnamecounts[d.id])
+			else:
+				channelnamecounts[d.id] = 1
+				label = d.id
+			path = os.path.join(destdir, '{0} - {1}.txt'.format(prefix, label))
 			numpy.savetxt(path, numpy.vstack((plot.get_xdata(d), plot.get_ydata(d))).transpose())
