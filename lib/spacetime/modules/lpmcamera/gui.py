@@ -278,6 +278,8 @@ class CameraTrendGUI(DoubleTimeTrendGUI, CameraGUI, XlimitsGUI):
 	@traits.on_trait_change('averaging, lastframe, stepframe, selected_primary_channels, selected_secondary_channels')
 	def settings_changed(self):
 		if not self.data:
+			self.plot.fft = self.fft
+			self.rebuild()
 			return
 		# FIXME: implement a smarter first/last frame selection, don't redraw everything
 		if self.fft:

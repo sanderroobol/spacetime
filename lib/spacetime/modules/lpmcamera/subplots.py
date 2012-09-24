@@ -58,6 +58,8 @@ class CameraTrend(XAxisHandling, DoubleMultiTrend):
 		super(CameraTrend, self).draw()
 		if self.xdata:
 			self.parent.markers.redraw()
+		if self.xdata or self.fft:
+			self.set_xlog()
 
 	def draw_marker(self, marker):
 		if self.fft:

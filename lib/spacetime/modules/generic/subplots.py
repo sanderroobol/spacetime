@@ -141,12 +141,14 @@ class XAxisHandling(object):
 		else:
 			self.axes.set_xlim(self.xlim_min, self.xlim_max)
 
-	def set_xlog(self, xlog):
-		self.xlog = xlog
+	# any class that inherits from XAxisHandling is responsible to call set_xlog() at the end of draw()
+	def set_xlog(self, xlog=None):
+		if xlog is not None:
+			self.xlog = xlog
 		if self.axes:
-			self.axes.set_xscale('log' if xlog else 'linear')
+			self.axes.set_xscale('log' if self.xlog else 'linear')
 		if self.secondaryaxes:
-			self.secondaryaxes.set_xscale('log' if xlog else 'linear')
+			self.secondaryaxes.set_xscale('log' if self.xlog else 'linear')
 
 
 class YAxisHandling(object):
@@ -271,12 +273,11 @@ class MultiTrend(YAxisHandling, Subplot):
 		return chandata.value
 
 	def draw(self):
-		if not self.data:
-			return
-		self.formatter.reset()
-		for d in self.data.iterchannels():
-			self.axes.plot(self.get_xdata(d), self.get_ydata(d), self.formatter(d), label=d.id)
-		self.draw_legend()
+		if self.data:
+			self.formatter.reset()
+			for d in self.data.iterchannels():
+				self.axes.plot(self.get_xdata(d), self.get_ydata(d), self.formatter(d), label=d.id)
+			self.draw_legend()
 		if self.ylog:
 			self.axes.set_yscale('log')
 
@@ -338,8 +339,8 @@ class DoubleMultiTrend(MultiTrend, DoubleYAxisHandling):
 			for d in self.secondarydata.iterchannels():
 				self.secondaryaxes.plot(self.get_xdata(d), self.get_ydata(d), self.formatter(d), label=d.id)
 			self.draw_legend()
-			if self.ylog2:
-				self.secondaryaxes.set_yscale('log')
+		if self.ylog2:
+			self.secondaryaxes.set_yscale('log')
 
 	def get_legend_items(self):
 		# manually join the legends for both y-axes
