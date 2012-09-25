@@ -290,19 +290,11 @@ class ExportDialog(support.UtilityWindow):
 	wxfilters = traits.List(traits.Str)
 
 	dpi = traits.Range(low=1, high=10000000, value=72)
-	rasterize = traits.Property(depends_on='filetype')
 
 	canvas_width = traits.Float(800)
 	canvas_height = traits.Float(600)
 	canvas_unit = traits.Enum('px', 'cm', 'inch')
 	figsize = traits.Property(depends_on='canvas_width, canvas_height, canvas_unit')
-
-	def _get_rasterize(self):
-		ft = self.filetype.lower()
-		for i in ('pdf', 'vector', 'postscript', 'metafile'):
-			if i in ft:
-				return False
-		return True
 
 	def _get_extension(self):
 		return self.extensions[self.filetypes.index(self.filetype)]
@@ -348,7 +340,7 @@ class ExportDialog(support.UtilityWindow):
 
 	traits_view = traitsui.View(
 		traitsui.Item('filetype', editor=traitsui.EnumEditor(name='filetypes')),
-		traitsui.Item('dpi', enabled_when='rasterize'),
+		traitsui.Item('dpi'),
 		traitsui.Group(
 			traitsui.Item('canvas_width', label='Width'),
 			traitsui.Item('canvas_height', label='Height'),
@@ -378,7 +370,7 @@ class MovieDialogMainTab(traits.HasTraits):
 		traitsui.Group(
 			traitsui.Item('frame_width', label='Width'),
 			traitsui.Item('frame_height', label='Height'),
-			traitsui.Item('dpi', enabled_when='rasterize'),
+			traitsui.Item('dpi'),
 			label='Dimensions',
 			show_border=True,
 		),
