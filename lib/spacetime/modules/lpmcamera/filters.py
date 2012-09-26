@@ -21,6 +21,8 @@ from __future__ import division
 import numpy
 import scipy.stats
 
+from camera.formats import raw
+
 
 def bgs_line_by_line(data):
 	new = numpy.zeros(data.shape)
@@ -88,3 +90,47 @@ def average(npoints):
 		data.time = numpy.array(map(numpy.mean, numpy.array_split(data.time, numpy.ceil(data.time.size/npoints))))
 		return data
 	return avgn
+
+
+def merge_directions(lrdata, rldata):
+	if lrdata.shape != rldata.shape:
+		raise ValueError('L2R and R2L arrays have different shape')
+	ret = numpy.zeros((lrdata.shape[0], lrdata.shape[1]*2))
+	ret[:, 0:lrdata.shape[1]] = lrdata
+	ret[:, lrdata.shape[1]:] = rldata[:, ::-1]
+	return ret
+
+def split_directions(data):
+	lr = data[:, 0:(data.shape[1] // 2)]
+	rl = data[:, :(data.shape[1] // 2)-1:-1]
+	return lr, rl
+
+def code2func(expr, preexec, variable='x'):
+	def filter(x):
+		env = {variable: x}
+		exec preexec in env
+		return eval(expr, env)
+	return filter
+
+def fourier(filter):
+	def fourierfilter(frame):
+		if frame.direction == (raw.RawFileChannelInfo.LR | raw.RawFileChannelInfo.RL):
+			data = frame.image
+		else:
+			data = merge_directions(frame.lrimage, frame.rlimage)
+
+		z = scipy.fftpack.fft(data.flatten())
+		freq = scipy.fftpack.fftfreq(z.size, 1/frame.pixelrate)
+		filtered_data = scipy.fftpack.ifft(filter(freq) * z).real.reshape(data.shape)
+		print filtered_data
+
+		frame.lrimage, frame.rlimage = split_directions(filtered_data)
+		if frame.direction == (raw.RawFileChannelInfo.LR | raw.RawFileChannelInfo.RL):
+			frame.image = filtered_data
+		elif frame.direction == raw.RawFileChannelInfo.LR:
+			frame.image = frame.lrimage
+		else:
+			frame.image = frame.rlimage
+	
+		return frame
+	return fourierfilter

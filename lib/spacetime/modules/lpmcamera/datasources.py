@@ -21,10 +21,12 @@ from __future__ import division
 from ..generic.datasources import DataSource, MultiTrend, DataChannel, ImageFrame
 
 import numpy
+import scipy.fftpack
 
 from camera.formats import raw
 
-from ... import util, mathutil
+from ... import util
+from . import filters
 
 # Camera class for image mode and trend mode
 class Camera(MultiTrend):
@@ -38,12 +40,20 @@ class Camera(MultiTrend):
 
 	def getdata(self, channel, frame):
 		ret = ImageFrame()
-		ret.image = self.rawfile.channelImage(frame, channel).asArray(direction=self.direction)
-		ysize, xsize = ret.image.shape
+		ret.lrimage = self.rawfile.channelImage(frame, channel).asArray(direction=raw.RawFileChannelInfo.LR)
+		ret.rlimage = self.rawfile.channelImage(frame, channel).asArray(direction=raw.RawFileChannelInfo.RL)
+		ret.direction = self.direction
+		if self.direction == (raw.RawFileChannelInfo.LR | raw.RawFileChannelInfo.RL):
+			ret.image = filters.merge_directions(ret.lrimage, ret.rlimage)
+		elif self.direction == raw.RawFileChannelInfo.LR:
+			ret.image = ret.lrimage
+		else:
+			ret.image = ret.rlimage
 
 		frameinfo = self.rawfile.frameInfo(frame)
+		ret.pixelrate = frameinfo.pixelclock_kHz * 1000 / frameinfo.samplesPerPoint
 		ret.tstart = util.mpldtfromtimestamp(frameinfo.acquisitionTime)
-		ret.tend = ret.tstart + ret.image.size * 2 / frameinfo.pixelclock_kHz / 1000 * frameinfo.samplesPerPoint / 86400
+		ret.tend = ret.tstart + ret.lrimage.size * 2 / ret.pixelrate / 86400
 		return ret
 
 	def getchanneldata(self, channel, frameiter=None):
@@ -56,30 +66,43 @@ class Camera(MultiTrend):
 			frameinfo = self.rawfile.frameInfo(frameno)
 			tstart = util.mpldtfromtimestamp(frameinfo.acquisitionTime)
 
-			if self.direction == (raw.RawFileChannelInfo.LR | raw.RawFileChannelInfo.RL):
-				lrdata = frame.asArray(direction=raw.RawFileChannelInfo.LR)
-				rldata = frame.asArray(direction=raw.RawFileChannelInfo.RL)
+			# correct for software oversampling: convert from samplerate (incorrectly labeld as pixelclock_kHz) into pixelrate
+			pixelrate = frameinfo.pixelclock_kHz * 1000 / frameinfo.samplesPerPoint
 
-				image = numpy.zeros((lrdata.shape[0], lrdata.shape[1]*2))
-				image[:, 0:lrdata.shape[1]] = lrdata
-				image[:, lrdata.shape[1]:] = rldata[:, ::-1]
-				tend = tstart + image.size / frameinfo.pixelclock_kHz / 1000 * frameinfo.samplesPerPoint / 86400
+			if self.direction == (raw.RawFileChannelInfo.LR | raw.RawFileChannelInfo.RL):
+				image = filters.merge_directions(frame.asArray(direction=raw.RawFileChannelInfo.LR), frame.asArray(direction=raw.RawFileChannelInfo.RL))
+				tend = tstart + image.size / pixelrate / 86400
 			else:
 				image = frame.asArray(direction=self.direction)
-				tend = tstart + image.size * 2 / frameinfo.pixelclock_kHz / 1000 * frameinfo.samplesPerPoint / 86400
+				tend = tstart + image.size * 2 / pixelrate / 86400
+
+			if not self.fft and self.averaging:
+				im = image.mean(axis=1)
+			else:
+				im = image.flatten()
+			data.append(im)
+			time.append(numpy.linspace(tstart, tend, im.size))
+
+		data = numpy.hstack(data)
+		time = numpy.hstack(time)
+
+		# NOTE: the FFT stuff silently assumes that all frames are taken with identical settings
+		if self.fourierfilter or self.fft:
+			z = scipy.fftpack.fft(data)
+			freq = scipy.fftpack.fftfreq(z.size, 1/pixelrate)
+
+			if self.fourierfilter:
+				z *= self.fourierfilter(freq)
 
 			if self.fft:
-				freq, power = mathutil.easyfft(image.flatten(), frameinfo.pixelclock_kHz * 1000 / frameinfo.samplesPerPoint)
-				data.append(power)
-				time.append(freq)
+				power = abs(z / z.size)**2
+				clip = int(numpy.ceil(z.size / 2.))
+				return DataChannel(id=str(channel), value=power[:clip], time=freq[:clip])
 			else:
-				if self.averaging:
-					im = image.mean(axis=1)
-				else:
-					im = image.flatten()
-				data.append(im)
-				time.append(numpy.linspace(tstart, tend, im.size))
-		return DataChannel(id=str(channel), value=numpy.hstack(data), time=numpy.hstack(time))
+				filtered_data = scipy.fftpack.ifft(z)
+				return DataChannel(id=str(channel), value=filtered_data, time=time)
+
+		return DataChannel(id=str(channel), value=data, time=time)
 
 	def getframecount(self):
 		return self.rawfile.header.frameCount

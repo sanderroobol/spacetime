@@ -18,12 +18,56 @@
 
 import enthought.traits.api as traits
 import enthought.traits.ui.api as traitsui
+import numpy
 
 from ..generic.gui import SubplotGUI, DoubleTimeTrendGUI, XlimitsGUI, FalseColorImageGUI
 from ..generic.subplots import Image
 from ...gui import support
 
 from . import datasources, subplots, filters
+
+
+class FourierFilterHandler(traitsui.Handler):
+	def close(self, info, is_ok=None):
+		ff = info.ui.context['object']
+		if not is_ok or not ff.transferfunc:
+			return True
+
+		try:
+			func = filters.code2func(ff.transferfunc, ff.preexec, variable='f')
+			func(numpy.linspace(-100., 100., 100))
+		except:
+			support.Message.exception('The filter function does not evaluate properly.', desc='Check the output below and resolve the problem.', title='Invalid filter', parent=info.ui.control)
+			return False
+		else:
+			return True
+
+
+class FourierFilter(traits.HasTraits):
+	preexec = traits.Str()
+	transferfunc = traits.Str()
+
+	traits_view = traitsui.View(
+		traitsui.VGroup(
+			traitsui.Group(
+				traitsui.Item('transferfunc', style='custom', tooltip="Transfer function of the filter, as a function of frequency 'f'. Must be a single expression. May contain other variables, if they are defined below."),
+				show_border=True,
+				show_labels=False,
+				label='Transfer function',
+			),
+			traitsui.Group(
+				traitsui.Item('preexec', style='custom', tooltip='Any Python code to be executed before evaluating the transfer function. Can be used to define parameters.'),
+				show_border=True,
+				show_labels=False,
+				label='Pre-execution code',
+			),
+		),
+		kind='modal',
+		height=400,
+		width=300,
+		buttons=traitsui.OKCancelButtons,
+		handler=FourierFilterHandler,
+	)
 
 
 class CameraGUI(SubplotGUI):
@@ -35,11 +79,22 @@ class CameraGUI(SubplotGUI):
 	framecount = traits.Int(0)
 	direction = traits.Enum(1, 2)
 
-	traits_saved = 'firstframe', 'lastframe', 'stepframe', 'direction'
+	edit_fourierfilter = traits.Button
+	ff_transfer = traits.Str
+	ff_preexec = traits.Str
+
+	traits_saved = 'firstframe', 'lastframe', 'stepframe', 'direction', 'ff_transfer', 'ff_preexec'
 
 	def _direction_changed(self):
 		self.data.direction = self.direction
 		self.rebuild()
+
+	def _edit_fourierfilter_fired(self):
+		ff = FourierFilter(transferfunc=self.ff_transfer, preexec=self.ff_preexec)
+		if ff.edit_traits().result:
+			self.ff_transfer = ff.transferfunc
+			self.ff_preexec = ff.preexec
+			self.settings_changed()
 
 
 class CameraFrameGUIHandler(traitsui.Handler):
@@ -122,6 +177,8 @@ class CameraFrameGUI(FalseColorImageGUI, CameraGUI):
 		else:
 			# FIXME: implement a smarter first/last frame selection, don't redraw everything
 			data = self.data.selectchannel(self.channel).selectframes(self.firstframe, self.lastframe, self.stepframe)
+		if self.ff_transfer:
+			data = data.apply_filter(filters.fourier(filters.code2func(self.ff_transfer, self.ff_preexec, variable='f')))
 		if self.filter in self.filter_map:
 			data = data.apply_filter(self.filter_map[self.filter])
 		if self.cauto and self.clip > 0:
@@ -172,6 +229,7 @@ class CameraFrameGUI(FalseColorImageGUI, CameraGUI):
 			traitsui.Item('clip', label='Color clipping', enabled_when='cauto', tooltip='When autoscaling, clip colorscale at <number> standard deviations away from the average (0 to disable)', editor=support.FloatEditor()),
 			traitsui.Item('rotate', label='Rotate image', tooltip='Plot scanlines vertically (always enabled in film strip mode)', enabled_when='is_singleframe'),
 			traitsui.Item('filter', label='Filtering', editor=traitsui.EnumEditor(values=support.EnumMapping([('none', 'none')] + [(i, s) for (i, s, f) in filter_list]))),
+			traitsui.Item('edit_fourierfilter', show_label=False, editor=traitsui.ButtonEditor(label='Time-domain filter...')),
 			show_border=True,
 			label='Display',
 		),
@@ -288,6 +346,10 @@ class CameraTrendGUI(DoubleTimeTrendGUI, CameraGUI, XlimitsGUI):
 			data = self.data.selectframes(self.firstframe, self.lastframe, self.stepframe)
 		self.data.averaging = self.averaging
 		self.plot.fft = self.data.fft = self.fft
+		if self.ff_transfer:
+			self.data.fourierfilter = filters.code2func(self.ff_transfer, self.ff_preexec, variable='f')
+		else:
+			self.data.fourierfilter = False
 
 		y1 = data.selectchannels(lambda chan: chan.id in self.selected_primary_channels)
 		y2 = data.selectchannels(lambda chan: chan.id in self.selected_secondary_channels)
@@ -306,6 +368,7 @@ class CameraTrendGUI(DoubleTimeTrendGUI, CameraGUI, XlimitsGUI):
 			traitsui.Item('stepframe', label='Key frame mode', enabled_when='not_fft'),
 			traitsui.Item('direction', editor=traitsui.EnumEditor(values=support.EnumMapping([(1, 'L2R'), (2, 'R2L'), (3, 'both')]))),
 			traitsui.Item('averaging', tooltip='Per-line averaging', enabled_when='not_fft'),
+			traitsui.Item('edit_fourierfilter', show_label=False, editor=traitsui.ButtonEditor(label='Time-domain filter...')),
 			traitsui.Item('legend'),
 			traitsui.Item('size'),
 			show_border=True,
