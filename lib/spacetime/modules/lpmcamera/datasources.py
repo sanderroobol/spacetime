@@ -88,7 +88,12 @@ class Camera(MultiTrend):
 
 		# NOTE: the FFT stuff silently assumes that all frames are taken with identical settings
 		if self.fourierfilter or self.fft:
-			z = scipy.fftpack.fft(data)
+			if self.fourierwindow:
+				window = scipy.signal.get_window(self.fourierwindow, data.size)
+			else:
+				window = 1.
+
+			z = scipy.fftpack.fft(data * window)
 			freq = scipy.fftpack.fftfreq(z.size, 1/pixelrate)
 
 			if self.fourierfilter:
@@ -100,7 +105,7 @@ class Camera(MultiTrend):
 				return DataChannel(id=str(channel), value=power[:clip], time=freq[:clip])
 			else:
 				filtered_data = scipy.fftpack.ifft(z)
-				return DataChannel(id=str(channel), value=filtered_data, time=time)
+				return DataChannel(id=str(channel), value=filtered_data.real, time=time)
 
 		return DataChannel(id=str(channel), value=data, time=time)
 

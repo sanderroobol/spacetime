@@ -112,17 +112,21 @@ def code2func(expr, preexec, variable='x'):
 		return eval(expr, env)
 	return filter
 
-def fourier(filter):
+def fourier(filter, window=None):
 	def fourierfilter(frame):
 		if frame.direction == (raw.RawFileChannelInfo.LR | raw.RawFileChannelInfo.RL):
 			data = frame.image
 		else:
 			data = merge_directions(frame.lrimage, frame.rlimage)
 
-		z = scipy.fftpack.fft(data.flatten())
+		if window:
+			win = scipy.signal.get_window(window, data.size)
+		else:
+			win = 1
+
+		z = scipy.fftpack.fft(data.flatten()*win)
 		freq = scipy.fftpack.fftfreq(z.size, 1/frame.pixelrate)
 		filtered_data = scipy.fftpack.ifft(filter(freq) * z).real.reshape(data.shape)
-		print filtered_data
 
 		frame.lrimage, frame.rlimage = split_directions(filtered_data)
 		if frame.direction == (raw.RawFileChannelInfo.LR | raw.RawFileChannelInfo.RL):
