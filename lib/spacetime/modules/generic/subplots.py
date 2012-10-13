@@ -548,6 +548,6 @@ class Image(ImageBase):
 			else:
 				im.set_data(numpy.rot90(im._A))
 
-	def draw_marker(self, left, right=None):
+	def draw_marker(self, marker):
 		pass
 
