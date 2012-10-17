@@ -104,10 +104,15 @@ class CSVFactory(object):
 	def __init__(self, **props):
 		self.props = props
 
-	def __call__(self, *args, **kwargs):
-		obj = CSV(*args, **kwargs)
-		obj.__dict__.update(self.props)
+	def __call__(self, filename):
+		obj = CSV()
+		obj.set_config(filename, **self.props)
+		obj.load()
 		return obj
+
+
+class CSVFormatError(Exception):
+	pass
 
 
 class CSV(MultiTrend):
@@ -115,9 +120,6 @@ class CSV(MultiTrend):
 	time_type = 'unix'
 	time_strptime = '%Y-%m-%d %H:%M:%S'
 	time_channel_headers = set(['Time'])
-
-	def set_header(self, line):
-		self.channel_labels = line.strip().split('\t')
 
 	def iterchannelnames(self):
 		return iter(self.channel_labels)
@@ -133,7 +135,7 @@ class CSV(MultiTrend):
 		except TypeError:
 			return [self.time_column]
 
-	def parse_time(self, data):
+	def convert_time(self, data):
 		if self.time_type == 'matplotlib':
 			return data
 		elif self.time_type == 'unix':
@@ -142,35 +144,68 @@ class CSV(MultiTrend):
 			# Labview uses the number of seconds since 1-1-1904 00:00:00 UTC.
 			# mpldtfromdatetime(datetime.datetime(1904, 1, 1, 0, 0, 0, tzinfo=pytz.utc)) = 695056
 			return data / 86400. + 695056
-		elif self.time_type == 'strptime':
-			try:
-				return numpy.fromiter((util.mpldtstrptime(i, self.time_strptime) for i in data), dtype=float)
-			except TypeError:
-				return util.mpldtstrptime(data, self.time_strptime)	
+		raise RuntimeError('not reached')
 
 	def get_channel_kwargs(self, label, i):
 		return dict(id=label)
 
-	def verify_data(self, data):
-		pass
+	def verify_data(self):
+		assert len(self.channel_labels) == self.data.shape[1]
 
 	def iterchannels(self):
 		time_columns = list(self.get_time_columns())
 		if time_columns[0] != 0:
-			time = self.parse_time(self.data[:, time_columns[0]])
+			time = self.data[:, time_columns[0]]
 
 		for i, label in enumerate(self.channel_labels):
 			if time_columns and i == time_columns[0]:
-				time = self.parse_time(self.data[:, time_columns.pop(0)])
+				time = self.data[:, time_columns.pop(0)]
 			else:
 				yield DataChannel(time=time, value=self.data[:, i].astype(float), **self.get_channel_kwargs(label, i))
 
-	def __init__(self, *args, **kwargs):
-		super(CSV, self).__init__(*args, **kwargs)
+	def __init__(self):
+		pass
+
+	def set_config(self, filename, delimiter='\t', skip_lines=0, time_type='matplotlib', time_strptime=None, time_column='auto'):
+		self.filename = filename
+		self.delimiter = delimiter
+		self.skip_lines = skip_lines
+		self.time_type = time_type
+		self.time_strptime = time_strptime
+		self.time_column = time_column
+
+	def read_header(self, fp):
+		for i in range(self.skip_lines):
+			fp.readline()
+
+		line = fp.readline()
+		if self.delimiter not in line:
+			raise CSVFormatError('header line does not contain delimiter')
+		self.channel_labels = line.split(self.delimiter)
+
+	def load(self, probe=False):
 		with open(self.filename) as fp:
-			self.set_header(fp.readline())
-			self.data = numpy.loadtxt(fp)
-		self.verify_data(self.data)
+			self.read_header(fp)
+
+			time_columns = self.get_time_columns()
+
+			if self.time_type == 'strptime':
+				data = []
+				for line in itertools.islice(fp, 0, 10 if probe else None):
+					line = tuple(util.mpldtstrptime(v, self.time_strptime) if i in time_columns else float(v) for (i, v) in enumerate(line.strip().split(self.delimiter)))
+				self.data = numpy.array(data)
+			else:
+				if probe:
+					data = []
+					for line in itertools.islice(fp, 10):
+						data.append(tuple(float(i) for i in line.split(self.delimiter)))
+					self.data = numpy.array(data)
+				else:
+					self.data = numpy.loadtxt(fp, delimiter=self.delimiter)
+
+				for i in time_columns:
+					self.data[:, i] = self.convert_time(self.data[:, i])
+		self.verify_data()
 
 
 class RGBImage(DataSource):

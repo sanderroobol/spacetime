@@ -237,6 +237,15 @@ class TimeTrendGUI(SubplotGUI):
 			self.yauto = False
 		logger.info('%s.ylim_callback: %s', self.__class__.__name__, self.ylimits)
 
+	def update_channel_names(self):
+		if self.channel_names:
+			uncheck = False
+		else:
+			uncheck = True
+		self.channel_names = list(self.data.iterchannelnames())
+		if uncheck:
+			self.channelobjs[0].checked = False # the TableEditor checks the first checkbox when it's initialized...
+
 	@traits.on_trait_change('filename, reload')
 	def load_file(self):
 		if self.filename:
@@ -246,13 +255,7 @@ class TimeTrendGUI(SubplotGUI):
 				gui.support.Message.file_open_failed(self.filename, parent=self.context.uiparent)
 				self.filename = ''
 				return False
-			if self.channel_names:
-				uncheck = False
-			else:
-				uncheck = True
-			self.channel_names = list(self.data.iterchannelnames())
-			if uncheck:
-				self.channelobjs[0].checked = False # the TableEditor checks the first checkbox when it's initialized...
+			self.update_channel_names()
 			self.settings_changed()
 			return True
 		return False
@@ -437,6 +440,27 @@ class XlimitsGUI(traits.HasTraits):
 		self.xauto = True
 
 
+class CSVConfigurationHandler(traitsui.Handler):
+	def close(self, info, is_ok=None):
+		if not is_ok:
+			return True
+
+		obj = info.ui.context['object']
+
+		data = obj.datafactory()
+		data.set_config(filename=obj.filename, delimiter=obj.csv_delimiter, skip_lines=obj.csv_skip_lines, time_type=obj.time_type, time_strptime=obj.time_format, time_column=obj.time_column)
+		try:
+			data.load(probe=True)
+		except:
+			gui.support.Message.exception('The file does not load correctly.', desc='Check the output below and resolve the problem.', title='Loading failed.', parent=info.ui.control)
+			return False
+		else:
+			data.load()
+			obj.data = data
+			obj.update_channel_names()
+			return True
+			
+
 class CSVGUI(DoubleTimeTrendGUI):
 	id = 'csv'
 	label = 'Plain text (experimental)'
@@ -445,16 +469,21 @@ class CSVGUI(DoubleTimeTrendGUI):
 	datafactory = datasources.CSV
 	filter = 'ASCII text files (*.txt, *.csv, *.tab)', '*.txt;*.csv;*.tab',
 
-	time_type = traits.Enum('unix', 'labview', 'matplotlib', 'custom')
+	csv_delimiter = traits.Enum('\t', ',', ';');
+	csv_skip_lines = traits.Int(0)
+
+	time_type = traits.Enum('unix', 'labview', 'matplotlib', 'strptime')
 	time_custom = traits.Property(depends_on='time_type')
 	time_format = traits.Str('%Y-%m-%d %H:%M:%S')
 	time_column = traits.Str('auto')
 	time_column_options = traits.Property(depends_on='channel_names')
 
-	traits_saved = 'time_type', 'time_format', 'time_column'
+	edit_configuration = traits.Button()
+
+	traits_saved = 'time_type', 'time_format', 'time_column', 'live_phase'
 
 	def _get_time_custom(self):
-		return self.time_type == 'custom'
+		return self.time_type == 'strptime'
 
 	def filter_channels(self, channels):
 		if self.time_column == 'auto':
@@ -473,34 +502,55 @@ class CSVGUI(DoubleTimeTrendGUI):
 	def _time_column_changed(self):
 		self.channel_names = list(self.channel_names) # trigger rebuild of traits depending on channel_names
 
-	@traits.on_trait_change('selected_primary_channels, selected_secondary_channels, time_type, time_format, time_column')
-	def settings_changed(self):
-		if not self.data:
-			return
-		if self.time_column == 'auto':
-			self.data.time_column = 'auto'
-		else:
-			self.data.time_column = self.channel_names.index(self.time_column)
-		if self.time_custom:
-			self.data.time_type = 'strptime'
-			self.data.time_strptime = self.time_format
-		else:
-			self.data.time_type = self.time_type
-		super(CSVGUI, self).settings_changed()
+	# adjust the inherited on_trait_change(filename, reload) event handler; don't respond to filename changes
+	@traits.on_trait_change('reload')
+	def load_file(self):
+		self.data.load()
+		self.update_channel_names()
+		self.settings_changed()
 
 	def traits_view(self):
 		return gui.support.PanelView(
-			self.get_general_view_group(),
 			traitsui.Group(
-				traitsui.Item('time_type', label='Type'),
-				traitsui.Item('time_format', label='Format string', enabled_when='time_custom'),
-				traitsui.Item('time_column', label='Column', editor=traitsui.EnumEditor(name='time_column_options')),
-				label='Time data',
+				traitsui.Item('visible'),
+				traitsui.Item('edit_configuration', show_label=False, editor=traitsui.ButtonEditor(label='Select file...')),
+				traitsui.Item('reload', show_label=False),
+				label='General',
 				show_border=True,
 			),
 			traitsui.Include('yaxis_group'),
 			traitsui.Include('relativistic_group'),
 		)
+
+	def _edit_configuration_fired(self):
+		if self.edit_traits(view='configuration_view').result:
+			self.settings_changed()
+
+	def configuration_view(self):
+		return traitsui.View(
+			traitsui.Group(
+				traitsui.Group(
+					traitsui.Item('filename', editor=gui.support.FileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),
+					traitsui.Item('csv_delimiter', label='Delimiter', editor=traitsui.EnumEditor(values=gui.support.EnumMapping([('\t', 'tab'), ',', ';']))),
+					traitsui.Item('csv_skip_lines', label='Skip header lines'), 
+					label='Data',
+					show_border=True,
+				),
+				traitsui.Group(
+					traitsui.Item('time_type', label='Type', editor=traitsui.EnumEditor(values=gui.support.EnumMapping((('unix', 'Unix timestamp (seconds since 1-1-1970 00:00:00 UTC)'), ('matplotlib', 'Matplotlib (days since 1-1-0001 00:00:00 UTC, plus 1)'), ('labview', 'LabVIEW (seconds since 1-1-1904 00:00:00 UTC'), ('strptime', 'Custom (strptime format)'))))),
+					traitsui.Item('time_format', label='Format string', enabled_when='time_custom'),
+					traitsui.Item('time_column', label='Column', editor=traitsui.EnumEditor(name='time_column_options')),
+					label='Time data',
+					show_border=True,
+				),
+				layout='normal',
+			),
+			handler=CSVConfigurationHandler(),
+			buttons=traitsui.OKCancelButtons,
+			width=500,
+			kind='livemodal',
+		)
+
 
 
 class FalseColorMap(traits.HasTraits):

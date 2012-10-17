@@ -44,7 +44,7 @@ class GasCabinet(CSV):
 		'valve': 'position'
 	}
 
-	def set_header(self, line):
+	def parse_column_names(self, line):
 		labels = line.split('\t')
 		self.channel_kwargs = []
 		self.channel_labels = []
@@ -55,9 +55,6 @@ class GasCabinet(CSV):
 
 	def get_channel_kwargs(self, label, i):
 		return self.channel_kwargs[i]
-
-	def verify_data(self, data):
-		assert len(self.channel_labels) == data.shape[1]
 
 	def make_channel_mapping(self):
 		# construct mapping with all possible names that we might encounter
@@ -89,27 +86,22 @@ class GasCabinet(CSV):
 		self.channel_mapping['time'] = dict(id='time')
 		self.channel_mapping['valves time'] = dict(id='Valves time')
 
-	# replace CSV.__init__() with some custom logic
-	def __init__(self, *args, **kwargs):
-		super(GasCabinet, self).__init__(*args, **kwargs)
+	def read_header(self, fp):
 		self.make_channel_mapping()
 
-		with open(self.filename) as fp:
-			line1 = fp.readline()
-			line2 = fp.readline()
-			fp.seek(len(line1)) # line2 contains real data, we want to read this again later on
-			
-			headercount = len(line1.split('\t'))
-			datacount = len(line2.split('\t'))
-			if headercount == 29 and (datacount == 37 or datacount == 38):
-				# support the buggy header from some versions of the LabVIEW gas cabinet control software
-				columns = ['{0} {1}'.format(c, p) for (c, p) in itertools.product(self.controllers, self.controller_parameters)] + \
-					['Valves time'] + ['{0} valve'.format(v) for v in self.valves]
-				if datacount == 37:
-					columns.pop()
-				self.set_header('\t'.join(columns))
-				self.get_time_columns = lambda: [len(self.controller_parameters) * i for i in range(len(self.controllers))] + [len(self.controllers) * len(self.controller_parameters)] 
-			else:
-				self.set_header(line1.strip())
-			self.data = numpy.loadtxt(fp)
-		self.verify_data(self.data)
+		line1 = fp.readline()
+		line2 = fp.readline()
+		fp.seek(len(line1)) # line2 contains real data, we want to read this again later on
+		
+		headercount = len(line1.split('\t'))
+		datacount = len(line2.split('\t'))
+		if headercount == 29 and (datacount == 37 or datacount == 38):
+			# support the buggy header from some versions of the LabVIEW gas cabinet control software
+			columns = ['{0} {1}'.format(c, p) for (c, p) in itertools.product(self.controllers, self.controller_parameters)] + \
+				['Valves time'] + ['{0} valve'.format(v) for v in self.valves]
+			if datacount == 37:
+				columns.pop()
+			self.parse_column_names('\t'.join(columns))
+			self.get_time_columns = lambda: [len(self.controller_parameters) * i for i in range(len(self.controllers))] + [len(self.controllers) * len(self.controller_parameters)] 
+		else:
+			self.parse_column_names(line1.strip())
