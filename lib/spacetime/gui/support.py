@@ -287,11 +287,8 @@ class PersistantGeometryHandler(traitsui.Handler):
 
 
 def PanelView(*args, **kwargs):
-	if 'handler' in kwargs:
-		newkwargs = kwargs.copy()
-		del newkwargs['handler']
-		return traitsui.View(traitsui.Group(*args, layout='normal', scrollable=True, **newkwargs), handler=kwargs['handler'])
-	return traitsui.View(traitsui.Group(*args, layout='normal', scrollable=True, **kwargs))
+	handler = kwargs.pop('handler', None)
+	return traitsui.View(traitsui.Group(*args, layout='normal', scrollable=True, **kwargs), handler=handler)
 
 
 def EnumMapping(items):
