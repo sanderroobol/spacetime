@@ -1,37 +1,58 @@
 TODO for 1.0
 ============
+* Proper raster image support 
+  - choice of manual file selection or directory+pattern
+  - timestamp selection: exif, filename strptime pattern, ctime/mtime, start/exposure/delay
+* Bugfix: zoom to fit / autoscale doesn't work for images
+
+
+Unprioritized TODO's:
+=====================
+
+Plotting / presentation
+-----------------------
+* Option for markers to hide data in future
 * Bug: markers can cause autoscaled axes to include [0, 1]
+* Reduce number of digits in FloatEditors
+* Axes labels (mostly y-axis, but also others)
+* Multi-image-mode for multi-channel images
+* Interactive reverse markers: click in time graph and jump to image
+* Colorbar for false color images
+* Support non-uniformly spaced Time2D datasets (through pcolorfast)
+* Custom cursor text for Images (value for false color plots, RGB for raster images; also time for scanning images)
+
+Code structure:
+---------------
+* Separate concept of Plot and Canvas: multi canvas plots (dual-plot/semi-clone presentation mode)
+
+* Relative paths in project files (introduce File Dependency object for Panels). Possibly 'Bloated project' containing all data files.
+* Multi-file support for most subplots (auto chaining)
+* Generalize DoubleMultiTrend to an arbitrary number of subplots (with or without twinx'ed graphs).
 * Enh: rework subplot management:
         - X-axis labels and vertical spacing when using non-shared axes
-* New: Relative / rezero'ed time axis
-* New: Axes labels (mostly y-axis, but also others)
 * New: API docs and examples
-* Enh: relative paths in project files (introduce File Dependency object for Panels)
-* Enh: reduce number of digits in FloatEditors
-* Bug: zoom to fit / autoscale doesn't work for Camera Images
+* Centralize and enhance mass spec tricks (normalization, fragmentation factors, ionization probabilities)
 
-Unprioritized
-=============
-* New: Camera multi-image-mode for a single frame
-* Portable project files. Possibly 'Bloated project' containing all data files.
-* click in time graph and jump to camera image (single mode)
-* Camera: cursor should show time instead of pixels in single frame mode
-* Data export? How? Where? Why? When? Whatfor? Whatever! :)
-* Camera: show frame metadata somehow
-* Camera: show colorbar
+Other:
+------
+* Gwyddion Image module (like general raster images, but somehow using the Gwyddion file modules)
+* Movie import for raster image module
+* Open frame in external editor (link to WSxM/Gwyddion/Camera)
+
+Packaging:
+----------
+* Native Mac OS X package
+* .deb package for Debian-based Linux distritbutions
+
+LPM Camera related:
+-------------------
+* Camera: show frame metadata: select fields to show next to image and/or separate window with everything 
 * Camera: real units in color scale
 * Camera: link Camera-Trend to Camera instance
-* Camera: add file chaining support to panel
 * Camera: improve performance when changing frames (update instead of complete rebuild)
 * CameraTrend: option to not link datapoints of different frames
-* Generalize DoubleMultiTrend to an arbitrary number of subplots (with or without twinx'ed graphs).
-* Native Mac OS X package
-* QMS: correct for fragmentation factors and ionization probabilities
-* Separate concept of Plot and Canvas: multi canvas plots (dual-plot/semi-clone presentation mode)
-* Two (or more) phase Panels: Initialization phase (no graph yet: select file and essential parameters for reading/interpreting), Plotting phase (any change is live!)
-* Dual-plot/semi-clone presentation mode!
-* Open frame in external editor (link to WSxM/Gwyddion/Camera)
-* General raster-image plotting (or even Gwyddion file modules? Timestamp selection based on: exif, Gwyddion metadata field, filename pattern matching, filename datestamp; movie import)
+* Support for ScanDocuments, possibly also for projects
+
 
 Known bugs / limitations in the Enthought Traits UI toolkit
 ===========================================================
