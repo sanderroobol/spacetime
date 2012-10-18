@@ -122,16 +122,17 @@ class CSV(MultiTrend):
 	time_channel_headers = set(['Time'])
 
 	def iterchannelnames(self):
-		return iter(self.channel_labels)
+		time_columns = self.get_time_columns()
+		return (lbl for (i, lbl) in enumerate(self.channel_labels) if i not in time_columns)
 
 	def get_time_columns(self):
 		if self.time_column == 'auto':
 			if set(self.channel_labels) & self.time_channel_headers:
-				return (i for (i,l) in enumerate(self.channel_labels) if l in self.time_channel_headers)
+				return [i for (i,l) in enumerate(self.channel_labels) if l in self.time_channel_headers]
 			else:
 				return [0]
 		try:
-			return iter(self.time_column)
+			return list(self.time_column)
 		except TypeError:
 			return [self.time_column]
 
@@ -153,7 +154,7 @@ class CSV(MultiTrend):
 		assert len(self.channel_labels) == self.data.shape[1]
 
 	def iterchannels(self):
-		time_columns = list(self.get_time_columns())
+		time_columns = self.get_time_columns()
 		if time_columns[0] != 0:
 			time = self.data[:, time_columns[0]]
 
@@ -170,6 +171,7 @@ class CSV(MultiTrend):
 		self.filename = filename
 		self.delimiter = delimiter
 		self.skip_lines = skip_lines
+		assert time_type in ('unix', 'matplotlib', 'labview', 'strptime')
 		self.time_type = time_type
 		self.time_strptime = time_strptime
 		self.time_column = time_column
@@ -181,7 +183,19 @@ class CSV(MultiTrend):
 		line = fp.readline()
 		if self.delimiter not in line:
 			raise CSVFormatError('header line does not contain delimiter')
-		self.channel_labels = line.split(self.delimiter)
+		self.channel_labels = [i.strip() for i in line.split(self.delimiter)]
+
+	@classmethod
+	def probe_column_names(cls, filename, delimiter, skip_lines):
+		obj = cls()
+		obj.delimiter = delimiter
+		obj.skip_lines = skip_lines
+		try:
+			with open(filename) as fp:
+				obj.read_header(fp)
+				return obj.channel_labels
+		except:
+			return []
 
 	def load(self, probe=False):
 		with open(self.filename) as fp:
@@ -192,7 +206,7 @@ class CSV(MultiTrend):
 			if self.time_type == 'strptime':
 				data = []
 				for line in itertools.islice(fp, 0, 10 if probe else None):
-					line = tuple(util.mpldtstrptime(v, self.time_strptime) if i in time_columns else float(v) for (i, v) in enumerate(line.strip().split(self.delimiter)))
+					data.append(tuple(util.mpldtstrptime(v.strip(), self.time_strptime) if i in time_columns else float(v) for (i, v) in enumerate(line.strip().split(self.delimiter))))
 				self.data = numpy.array(data)
 			else:
 				if probe:

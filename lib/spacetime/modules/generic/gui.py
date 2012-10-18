@@ -448,16 +448,14 @@ class CSVConfigurationHandler(traitsui.Handler):
 		obj = info.ui.context['object']
 
 		data = obj.datafactory()
-		data.set_config(filename=obj.filename, delimiter=obj.csv_delimiter, skip_lines=obj.csv_skip_lines, time_type=obj.time_type, time_strptime=obj.time_format, time_column=obj.time_column)
+		data.set_config(filename=obj.filename, delimiter=obj.csv_delimiter, skip_lines=obj.csv_skip_lines, time_type=obj.time_type, time_strptime=obj.time_format.strip(), time_column=obj.time_column)
 		try:
 			data.load(probe=True)
 		except:
 			gui.support.Message.exception('The file does not load correctly.', desc='Check the output below and resolve the problem.', title='Loading failed.', parent=info.ui.control)
 			return False
 		else:
-			data.load()
-			obj.data = data
-			obj.update_channel_names()
+			obj.is_configured = True
 			return True
 			
 
@@ -475,12 +473,14 @@ class CSVGUI(DoubleTimeTrendGUI):
 	time_type = traits.Enum('unix', 'labview', 'matplotlib', 'strptime')
 	time_custom = traits.Property(depends_on='time_type')
 	time_format = traits.Str('%Y-%m-%d %H:%M:%S')
-	time_column = traits.Str('auto')
-	time_column_options = traits.Property(depends_on='channel_names')
+	time_column = traits.Any('auto')
+	time_column_options = traits.Property(depends_on='filename, csv_delimiter, csv_skip_lines')
 
 	edit_configuration = traits.Button()
+	is_configured = traits.Bool(False)
 
-	traits_saved = 'time_type', 'time_format', 'time_column', 'live_phase'
+	# FIXME: somehow selected_*_channels is not restored properly
+	traits_saved = 'csv_delimiter', 'csv_skip_lines', 'time_type', 'time_format', 'time_column', 'is_configured'
 
 	def _get_time_custom(self):
 		return self.time_type == 'strptime'
@@ -497,17 +497,17 @@ class CSVGUI(DoubleTimeTrendGUI):
 
 	@traits.cached_property
 	def _get_time_column_options(self):
-		return gui.support.EnumMapping([('auto', '(auto)')] + self.channel_names)
-
-	def _time_column_changed(self):
-		self.channel_names = list(self.channel_names) # trigger rebuild of traits depending on channel_names
+		return gui.support.EnumMapping([('auto', '(auto)')] + list(enumerate(self.datafactory.probe_column_names(self.filename, self.csv_delimiter, self.csv_skip_lines))))
 
 	# adjust the inherited on_trait_change(filename, reload) event handler; don't respond to filename changes
-	@traits.on_trait_change('reload')
+	@traits.on_trait_change('is_configured, reload')
 	def load_file(self):
-		self.data.load()
-		self.update_channel_names()
-		self.settings_changed()
+		if self.is_configured:
+			self.data = self.datafactory()
+			self.data.set_config(filename=self.filename, delimiter=self.csv_delimiter, skip_lines=self.csv_skip_lines, time_type=self.time_type, time_strptime=self.time_format.strip(), time_column=self.time_column)
+			self.data.load()
+			self.update_channel_names()
+			self.settings_changed()
 
 	def traits_view(self):
 		return gui.support.PanelView(
