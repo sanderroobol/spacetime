@@ -468,7 +468,6 @@ class CSVConfigurationHandler(traitsui.Handler):
 			gui.support.Message.exception('The file does not load correctly.', desc='Check the output below and resolve the problem.', title='Loading failed.', parent=info.ui.control)
 			return False
 		else:
-			obj.is_configured = True
 			return True
 			
 
@@ -535,8 +534,16 @@ class CSVGUI(DoubleTimeTrendGUI):
 		)
 
 	def _edit_configuration_fired(self):
-		if self.edit_traits(view='configuration_view').result:
-			self.settings_changed()
+		# emulate nonlive behaviour without breaking self.context
+		sync = ['filename', 'csv_delimiter', 'csv_skip_lines', 'time_type', 'time_format', 'time_column']
+		copy = self.clone_traits(sync)
+		copy.context = self.context
+		if copy.edit_traits(view='configuration_view').result:
+			self.copy_traits(copy, sync)
+			# force trigger of load_file() and set self.is_configured to True
+			# (to trigger load_file() when opening a project from file)
+			self.is_configured = False
+			self.is_configured = True
 
 	def configuration_view(self):
 		return traitsui.View(
