@@ -41,11 +41,24 @@ class Tab(traits.HasTraits):
 
 class TraitsSavedMeta(traits.HasTraits.__metaclass__):
 	def __new__(mcs, name, bases, dict):
-		if 'traits_saved' not in dict:
-			dict['traits_saved'] = ()
+		# Join traits_saved from current class and all its base classes.
+		# Order is maintained during loading: traits_saved is evaluated from
+		# left to right, and parent traits get restored before child traits.
+		# The order of base classes is also respected in case of multiple
+		# inherintance.
+		# A child can override traits from a parent in two ways:
+		# - a trait will be skipped completely if it is mentioned in traits_not_saved
+		# - if a trait is mentioned by both parent and child, the child will take precedence
+
+		saved = list(reversed(dict.get('traits_saved', ())))
+		not_saved = set(dict.get('traits_not_saved', ()))
+		
 		for base in bases:
-			if 'traits_saved' in base.__dict__:
-				dict['traits_saved'] = tuple(i for i in base.__dict__['traits_saved'] if 'traits_not_saved' not in dict or i not in dict['traits_not_saved']) + dict['traits_saved']
+			for i in reversed(base.__dict__.get('traits_saved', ())):
+				if i not in not_saved and i not in saved:
+					saved.append(i)
+
+		dict['traits_saved'] = tuple(reversed(saved))
 		return traits.HasTraits.__metaclass__.__new__(mcs, name, bases, dict)
 
 
@@ -461,7 +474,7 @@ class CSVConfigurationHandler(traitsui.Handler):
 
 class CSVGUI(DoubleTimeTrendGUI):
 	id = 'csv'
-	label = 'Plain text (experimental)'
+	label = 'Plain text'
 	desc = 'Flexible reader for CSV / tab separated / ASCII files.\n\nAccepts times as unix timestamp (seconds sinds 1970-1-1 00:00:00 UTC), Labview timestamp (seconds since since 1904-1-1 00:00:00 UTC), Matplotlib timestamps (days since 0001-01-01 UTC, plus 1) or arbitrary strings (strptime format).'
 
 	datafactory = datasources.CSV
@@ -479,8 +492,7 @@ class CSVGUI(DoubleTimeTrendGUI):
 	edit_configuration = traits.Button()
 	is_configured = traits.Bool(False)
 
-	# FIXME: somehow selected_*_channels is not restored properly
-	traits_saved = 'csv_delimiter', 'csv_skip_lines', 'time_type', 'time_format', 'time_column', 'is_configured'
+	traits_saved = 'csv_delimiter', 'csv_skip_lines', 'time_type', 'time_format', 'time_column', 'is_configured', 'selected_primary_channels', 'selected_secondary_channels'
 
 	def _get_time_custom(self):
 		return self.time_type == 'strptime'
