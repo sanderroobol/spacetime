@@ -21,7 +21,7 @@ import enthought.traits.ui.api as traitsui
 import numpy
 import scipy.signal
 
-from ..generic.gui import SubplotGUI, DoubleTimeTrendGUI, XlimitsGUI, FalseColorImageGUI
+from ..generic.gui import SerializableComponent, SubplotGUI, DoubleTimeTrendGUI, XlimitsGUI, FalseColorImageGUI
 from ..generic.subplots import Image
 from ...gui import support
 
@@ -44,7 +44,7 @@ class FourierFilterHandler(traitsui.Handler):
 			return True
 
 
-class FourierFilter(traits.HasTraits):
+class FourierFilter(SerializableComponent):
 	preexec = traits.Str()
 	transferfunc = traits.Str()
 
@@ -58,16 +58,31 @@ class FourierFilter(traits.HasTraits):
 	]
 	window_mapping = dict((i,()) if isinstance(i, basestring) else (i[0], i[1:]) for i in windows)
 	window = traits.Enum([i if isinstance(i, basestring) else i[0] for i in windows])
-	window_p1 = traits.Float
-	window_p2 = traits.Float
+	window_p1 = traits.Float(1)
+	window_p2 = traits.Float(1)
 	needs_p1 = traits.Property(depends_on='window')	
 	needs_p2 = traits.Property(depends_on='window')
+
+	traits_saved = 'preexec', 'transferfunc', 'window', 'window_p1', 'window_p2'
 
 	def _get_needs_p1(self):
 		return len(self.window_mapping[self.window]) >= 1
 
 	def _get_needs_p2(self):
 		return len(self.window_mapping[self.window]) >= 2
+
+	def get_window_tuple(self):
+		if self.window == 'none':
+			return None
+		else:
+			window = self.window, self.window_p1, self.window_p2
+			return window[:1+len(self.window_mapping[self.window])] # chop of unneeded parameters
+
+	def get_callable(self, variable):
+		return filters.code2func(self.transferfunc, self.preexec, variable=variable)
+
+	def __nonzero__(self):
+		return bool(self.transferfunc)
 
 	def traits_view(self):
 		window_enum = []
@@ -123,26 +138,16 @@ class CameraGUI(SubplotGUI):
 	direction = traits.Enum(1, 2)
 
 	edit_fourierfilter = traits.Button
-	ff_transfer = traits.Str
-	ff_preexec = traits.Str
-	ff_window = traits.Str('none')
-	ff_window_p1 = traits.Float(1)
-	ff_window_p2 = traits.Float(1)
+	fourierfilter = traits.Instance(FourierFilter, args=())
 
-	traits_saved = 'firstframe', 'lastframe', 'stepframe', 'direction', 'ff_transfer', 'ff_preexec', 'ff_window', 'ff_window_p1', 'ff_window_p2'
+	traits_saved = 'firstframe', 'lastframe', 'stepframe', 'direction', 'fourierfilter.*'
 
 	def _direction_changed(self):
 		self.data.direction = self.direction
 		self.rebuild()
 
 	def _edit_fourierfilter_fired(self):
-		ff = FourierFilter(transferfunc=self.ff_transfer, preexec=self.ff_preexec, window=self.ff_window, window_p1=self.ff_window_p1, window_p2=self.ff_window_p2)
-		if ff.edit_traits().result:
-			self.ff_transfer = ff.transferfunc
-			self.ff_preexec = ff.preexec
-			self.ff_window = ff.window
-			self.ff_window_p1 = ff.window_p1
-			self.ff_window_p2 = ff.window_p2
+		if self.fourierfilter.edit_traits().result:
 			self.settings_changed()
 
 
@@ -226,13 +231,8 @@ class CameraFrameGUI(FalseColorImageGUI, CameraGUI):
 		else:
 			# FIXME: implement a smarter first/last frame selection, don't redraw everything
 			data = self.data.selectchannel(self.channel).selectframes(self.firstframe, self.lastframe, self.stepframe)
-		if self.ff_transfer:
-			if self.ff_window == 'none':
-				window = None
-			else:
-				window = self.ff_window, self.ff_window_p1, self.ff_window_p2
-				window = window[:1+len(FourierFilter.window_mapping[self.ff_window])] # chop of unneeded parameters
-			data = data.apply_filter(filters.fourier(filters.code2func(self.ff_transfer, self.ff_preexec, variable='f'), window))
+		if self.fourierfilter:
+			data = data.apply_filter(filters.fourier(self.fourierfilter.get_callable('f'), self.fourierfilter.get_window_tuple()))
 		if self.filter in self.filter_map:
 			data = data.apply_filter(self.filter_map[self.filter])
 		if self.cauto and self.clip > 0:
@@ -401,15 +401,9 @@ class CameraTrendGUI(DoubleTimeTrendGUI, CameraGUI, XlimitsGUI):
 		self.data.averaging = self.averaging
 		self.plot.fft = self.data.fft = self.fft
 
-		if self.ff_window == 'none':
-			window = None
-		else:
-			window = self.ff_window, self.ff_window_p1, self.ff_window_p2
-			window = window[:1+len(FourierFilter.window_mapping[self.ff_window])] # chop of unneeded parameters
-		self.data.fourierwindow = window
-
-		if self.ff_transfer:
-			self.data.fourierfilter = filters.code2func(self.ff_transfer, self.ff_preexec, variable='f')
+		if self.fourierfilter:
+			self.data.fourierfilter = self.fourierfilter.get_callable('f')
+			self.data.fourierwindow = self.fourierfilter.get_window_tuple()
 		else:
 			self.data.fourierfilter = False
 

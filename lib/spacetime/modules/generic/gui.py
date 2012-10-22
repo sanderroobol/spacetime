@@ -52,7 +52,21 @@ class TraitsSavedMeta(traits.HasTraits.__metaclass__):
 		# - a trait will be skipped completely if it is mentioned in traits_not_saved
 		# - if a trait is mentioned by both parent and child, the child will take precedence
 
-		saved = list(reversed(dict.get('traits_saved', ())))
+		saved = []
+		for i in reversed(dict.get('traits_saved', ())):
+			if '*' in i:
+				if i.endswith('.*') and '.' not in i[:-2]:
+					prefix = i[:-2]
+					sub = dict[prefix]
+					if isinstance(sub, traits.Instance) and issubclass(sub.klass, SerializableComponent):
+						saved.extend('{0}.{1}'.format(prefix, j) for j in reversed(sub.klass.traits_saved))
+					else:
+						raise RuntimeError('traits_saved {0}.* pattern does correspond to a SerializableComponent'.format(sub))
+				else:
+					raise RuntimeError('bad traits_saved pattern, * can only be used in the form foo.*')
+			else:
+				saved.append(i)
+
 		not_saved = set(dict.get('traits_not_saved', ()))
 		
 		for base in bases:
@@ -64,14 +78,48 @@ class TraitsSavedMeta(traits.HasTraits.__metaclass__):
 		return traits.HasTraits.__metaclass__.__new__(mcs, name, bases, dict)
 
 
-class SerializableTab(Tab):
+class SerializableComponent(traits.HasTraits):
 	__metaclass__ = TraitsSavedMeta
+
+	def _getitem_serialized(self, key):
+		if '.' in key:
+			prefix, suffix = key.split('.', 1)
+			src = getattr(self, prefix)
+			if isinstance(src, SerializableComponent):
+				return src._getitem_serialized(suffix)
+			else:
+				raise ValueError('prefix {0} is not a SerializableComponent'.format(prefix))
+		else:
+			return getattr(self, key)
+
+	def get_serialized(self):
+		if hasattr(self, 'traits_saved'):
+			return dict((id, self._getitem_serialized(id)) for id in self.traits_saved)
+		else:
+			return dict()
+
+	def _setitem_serialized(self, key, value):
+		if '.' in key:
+			prefix, suffix = key.split('.', 1)
+			dest = getattr(self, prefix)
+			if isinstance(dest, SerializableComponent):
+				dest._setitem_serialized(suffix, value)
+			else:
+				raise ValueError('prefix {0} is not a SerializableComponent'.format(prefix))
+		else:
+			self.trait_set(**{key: value})
+
+
+class SerializableTab(SerializableComponent, Tab):
 	context = traits.Instance(traits.HasTraits)
 	_modified = traits.Bool(False)
 
 	def __init__(self, *args, **kwargs):
 		super(SerializableTab, self).__init__(*args, **kwargs)
-		self.on_trait_change(self.set_modified, list(self.traits_saved))
+
+		# don't simply pass in list(self.traits_saved) to work around a bug in on_trait_change
+		for i in self.traits_saved:
+			self.on_trait_change(self.set_modified, i)
 
 	def _delayed_from_serialized(self, src):
 		with self.context.canvas.hold():
@@ -79,7 +127,7 @@ class SerializableTab(Tab):
 			for id in self.traits_saved:
 				if id in src:
 					try: 
-						self.trait_set(**dict(((id, src[id]),)))
+						self._setitem_serialized(id, src[id])
 					except:
 						gui.support.Message.exception(title='Warning', message='Warning: incompatible project file', desc='Could not restore property "{0}" for graph "{1}". This graph might not be completely functional.'.format(id, self.label))
 					del src[id]
@@ -94,12 +142,6 @@ class SerializableTab(Tab):
 	def from_serialized(self, src):
 		if hasattr(self, 'traits_saved'):
 			wx.CallAfter(lambda: self._delayed_from_serialized(src))
-
-	def get_serialized(self):
-		if hasattr(self, 'traits_saved'):
-			return dict((id, getattr(self, id)) for id in self.traits_saved)
-		else:
-			return dict()
 
 	def clear_modified(self):
 		self._modified = False
