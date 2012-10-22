@@ -23,14 +23,16 @@ from enthought.traits.ui.extras.checkbox_column import CheckboxColumn
 
 import os
 import wx
+import glob
 
 import string
 import matplotlib.cm
+import PIL.Image
 
 import logging
 logger = logging.getLogger(__name__)
 
-from ... import gui
+from ... import gui, util
 
 from . import subplots, datasources, datasinks
 
@@ -682,21 +684,104 @@ class FalseColorImageGUI(FalseColorMap, ImageGUI):
 		return plot
 
 
+class RGBImageConfigurationHandler(traitsui.Handler):
+	def close(self, info, is_ok=None):
+		if not is_ok:
+			return True
+
+		obj = info.ui.context['object']
+		return True
+
+		data = obj.datafactory()
+		data.set_config(filename=obj.filename, delimiter=obj.csv_delimiter, skip_lines=obj.csv_skip_lines, time_type=obj.time_type, time_strptime=obj.time_format.strip(), time_column=obj.time_column)
+		try:
+			data.load(probe=True)
+		except:
+			gui.support.Message.exception('The file does not load correctly.', desc='Check the output below and resolve the problem.', title='Loading failed.', parent=info.ui.control)
+			return False
+		else:
+			return True
+
+
+def ImageListEditor():
+	return traitsui.TableEditor(
+		sortable = True,
+		configurable = False,
+		show_column_labels = True,
+		auto_size = False,
+		columns = [
+			CheckboxColumn(name='checked', label='', editable=False, width=0.1, horizontal_alignment='left'),
+			ObjectColumn(name='shortpath', label='Filename', editable=False, width=0.35, horizontal_alignment='left'),
+			ObjectColumn(name='timestr', label='Timestamp', editable=False, width=0.35, horizontal_alignment='left'),
+			ObjectColumn(name='exposure', editable=False, width=0.2, horizontal_alignment='left'),
+		],
+	)
+
+def ImageListPreviewEditor():
+	return traitsui.TableEditor(
+		sortable = True,
+		configurable = False,
+		show_column_labels = True,
+		auto_size = False,
+		columns = [
+			ObjectColumn(name='shortpath', label='Filename', editable=False, width=0.4, horizontal_alignment='left'),
+			ObjectColumn(name='timestr', label='Timestamp', editable=False, width=0.45, horizontal_alignment='left'),
+			ObjectColumn(name='exposure', editable=False, width=0.15, horizontal_alignment='left'),
+		],
+	)
+
+
+class ImageFile(traits.HasTraits):
+	id = traits.Int
+	checked = traits.Bool
+	shortpath = traits.Property(depends_on='path')
+	path = traits.Str
+	timestamp = traits.Float()
+	timestr = traits.Property(depends_on='timestamp')
+	exposure = traits.Float(0)
+
+	@traits.cached_property
+	def _get_shortpath(self):
+		return os.path.basename(self.path)
+
+	@traits.cached_property
+	def _get_timestr(self):
+		return util.datetimefrommpldt(self.timestamp).strftime('%Y-%m-%d %H:%M:%S.%f')
+
+	@classmethod
+	def probefile(cls, id, path, probefunc):
+		timestamp, exposure = probefunc(id, path)
+		return cls(id=id, path=path, timestamp=timestamp, exposure=exposure)
+
+
 class RGBImageGUI(ImageGUI):
 	id = 'rgbimage'
 	label = 'Image'
 	desc = 'Any bitmap image (PNG, JPEG, TIFF, BMP, ...)'
-	filenames = traits.List(traits.Str)
-	filename_count = traits.Property(traits.Int, depends_on='filenames')
-	short_filenames = traits.Property(traits.List(traits.Str), depends_on='filenames')
-	select_files = traits.Button
-	selected_filename = traits.Str
-	selected_index = traits.Int
 
-	traits_saved = 'filenames', 'selected_index'
+	directory = traits.Directory
+	pattern = traits.Str('*')
+	files = traits.List(traits.Instance(ImageFile))
+	file_count = traits.Property(traits.Int, depends_on='files')
+
+	select_files = traits.Button
+	selected_index = traits.Property(traits.Int, depends_on='files.checked')
+
+	time_source = traits.Enum('exif', 'ctime', 'mtime', 'manual')
+	time_manual = traits.Property(traits.Bool, depends_on='time_source')
+	time_exif = traits.Property(traits.Bool, depends_on='time_source')
+
+	time_start = traits.DelegatesTo('time_start_editor', 'mpldt')
+	time_start_editor = traits.Instance(gui.support.DateTimeSelector, args=())
+	time_exposure = traits.Float(1)
+	time_delay = traits.Float(0)
+
+	is_configured = False
+
+	traits_saved = 'time_source', 'time_start', 'time_exposure', 'time_delay', 'selected_index', 'time_source', 'is_configured'
 	traits_not_saved = 'filename',
 
-	plotfactory = subplots.Image	
+	plotfactory = subplots.Image
 	datafactory = datasources.RGBImage
 
 	def _plot_default(self):
@@ -705,48 +790,136 @@ class RGBImageGUI(ImageGUI):
 		return plot
 
 	@traits.cached_property
-	def _get_short_filenames(self):
-		return [os.path.basename(i) for i in self.filenames]
+	def _get_selected_index(self):
+		for f in self.files:
+			if f.checked:
+				return f.id
+		return -1
 
-	def _get_filename_count(self):
-		return len(self.filenames)
+	def _set_selected_index(self, new, old):
+		print 'set', new, old
+		return
+		if old >= 0:
+			self.files[old].checked = False
+		self.files[new].checked = True
 
-	def _selected_filename_changed(self):
-		self.selected_index = self.short_filenames.index(self.selected_filename)
+	@traits.cached_property
+	def _get_time_manual(self):
+		return self.time_source == 'manual'
+
+	@traits.cached_property
+	def _get_time_exif(self):
+		return self.time_source == 'exif'
+
+	@traits.cached_property
+	def _get_file_count(self):
+		return len(self.files)
+
+	@traits.on_trait_change('reload, directory', 'pattern')
+	def glob_files(self):
+		self.files = [ImageFile.probefile(i, fn, self.get_timestamp) for (i, fn) in enumerate(glob.glob(os.path.join(self.directory, self.pattern)))]
+
+	@traits.on_trait_change('time_source')
+	def retime_files(self):
+		for i, f in enumerate(self.files):
+			timestamp, exposure = self.get_timestamp(i, f.path)
+			f.timestamp = timestamp
+			f.exposure = exposure
+
+	@traits.on_trait_change('time_start, time_exposure, time_delay')
+	def manual_retime_files(self):
+		if self.time_manual:
+			self.retime_files()
+
+	def get_timestamp(self, i, fn):
+		try:
+			# 864e5 ms per day
+			if self.time_source == 'manual':
+				return self.time_start + i * (self.time_exposure + self.time_delay) / 864e5, self.time_exposure
+			elif self.time_source in ('ctime', 'mtime'):
+				return util.mpldtfromtimestamp(getattr(os.stat(fn), 'st_' + self.time_source)), 0
+			elif self.time_source == 'exif':
+				im = PIL.Image.open(fn)
+				info = im._getexif()
+				timestamp = util.mpldtstrptime(info[0x132], '%Y:%m:%d %H:%M:%S')
+				exposure = info.get(0x829a, (0,1))
+				exposure = 1e3 * exposure[0] / exposure[1]
+
+				return timestamp, exposure
+		except:
+			return 0., 0.
 
 	@traits.on_trait_change('reload, selected_index')
 	def file_changed(self):
-		if self.selected_index >= self.filename_count:
-			self.selected_index = self.filename_count - 1
+		if not self.is_configured:
 			return
-		self.selected_filename = self.short_filenames[self.selected_index]
-		self.plot.set_data(self.datafactory(self.filenames[self.selected_index]))
+		if self.selected_index >= self.file_count:
+			self.selected_index = self.file_count - 1
+			return
+		f = self.files[self.selected_index]
+		self.plot.set_data(self.datafactory(f.path, f.timestamp))
 		self.rebuild()
 
-	def _filenames_changed(self):
-		self.file_changed()
-
 	def _select_files_fired(self):
-		dlg = wx.FileDialog(
-			self.context.uiparent,
-			defaultDir=self.context.prefs.get_path('rgbimage'),
-			style=wx.FD_OPEN|wx.FD_MULTIPLE,
-			wildcard='All files|*'
-		)
-		if dlg.ShowModal() != wx.ID_OK:
-			return
-		self.context.prefs.set_path('rgbimage', dlg.GetDirectory())
-		self.filenames = dlg.GetPaths()
+		sync = ['directory', 'pattern', 'time_source', 'time_start', 'time_exposure', 'time_delay']
+
+		copy = self.clone_traits(sync)
+		copy.context = self.context
+		if copy.edit_traits(view='configuration_view').result:
+			self.copy_traits(copy, sync)
+			# force trigger of load_file() and set self.is_configured to True
+			# (to trigger load_file() when opening a project from file)
+			self.is_configured = False
+			self.is_configured = True
 
 	def traits_view(self):
 		return gui.support.PanelView(
 			traitsui.Group(
 				traitsui.Item('visible'),
 				traitsui.Item('select_files', show_label=False),
-				traitsui.Item('selected_filename', label='File', editor=traitsui.EnumEditor(name='short_filenames')),
-				traitsui.Item('selected_index', label='Number', editor=traitsui.RangeEditor(low=0, high_name='filename_count', mode='spinner')),
 				traitsui.Item('reload', show_label=False),
+				traitsui.Item('selected_index', label='Number', editor=traitsui.RangeEditor(low=0, high_name='file_count', mode='spinner')),
+			
 				show_border=True,
 				label='General',
 			),
+			traitsui.Group(
+				traitsui.Item('files', label='File', editor=ImageListEditor()),
+				show_labels=False,
+				show_border=True,
+				label='Files',
+			),
 		)
+
+	def configuration_view(self):
+		return traitsui.View(
+			traitsui.Group(
+				traitsui.Group(
+					traitsui.Item('directory', editor=gui.support.DirectoryEditor()),
+					traitsui.Item('pattern'),
+					label='Files',
+					show_border=True,
+				),
+				traitsui.Group(
+					traitsui.Item('time_source', editor=traitsui.EnumEditor(values=gui.support.EnumMapping((('exif', 'EXIF'), ('ctime', 'File created'), ('mtime', 'File last modified'), ('manual', 'Manual'))))),
+					traitsui.Item('time_start_editor', label='Start', style='custom', enabled_when='time_manual', editor=traitsui.InstanceEditor(view='precision_view')),
+					traitsui.Item('time_exposure', label='Exposure (ms)', enabled_when='time_manual', editor=gui.support.FloatEditor()),
+					traitsui.Item('time_delay', label='Delay (ms)', enabled_when='time_manual', editor=gui.support.FloatEditor()),
+					label='Time',
+					show_border=True,
+				),
+				traitsui.Group(
+					traitsui.Item('files', height=350, editor=ImageListPreviewEditor()),
+					show_labels=False,
+					label='Preview',
+					show_border=True,
+				),
+				layout='normal',
+			),
+			handler=RGBImageConfigurationHandler(),
+			buttons=traitsui.OKCancelButtons,
+			width=500,
+			kind='livemodal',
+			resizable=True,
+		)
+

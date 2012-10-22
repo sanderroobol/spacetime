@@ -223,11 +223,13 @@ class CSV(MultiTrend):
 
 
 class RGBImage(DataSource):
-	def set_filename(self, filename):
-		self.filename = filename
+	def __init__(self, filename, tstart, tend=None):
+		super(RGBImage, self).__init__(filename)
+		self.tstart = tstart
+		self.tend = tend
 	
 	def getframe(self):
-		return ImageFrame(image=matplotlib.image.pil_to_array(PIL.Image.open(self.filename)), tstart=util.mpldtfromtimestamp(os.path.getmtime(self.filename)))
+		return ImageFrame(image=matplotlib.image.pil_to_array(PIL.Image.open(self.filename)), tstart=self.tstart, tend=self.tend)
 	
 	def iterframes(self):
 		yield self.getframe()
