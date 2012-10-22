@@ -112,6 +112,10 @@ class FileEditorImplementation(enthought.traits.ui.wx.file_editor.SimpleEditor):
 
 		return dlg
 
+	@staticmethod
+	def get_path_to_remember(dlg):
+		return dlg.Directory
+
 	def show_file_dialog ( self, event ):
 		""" Displays the pop-up file dialog.
 		"""
@@ -123,7 +127,7 @@ class FileEditorImplementation(enthought.traits.ui.wx.file_editor.SimpleEditor):
 			file_name = os.path.abspath( dlg.GetPath() )
 			dlg.Destroy()
 			if rc:
-				self.context_object.context.prefs.set_path(self.context_object.id, dlg.Directory)
+				self.context_object.context.prefs.set_path(self.context_object.id, self.get_path_to_remember(dlg))
 				if self.factory.truncate_ext:
 					file_name = os.path.splitext( file_name )[0]
 
@@ -133,6 +137,30 @@ class FileEditorImplementation(enthought.traits.ui.wx.file_editor.SimpleEditor):
 
 class FileEditor(enthought.traits.ui.basic_editor_factory.BasicEditorFactory, traitsui.FileEditor):
 	klass = FileEditorImplementation
+
+
+class DirectoryEditorImplementation(FileEditorImplementation):
+	# also borrowed from enthought.traits.ui.wx.directory_editor.SimpleEditor and improved
+
+	def _create_file_dialog ( self ):
+		""" Creates the correct type of file dialog.
+		"""
+		dlg = wx.DirDialog( self.control, message = 'Select a Directory' )
+		path = self._file_name.GetValue()
+		if path:
+			dlg.Path = path
+		else:
+			dlg.Path = self.context_object.context.prefs.get_path(self.context_object.id)
+		return dlg
+
+	@staticmethod
+	def get_path_to_remember(dlg):
+		return dlg.Path
+
+
+class DirectoryEditor(enthought.traits.ui.basic_editor_factory.BasicEditorFactory, traitsui.DirectoryEditor):
+	klass = DirectoryEditorImplementation
+	entries = 0	
 
 
 class TimeEditorImplementation(enthought.traits.ui.wx.time_editor.SimpleEditor):
@@ -212,6 +240,7 @@ class DateTimeSelector(traits.HasTraits):
 	time = traits.Time(datetime.time())
 	datetime = traits.Property(depends_on='date, time')
 	mpldt = traits.Property(depends_on='datetime')
+	usecs = traits.Property(traits.Int, depends_on='time')
 
 	@traits.cached_property
 	def _get_datetime(self):
@@ -228,6 +257,13 @@ class DateTimeSelector(traits.HasTraits):
 	def _set_mpldt(self, f):
 		self.datetime = util.datetimefrommpldt(f, tz=util.localtz)
 
+	@traits.cached_property
+	def _get_usecs(self):
+		return self.time.microsecond
+
+	def _set_usecs(self, usecs):
+		self.time = datetime.time(hour=self.time.hour, minute=self.time.minute, second=self.time.second, microsecond=usecs)
+
 	def __str__(self):
 		return self.datetime.strftime('%Y-%m-%d %H:%M:%S.%f')
 
@@ -236,6 +272,13 @@ class DateTimeSelector(traits.HasTraits):
 			traitsui.Item('time', editor=traitsui.TimeEditor()),
 			traitsui.Item('date'),
 			show_labels=False,
+	))
+
+	precision_view = traitsui.View(
+		traitsui.VGroup(
+			traitsui.Item('date'),
+			traitsui.Item('time', editor=traitsui.TimeEditor()),
+			traitsui.Item('usecs', label='Microseconds', editor=traitsui.RangeEditor(low=0, high=999999))
 	))
 
 
