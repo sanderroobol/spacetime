@@ -106,6 +106,11 @@ def mpldtfromdatetime(dt):
 		return _to_ordinalf(dt)
 
 
+def mpldtlikedatetime(*args, **kwargs):
+	tz = kwargs.pop('tzinfo', localtz)
+	return mpldtfromdatetime(tz.localize(datetime.datetime(*args, **kwargs)))
+
+
 def datetimefrommpldt(num, tz=localtz):
 	# based on matplotlib.num2date
 	if iterable(num):

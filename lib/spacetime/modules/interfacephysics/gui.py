@@ -100,3 +100,12 @@ class PLLMonitor(ReactorEnvironmentGUI):
 	id = 'pllmonitor'
 	label = 'PLL monitor'
 	desc = 'Monitors resonance frequency and noise of the quartz tuning fork of the ReactorAFM.'
+
+
+class TEMHeater(DoubleTimeTrendGUI):
+	id = 'temheater'
+	label = 'TEM Heater'
+	desc = 'Reads the data file of the temperature controller of the TEM Nanoreactors developed in Delft.'
+
+	datafactory = datasources.TEMHeater
+	filter = 'ASCII text files (*.txt)', '*.txt',
