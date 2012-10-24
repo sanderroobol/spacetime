@@ -78,7 +78,7 @@ class TraitsSavedMeta(traits.HasTraits.__metaclass__):
 		return traits.HasTraits.__metaclass__.__new__(mcs, name, bases, dict)
 
 
-class SerializableComponent(traits.HasTraits):
+class SerializableBase(traits.HasTraits):
 	__metaclass__ = TraitsSavedMeta
 
 	def _getitem_serialized(self, key):
@@ -110,7 +110,38 @@ class SerializableComponent(traits.HasTraits):
 			self.trait_set(**{key: value})
 
 
-class SerializableTab(SerializableComponent, Tab):
+class SerializableComponent(SerializableBase):
+	parent = traits.Instance(traits.HasTraits)
+	context = traits.DelegatesTo('parent')
+
+	def activate(self):
+		pass
+
+
+class ActivationComponent(SerializableComponent):
+	active = traits.Bool(False)
+	traits_saved = 'active',
+
+	def activate(self):
+		self.active = False
+		self.active = True
+
+
+class NonLiveComponentEditor(SerializableComponent):
+	traits_not_saved = 'active', 
+
+	@classmethod
+	def edit_nonlive(cls, source):
+		obj = cls(id=source.id, parent=source.parent)
+		obj.copy_traits(source, obj.traits_saved)
+		if obj.edit_traits().result:
+			source.copy_traits(obj, obj.traits_saved)
+			source.activate()
+			return True
+		return False
+
+
+class SerializableTab(SerializableBase, Tab):
 	context = traits.Instance(traits.HasTraits)
 	_modified = traits.Bool(False)
 
@@ -504,8 +535,8 @@ class CSVConfigurationHandler(traitsui.Handler):
 
 		obj = info.ui.context['object']
 
-		data = obj.datafactory()
-		data.set_config(filename=obj.filename, delimiter=obj.csv_delimiter, skip_lines=obj.csv_skip_lines, time_type=obj.time_type, time_strptime=obj.time_format.strip(), time_column=obj.time_column)
+		data = obj.parent.datafactory()
+		data.set_config(filename=obj.filename, delimiter=obj.delimiter, skip_lines=obj.skip_lines, time_type=obj.time_type, time_strptime=obj.time_format.strip(), time_column=obj.time_column)
 		try:
 			data.load(probe=True)
 		except:
@@ -513,89 +544,49 @@ class CSVConfigurationHandler(traitsui.Handler):
 			return False
 		else:
 			return True
-			
 
-class CSVGUI(DoubleTimeTrendGUI):
-	id = 'csv'
-	label = 'Plain text'
-	desc = 'Flexible reader for CSV / tab separated / ASCII files.\n\nAccepts times as unix timestamp (seconds sinds 1970-1-1 00:00:00 UTC), Labview timestamp (seconds since since 1904-1-1 00:00:00 UTC), Matplotlib timestamps (days since 0001-01-01 UTC, plus 1) or arbitrary strings (strptime format).'
 
-	datafactory = datasources.CSV
-	filter = 'ASCII text files (*.txt, *.csv, *.tab)', '*.txt;*.csv;*.tab',
+class CSVConfiguration(ActivationComponent):
+	filename = traits.File
 
-	csv_delimiter = traits.Enum('\t', ',', ';');
-	csv_skip_lines = traits.Int(0)
+	delimiter = traits.Enum('\t', ',', ';');
+	skip_lines = traits.Int(0)
 
 	time_type = traits.Enum('unix', 'labview', 'matplotlib', 'strptime')
-	time_custom = traits.Property(depends_on='time_type')
 	time_format = traits.Str('%Y-%m-%d %H:%M:%S')
 	time_column = traits.Any('auto')
-	time_column_options = traits.Property(depends_on='filename, csv_delimiter, csv_skip_lines')
 
-	edit_configuration = traits.Button()
-	is_configured = traits.Bool(False)
+	active = traits.Bool(False)
 
-	traits_saved = 'csv_delimiter', 'csv_skip_lines', 'time_type', 'time_format', 'time_column', 'is_configured', 'selected_primary_channels', 'selected_secondary_channels'
+	traits_saved = 'filename', 'delimiter', 'skip_lines', 'time_type', 'time_format', 'time_column', 'active'
+
+	def get_datasource(self):
+		data = self.parent.datafactory()
+		data.set_config(filename=self.filename, delimiter=self.delimiter, skip_lines=self.skip_lines, time_type=self.time_type, time_strptime=self.time_format.strip(), time_column=self.time_column)
+		data.load()
+		return data
+
+
+class CSVConfigurationEditor(CSVConfiguration, NonLiveComponentEditor):
+	filter = 'ASCII text files (*.txt, *.csv, *.tab)', '*.txt;*.csv;*.tab',
+
+	time_custom = traits.Property(depends_on='time_type')
+	time_column_options = traits.Property(depends_on='filename, delimiter, skip_lines')
 
 	def _get_time_custom(self):
 		return self.time_type == 'strptime'
 
-	def filter_channels(self, channels):
-		if self.time_column == 'auto':
-			if self.data:
-				check = set(self.data.time_channel_headers)
-			else:
-				check = set()
-		else:
-			check = set([self.time_column])
-		return (chan for chan in channels if chan.id not in check)
-
 	@traits.cached_property
 	def _get_time_column_options(self):
-		return gui.support.EnumMapping([('auto', '(auto)')] + list(enumerate(self.datafactory.probe_column_names(self.filename, self.csv_delimiter, self.csv_skip_lines))))
-
-	# adjust the inherited on_trait_change(filename, reload) event handler; don't respond to filename changes
-	@traits.on_trait_change('is_configured, reload')
-	def load_file(self):
-		if self.is_configured:
-			self.data = self.datafactory()
-			self.data.set_config(filename=self.filename, delimiter=self.csv_delimiter, skip_lines=self.csv_skip_lines, time_type=self.time_type, time_strptime=self.time_format.strip(), time_column=self.time_column)
-			self.data.load()
-			self.update_channel_names()
-			self.settings_changed()
+		return gui.support.EnumMapping([('auto', '(auto)')] + list(enumerate(self.parent.datafactory.probe_column_names(self.filename, self.delimiter, self.skip_lines))))
 
 	def traits_view(self):
-		return gui.support.PanelView(
-			traitsui.Group(
-				traitsui.Item('visible'),
-				traitsui.Item('edit_configuration', show_label=False, editor=traitsui.ButtonEditor(label='Select file...')),
-				traitsui.Item('reload', show_label=False),
-				label='General',
-				show_border=True,
-			),
-			traitsui.Include('yaxis_group'),
-			traitsui.Include('relativistic_group'),
-		)
-
-	def _edit_configuration_fired(self):
-		# emulate nonlive behaviour without breaking self.context
-		sync = ['filename', 'csv_delimiter', 'csv_skip_lines', 'time_type', 'time_format', 'time_column']
-		copy = self.clone_traits(sync)
-		copy.context = self.context
-		if copy.edit_traits(view='configuration_view').result:
-			self.copy_traits(copy, sync)
-			# force trigger of load_file() and set self.is_configured to True
-			# (to trigger load_file() when opening a project from file)
-			self.is_configured = False
-			self.is_configured = True
-
-	def configuration_view(self):
 		return traitsui.View(
 			traitsui.Group(
 				traitsui.Group(
 					traitsui.Item('filename', editor=gui.support.FileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),
-					traitsui.Item('csv_delimiter', label='Delimiter', editor=traitsui.EnumEditor(values=gui.support.EnumMapping([('\t', 'tab'), ',', ';']))),
-					traitsui.Item('csv_skip_lines', label='Skip header lines'), 
+					traitsui.Item('delimiter', label='Delimiter', editor=traitsui.EnumEditor(values=gui.support.EnumMapping([('\t', 'tab'), ',', ';']))),
+					traitsui.Item('skip_lines', label='Skip header lines'), 
 					label='Data',
 					show_border=True,
 				),
@@ -614,6 +605,57 @@ class CSVGUI(DoubleTimeTrendGUI):
 			kind='livemodal',
 		)
 
+
+class CSVGUI(DoubleTimeTrendGUI):
+	id = 'csv'
+	label = 'Plain text'
+	desc = 'Flexible reader for CSV / tab separated / ASCII files.\n\nAccepts times as unix timestamp (seconds sinds 1970-1-1 00:00:00 UTC), Labview timestamp (seconds since since 1904-1-1 00:00:00 UTC), Matplotlib timestamps (days since 0001-01-01 UTC, plus 1) or arbitrary strings (strptime format).'
+
+	datafactory = datasources.CSV
+	configuration = traits.Instance(CSVConfiguration)
+	edit_configuration = traits.Button()
+
+	traits_saved = 'configuration.*', 'selected_primary_channels', 'selected_secondary_channels'
+	traits_not_saved = 'filename', 
+
+	def _configuration_default(self):
+		config = CSVConfiguration(id=self.id+'.configuration', parent=self)
+		config.on_trait_change(self.load_file, 'active')
+		return config
+
+	def filter_channels(self, channels):
+		if self.configuration.time_column == 'auto':
+			if self.data:
+				check = set(self.data.time_channel_headers)
+			else:
+				check = set()
+		else:
+			check = set([self.configuration.time_column])
+		return (chan for chan in channels if chan.id not in check)
+
+	# also responds to changes to configuration.active, dynamically defined in _configuration_default()
+	@traits.on_trait_change('reload')
+	def load_file(self):
+		if self.configuration.active:
+			self.data = self.configuration.get_datasource()
+			self.update_channel_names()
+			self.settings_changed()
+
+	def traits_view(self):
+		return gui.support.PanelView(
+			traitsui.Group(
+				traitsui.Item('visible'),
+				traitsui.Item('edit_configuration', show_label=False, editor=traitsui.ButtonEditor(label='Select file...')),
+				traitsui.Item('reload', show_label=False),
+				label='General',
+				show_border=True,
+			),
+			traitsui.Include('yaxis_group'),
+			traitsui.Include('relativistic_group'),
+		)
+
+	def _edit_configuration_fired(self):
+		CSVConfigurationEditor.edit_nonlive(self.configuration)
 
 
 class FalseColorMap(traits.HasTraits):
