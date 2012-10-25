@@ -16,14 +16,41 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import numpy
+from __future__ import division
+
 import datetime
+import numpy
 
 from ... import util
 from ..generic.datasources import MultiTrend, DataChannel
+from . import pypy
 
 
-class PeakJump(MultiTrend):
+class QuaderaScan(MultiTrend):
+	def __init__(self, *args, **kwargs):
+		super(QuaderaScan, self).__init__(*args, **kwargs)
+		self.masses, self.time_data, self.ion_data, self.channels = pypy.loadscan(self.filename)
+
+	def iterimages(self):
+		d = util.Struct()
+		d.data = self.ion_data.transpose()
+		d.tstart = self.time_data[0]
+		d.tend = self.time_data[-1]
+		d.ybottom = self.masses[0]
+		d.ytop = self.masses[-1]
+		yield d
+
+
+class QuaderaMID(MultiTrend):
+	channels = None
+	masses = None
+
+	def __init__(self, *args, **kwargs):
+		super(QuaderaMID, self).__init__(*args, **kwargs)
+		self.header, self.masses, self.channels = pypy.loadmid(self.filename)
+
+
+class MKSPeakJump(MultiTrend):
 	lastdt = None
 	ampm = None
 
@@ -40,7 +67,7 @@ class PeakJump(MultiTrend):
 		return util.mpldtfromdatetime(dt)
 
 	def __init__(self, *args, **kwargs):
-		super(PeakJump, self).__init__(*args, **kwargs)
+		super(MKSPeakJump, self).__init__(*args, **kwargs)
 		with open(self.filename) as fp:
 			while 1:
 				line = fp.readline()
@@ -65,3 +92,40 @@ class PeakJump(MultiTrend):
 		self.time = numpy.array(times)
 
 		self.channels = [DataChannel(time=self.time, value=self.data[:, i], id=m) for i, m in enumerate(self.masses)]
+
+
+class SRSScan(MultiTrend):
+	def __init__(self, *args, **kwargs):
+		super(SRSScan, self).__init__(*args, **kwargs)
+		with open(self.filename) as fp:
+			# parse header looking for start time
+			line = ''
+			while not line.startswith('Start time, '):
+				line = fp.readline().strip()
+			starttime = util.mpldtstrptime(line[12:], '%b %d, %Y  %I:%M:%S %p')
+
+			# read rest of header until blank line indicating start of channel table
+			while line:
+				line = fp.readline().strip()
+
+			# read channel info, stop on blank line
+			self.channel_labels = []
+			while True:
+				line = fp.readline().strip()
+				if not line:
+					break
+				line = line.split()
+				mass = line[1]
+				name = ' '.join(line[2:-3]) # name might contain spaces...
+				self.channel_labels.append('{0} ({1})'.format(name, mass))
+
+			fp.readline() # another blank line
+			fp.readline() # column headers
+			fp.readline() # blank
+
+			self.data = numpy.loadtxt(fp, delimiter=',', usecols=range(len(self.channel_labels)+1))
+
+		time = self.data[:, 0] / 86400 + starttime
+		self.channels = []
+		for i, v in enumerate(self.channel_labels):
+			self.channels.append(DataChannel(time=time, value=self.data[:, i+1], id=v))

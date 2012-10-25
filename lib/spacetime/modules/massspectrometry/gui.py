@@ -19,24 +19,18 @@
 import enthought.traits.api as traits
 import enthought.traits.ui.api as traitsui
 
-from ..generic.gui import TimeTrendGUI, Time2DGUI
+from ..generic.gui import TimeTrendGUI, Time2DGUI, SerializableBase
 from ... import gui
 
 from . import subplots, datasources
 
 
-class NormalizationGUI(traits.HasTraits):
+class NormalizationBase(SerializableBase):
 	normalize_channel = traits.Str('none')
 	normalize_channel_options = traits.Property(depends_on='channel_names')
 	normalize_factor = traits.Float(1.)
 
-	filter = 'Quadera ASCII files (*.asc)', '*.asc'
-
 	traits_saved = 'normalize_channel', 'normalize_factor'
-
-	def __init__(self, *args, **kwargs):
-		super(NormalizationGUI, self).__init__(*args, **kwargs)
-		self.ylog = True
 
 	@traits.cached_property
 	def _get_normalize_channel_options(self):
@@ -58,13 +52,12 @@ class NormalizationGUI(traits.HasTraits):
 	)
 
 
-class QuaderaMIDGUI(NormalizationGUI, TimeTrendGUI):
-	id = 'quadera_mid'
-	label = 'Quadera MID'
-	desc = 'Reads ASCII exported Quadera MID projects from a Pfeiffer PrismaPlus quadrupole mass spectrometer.'
+class NormalizationTrendGUI(NormalizationBase, TimeTrendGUI):
+	plotfactory = subplots.MSTrend
 
-	plotfactory = subplots.QTrend
-	datafactory = datasources.QuaderaMID
+	def __init__(self, *args, **kwargs):
+		super(NormalizationTrendGUI, self).__init__(*args, **kwargs)
+		self.ylog = True
 
 	def traits_view(self):
 		return gui.support.PanelView(
@@ -75,22 +68,8 @@ class QuaderaMIDGUI(NormalizationGUI, TimeTrendGUI):
 		)
 
 
-class QuaderaScanGUI(QuaderaMIDGUI):
-	id = 'quadera_scan'
-	label = 'Quadera Scan'
-	desc = 'Reads ASCII exported Quadera Scan projects from a Pfeiffer PrismaPlus quadrupole mass spectrometer.'
-
-	plotfactory = subplots.QTrend
-	datafactory = datasources.QuaderaScan
-
-
-class Quadera2DScanGUI(Time2DGUI, NormalizationGUI):
-	id = 'quadera_scan2d'
-	label = 'Quadera Scan 2D (experimental)'
-	desc = 'Reads ASCII exported Quadera Scan projects from a Pfeiffer PrismaPlus quadrupole mass spectrometer, makes pretty 2D plots.'
-
-	plotfactory = subplots.Q2D
-	datafactory = datasources.QuaderaScan
+class Normalization2DGUI(NormalizationBase, Time2DGUI):
+	plotfactory = subplots.MS2D
 
 	def traits_view(self):
 		return gui.support.PanelView(
@@ -100,3 +79,43 @@ class Quadera2DScanGUI(Time2DGUI, NormalizationGUI):
 			traitsui.Include('limits_group'),
 			traitsui.Include('relativistic_group'),
 		)
+
+
+class QuaderaMIDGUI(NormalizationTrendGUI):
+	id = 'quadera_mid'
+	label = 'Quadera MID'
+	desc = 'Reads ASCII exported Quadera MID projects from a Pfeiffer PrismaPlus quadrupole mass spectrometer.'
+	filter = 'Quadera ASCII files (*.asc)', '*.asc'
+	datafactory = datasources.QuaderaMID
+
+
+class QuaderaScanGUI(NormalizationTrendGUI):
+	id = 'quadera_scan'
+	label = 'Quadera Scan'
+	desc = 'Reads ASCII exported Quadera Scan projects from a Pfeiffer PrismaPlus quadrupole mass spectrometer.'
+	filter = 'Quadera ASCII files (*.asc)', '*.asc'
+	datafactory = datasources.QuaderaScan
+
+
+class Quadera2DScanGUI(Normalization2DGUI):
+	id = 'quadera_scan2d'
+	label = 'Quadera Scan 2D (experimental)'
+	desc = 'Reads ASCII exported Quadera Scan projects from a Pfeiffer PrismaPlus quadrupole mass spectrometer, makes pretty 2D plots.'
+	filter = 'Quadera ASCII files (*.asc)', '*.asc'
+	datafactory = datasources.QuaderaScan
+
+
+class MKSPeakJump(NormalizationTrendGUI):
+	id = 'mks_peakjump'
+	label = 'MKS Peak Jump'
+	desc = 'Reads ASCII files from MKS RGA.'
+	filter = 'Text files (*.txt)', '*.txt'
+	datafactory = datasources.MKSPeakJump
+
+
+class SRSScanGUI(NormalizationTrendGUI):
+	id = 'srs_scan'
+	label = 'SRS Scan'
+	desc = 'Reads ASCII exported data from Stanford Research Systems Residual Gas Analyzers.'
+	filter = 'ASCII text files (*.txt)', '*.txt',
+	datafactory = datasources.SRSScan

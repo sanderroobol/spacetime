@@ -29,18 +29,18 @@ class Normalization(object):
 			self.normalization_channel = 1
 
 
-class QTrend(Normalization, MultiTrend):
+class MSTrend(Normalization, MultiTrend):
 	def setup(self):
-		super(QTrend, self).setup()
+		super(MSTrend, self).setup()
 		self.axes.set_ylabel('Ion current (A)')
 
 	def get_ydata(self, chandata):
 		return chandata.value * self.normalization_factor / self.normalization_channel
 
 
-class Q2D(Normalization, Time2D):
+class MS2D(Normalization, Time2D):
 	def setup(self):
-		super(Q2D, self).setup()
+		super(MS2D, self).setup()
 		self.axes.set_ylabel('Mass (a.m.u.)')
 
 	def get_imdata(self, imdata):
