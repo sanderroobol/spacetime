@@ -370,6 +370,7 @@ class ImageBase(Subplot):
 	clim_max = 1.
 	clim_auto = True
 	clim_log = False
+	clim_callback_ext = None
 
 	def set_colormap(self, colormap):
 		self.colormap = colormap
@@ -406,7 +407,8 @@ class ImageBase(Subplot):
 			for image in self.axes.images:
 				self.clim_min = min(image._A.min(), self.clim_min)
 				self.clim_max = max(image._A.max(), self.clim_max)
-			self.clim_callback_ext(self.clim_min, self.clim_max)
+			if self.clim_callback_ext:
+				self.clim_callback_ext(self.clim_min, self.clim_max)
 
 	def get_clim_norm(self):
 		if self.clim_auto:

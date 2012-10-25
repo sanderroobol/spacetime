@@ -21,7 +21,7 @@ import enthought.traits.ui.api as traitsui
 import numpy
 import scipy.signal
 
-from ..generic.gui import SerializableComponent, SubplotGUI, DoubleTimeTrendGUI, XlimitsGUI, FalseColorImageGUI
+from ..generic.gui import SerializableComponent, SubplotGUI, DoubleTimeTrendGUI, XlimitsGUI, FalseColorImageGUI, SingleFrameAnimation
 from ..generic.subplots import Image
 from ...gui import support
 
@@ -159,7 +159,7 @@ class CameraFrameGUIHandler(traitsui.Handler):
 			info.firstframe.label_control.SetLabel('First frame:')
 
 
-class CameraFrameGUI(FalseColorImageGUI, CameraGUI):
+class CameraFrameGUI(FalseColorImageGUI, CameraGUI, SingleFrameAnimation):
 	id = 'camera'
 	label = 'Camera'
 	desc = 'Reads Camera RAW files and plots one or more images.'
@@ -188,6 +188,10 @@ class CameraFrameGUI(FalseColorImageGUI, CameraGUI):
 	is_filmstrip = traits.Property(depends_on='mode')
 
 	traits_saved = 'channel', 'filter', 'clip', 'rotate', 'mode'
+
+	animation_framenumber_trait = 'firstframe'
+	animation_framenumber_low = 0
+	animation_framenumber_high = 'framecount'
 
 	def _get_is_singleframe(self):
 		return self.mode == 'single frame'
@@ -290,28 +294,6 @@ class CameraFrameGUI(FalseColorImageGUI, CameraGUI):
 		traitsui.Include('relativistic_group'),
 		handler=CameraFrameGUIHandler()
 	)
-
-	def animate(self):
-		# FIXME: this only makes sense in single frame mode...
-		for i in range(self.animation_firstframe, self.animation_lastframe + 1):
-			self.firstframe = i
-			yield
-
-	animation_firstframe = traits.Int(0)
-	animation_lastframe = traits.Int(0)
-	animation_framecount = traits.Property(depends_on='animation_firstframe, animation_lastframe')
-
-	def _get_animation_framecount(self):
-		return self.animation_lastframe - self.animation_firstframe + 1
-
-	animation_view = traitsui.View(traitsui.Group(
-		traitsui.Group(
-			traitsui.Item('animation_firstframe', label='First', editor=traitsui.RangeEditor(low=0, high_name='framecount', mode='spinner')),
-			traitsui.Item('animation_lastframe', label='Last', editor=traitsui.RangeEditor(low=0, high_name='framecount', mode='spinner')),
-			label='Frames',
-			show_border=True,
-		)
-	))
 
 
 class CameraTrendGUI(DoubleTimeTrendGUI, CameraGUI, XlimitsGUI):
