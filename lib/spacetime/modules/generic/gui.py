@@ -795,7 +795,8 @@ class SingleFrameAnimation(traits.HasTraits):
 
 
 class ImageGUI(SubplotGUI):
-	pass
+	def reset_autoscale(self):
+		self.rebuild()
 
 
 class FalseColorImageGUI(FalseColorMap, ImageGUI):
