@@ -19,9 +19,9 @@
 import itertools
 import numpy
 
-from ..generic.datasources import CSV
+from ..generic.datasources import CustomCSV
 
-class GasCabinet(CSV):
+class GasCabinet(CustomCSV):
 	time_columns = 'auto'
 	time_type = 'labview'
 

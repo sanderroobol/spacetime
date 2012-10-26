@@ -116,6 +116,8 @@ class CSVFormatError(Exception):
 
 
 class CSV(MultiTrend):
+	delimiter = '\t'
+	skip_lines = 0
 	time_column = 0
 	time_type = 'unix'
 	time_strptime = '%Y-%m-%d %H:%M:%S'
@@ -220,6 +222,12 @@ class CSV(MultiTrend):
 				for i in time_columns:
 					self.data[:, i] = self.convert_time(self.data[:, i])
 		self.verify_data()
+
+
+class CustomCSV(CSV):
+	def __init__(self, filename):
+		MultiTrend.__init__(self, filename) # skip CSV constructor (it's a no-op anyway)
+		self.load()
 
 
 class RGBImage(DataSource):

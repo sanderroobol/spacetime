@@ -93,13 +93,14 @@ class ReactorEnvironmentGUI(DoubleTimeTrendGUI):
 	datafactory = CSVFactory(time_type='labview', time_column='auto')
 	filter = 'ASCII text files (*.txt)', '*.txt',
 
-	def filter_channels(self, channels):
-		return (chan for chan in channels if chan.id != 'Time')
 
-class PLLMonitor(ReactorEnvironmentGUI):
+class PLLMonitor(DoubleTimeTrendGUI):
 	id = 'pllmonitor'
 	label = 'PLL monitor'
 	desc = 'Monitors resonance frequency and noise of the quartz tuning fork of the ReactorAFM.'
+
+	datafactory = CSVFactory(time_type='labview', time_column='auto')
+	filter = 'ASCII text files (*.txt)', '*.txt',
 
 
 class TEMHeater(DoubleTimeTrendGUI):
