@@ -450,12 +450,13 @@ class SplitFrame(Frame):
 	app = traits.Instance(traits.HasTraits)
 	figure = traits.Instance(matplotlib.figure.Figure, args=())
 	tabs = traits.DelegatesTo('app')
+	tabs_selected = traits.DelegatesTo('app')
 	status = traits.DelegatesTo('app')
 
 	traits_view = traitsui.View(
 		traitsui.HSplit(
 			traitsui.Item('figure', width=600, editor=MPLFigureEditor(status='status'), dock='vertical'),
-			traitsui.Item('tabs', style='custom', editor=traitsui.ListEditor(use_notebook=True, page_name='.label')),
+			traitsui.Item('tabs', style='custom', editor=traitsui.ListEditor(use_notebook=True, selected='tabs_selected', page_name='.label')),
 			show_labels=False,
 		)
 	)
@@ -464,10 +465,11 @@ class SplitFrame(Frame):
 class SimpleFrame(Frame):
 	app = traits.Instance(traits.HasTraits)
 	tabs = traits.DelegatesTo('app')
+	tabs_selected = traits.DelegatesTo('app')
 
 	traits_view = traitsui.View(
 		traitsui.Group(
-			traitsui.Item('tabs', style='custom', editor=traitsui.ListEditor(use_notebook=True, page_name='.label')),
+			traitsui.Item('tabs', style='custom', editor=traitsui.ListEditor(use_notebook=True, selected='tabs_selected', page_name='.label')),
 			show_labels=False,
 		)
 	)
@@ -511,6 +513,7 @@ class App(traits.HasTraits):
 	project_modified = traits.Property(depends_on='_tabs_modified, tabs._modified')
 
 	tabs = traits.List(traits.Instance(modules.generic.gui.Tab))
+	tabs_selected = traits.Instance(modules.generic.gui.Tab)
 
 	def on_figure_resize(self, event):
 		logger.info('on_figure_resize called')

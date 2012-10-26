@@ -95,11 +95,11 @@ class GUIModuleSelector(support.UtilityWindow):
 		gms = cls(context=context)
 		if gms.run().result:
 			tabs = [context.app.get_new_tab(gms.moduleloader.get_class_by_id(id)) for id in gms.iter_selected()]
-		else:
-			tabs = []
-		if live:
-			context.app.tabs.extend(tabs)
-		return tabs
+			if live:
+				context.app.tabs.extend(tabs)
+				context.app.tabs_selected = tabs[0]
+			return tabs
+		return []
 
 	traits_view = traitsui.View(
 		traitsui.Group(
@@ -178,6 +178,8 @@ class GraphManager(support.UtilityWindow):
 		with context.canvas.hold():
 			if gm.run().result:
 				context.app.tabs = gm.tabs
+				if gm.selected_any:
+					context.app.tabs_selected = gm.tabs[gm.selected+1]
 
 	traits_view = traitsui.View(
 		traitsui.HGroup(
