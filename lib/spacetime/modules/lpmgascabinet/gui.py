@@ -28,10 +28,3 @@ class GasCabinetGUI(DoubleTimeTrendGUI):
 	plotfactory = subplots.GasCabinet
 	datafactory = datasources.GasCabinet
 	filter = 'ASCII text files (*.txt)', '*.txt',
-
-	def filter_channels(self, channels):
-		if self.data:
-			time_columns = set(self.data.get_time_columns())
-			return (chan for (i, chan) in enumerate(channels) if i not in time_columns)
-		else:
-			return channels
