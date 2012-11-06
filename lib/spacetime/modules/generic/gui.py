@@ -24,7 +24,7 @@ from enthought.traits.ui.extras.checkbox_column import CheckboxColumn
 import os
 import wx
 import glob
-
+import operator
 import string
 import matplotlib.cm
 import PIL.Image
@@ -891,7 +891,7 @@ class RGBImageConfiguration(ActivationComponent):
 	pattern = traits.Str('*')
 	files = traits.List(traits.Instance(ImageFile))
 
-	time_source = traits.Enum('exif', 'ctime', 'mtime', 'manual')
+	time_source = traits.Enum('header', 'ctime', 'mtime', 'manual')
 
 	time_start = traits.DelegatesTo('time_start_editor', 'mpldt')
 	time_start_editor = traits.Instance(gui.support.DateTimeSelector, args=())
@@ -906,22 +906,23 @@ class RGBImageConfiguration(ActivationComponent):
 				return self.time_start + i * (self.time_exposure + self.time_delay) / 864e5, self.time_exposure # 864e5 ms per day
 			elif self.time_source in ('ctime', 'mtime'):
 				return util.mpldtfromtimestamp(getattr(os.stat(fn), 'st_' + self.time_source)), 0
-			elif self.time_source == 'exif':
-				im = PIL.Image.open(fn)
-				info = im._getexif()
-				timestamp = util.mpldtstrptime(info[0x132], '%Y:%m:%d %H:%M:%S')
-				exposure = info.get(0x829a, (0,1))
-				exposure = 1e3 * exposure[0] / exposure[1]
-				return timestamp, exposure
+			elif self.time_source == 'header':
+				return datasources.RGBImage.autodetect_timeinfo(fn)
 		except:
 			return 0., 0.
+
+	def sort_files(self, files):
+		if self.time_source != 'manual':
+			files = sorted(files, key=operator.attrgetter('timestamp'))
+			for i, f in enumerate(files):
+				f.id = i
+		return files
 
 	def get_files(self, reload=False):
 		if reload or not self.files:
 			files = []
 			files.extend(ImageFile.probefile(files, i, fn, self.get_timestamp) for (i, fn) in enumerate(glob.glob(os.path.join(self.directory, self.pattern))))
-			self.files = files
-		return self.files
+		self.files = self.sort_files(files)
 
 
 class RGBImageConfigurationEditor(RGBImageConfiguration, NonLiveComponentEditor):
@@ -941,6 +942,7 @@ class RGBImageConfigurationEditor(RGBImageConfiguration, NonLiveComponentEditor)
 	def retime_files(self):
 		for i, f in enumerate(self.files):
 			f.timestamp, f.exposure = self.get_timestamp(i, f.path)
+		self.files = self.sort_files(self.files)
 
 	@traits.on_trait_change('time_start, time_exposure, time_delay')
 	def manual_retime_files(self):
@@ -957,7 +959,7 @@ class RGBImageConfigurationEditor(RGBImageConfiguration, NonLiveComponentEditor)
 					show_border=True,
 				),
 				traitsui.Group(
-					traitsui.Item('time_source', editor=traitsui.EnumEditor(values=gui.support.EnumMapping((('exif', 'EXIF'), ('ctime', 'File created'), ('mtime', 'File last modified'), ('manual', 'Manual'))))),
+					traitsui.Item('time_source', editor=traitsui.EnumEditor(values=gui.support.EnumMapping((('header', 'File header (EXIF/DM3)'), ('ctime', 'File created'), ('mtime', 'File last modified'), ('manual', 'Manual'))))),
 					traitsui.Item('time_start_editor', label='Start', style='custom', enabled_when='time_manual', editor=traitsui.InstanceEditor(view='precision_view')),
 					traitsui.Item('time_exposure', label='Exposure (ms)', enabled_when='time_manual', editor=gui.support.FloatEditor()),
 					traitsui.Item('time_delay', label='Delay (ms)', enabled_when='time_manual', editor=gui.support.FloatEditor()),
@@ -1051,7 +1053,7 @@ class RGBImageGUI(ImageGUI, SingleFrameAnimation):
 			tend = f.timestamp + f.exposure / 864e5
 		else:
 			tend = None
-		self.plot.set_data(self.datafactory(f.path, f.timestamp, tend))
+		self.plot.set_data(self.datafactory.autodetect(f.path, f.timestamp, tend))
 		self.rebuild()
 
 	def _select_files_fired(self):

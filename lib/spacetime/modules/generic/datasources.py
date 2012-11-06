@@ -22,6 +22,7 @@ import numpy
 import PIL.Image, matplotlib.image
 
 from ... import util
+from . import dm3lib
 
 
 class DataObject(object):
@@ -237,7 +238,55 @@ class RGBImage(DataSource):
 		self.tend = tend
 	
 	def getframe(self):
-		return ImageFrame(image=matplotlib.image.pil_to_array(PIL.Image.open(self.filename)), tstart=self.tstart, tend=self.tend)
+		return ImageFrame(image=self.loadfile(), tstart=self.tstart, tend=self.tend)
 	
 	def iterframes(self):
 		yield self.getframe()
+
+	@classmethod
+	def detect_subclass(cls, filename):
+		root, ext = os.path.splitext(filename)
+		if ext.lower() == '.dm3':
+			return DM3Image
+		try:
+			int(ext[1:])
+		except:
+			return PILImage
+		else:
+			return DM3Image
+
+	@classmethod
+	def autodetect(cls, filename, tstart, tend=None):
+		return cls.detect_subclass(filename)(filename, tstart, tend)
+
+	@classmethod
+	def autodetect_timeinfo(cls, filename):
+		return cls.detect_subclass(filename).get_timeinfo(filename)
+
+
+class PILImage(RGBImage):
+	def loadfile(self):
+		return matplotlib.image.pil_to_array(PIL.Image.open(self.filename))
+
+	@staticmethod
+	def get_timeinfo(filename):
+		im = PIL.Image.open(filename)
+		info = im._getexif()
+		timestamp = util.mpldtstrptime(info[0x132], '%Y:%m:%d %H:%M:%S')
+		exposure = info.get(0x829a, (0,1))
+		exposure = 1e3 * exposure[0] / exposure[1]
+		return timestamp, exposure
+
+
+class DM3Image(RGBImage):
+	def loadfile(self):
+		return matplotlib.image.pil_to_array(dm3lib.DM3(self.filename).getImage())
+
+	@staticmethod
+	def get_timeinfo(filename):
+		dm3 = dm3lib.DM3(filename)
+		date = dm3.tags['root.ImageList.1.ImageTags.DataBar.Acquisition Date']
+		time = dm3.tags['root.ImageList.1.ImageTags.DataBar.Acquisition Time']
+		timestamp = util.mpldtstrptime('{0} {1}'.format(date, time), '%m/%d/%Y %I:%M:%S %p')
+		exposure = float(dm3.tags['root.ImageList.1.ImageTags.Acquisition.Parameters.High Level.Exposure (s)']) * 1e3
+		return timestamp, exposure
