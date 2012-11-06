@@ -1063,6 +1063,7 @@ class RGBImageGUI(ImageGUI, SingleFrameAnimation):
 		return gui.support.PanelView(
 			traitsui.Group(
 				traitsui.Item('visible'),
+				traitsui.Item('size'),
 				traitsui.Item('select_files', show_label=False),
 				traitsui.Item('reload', show_label=False, enabled_when='configuration.active'),
 				traitsui.Item('selected_index', label='Number', editor=traitsui.RangeEditor(low=0, high_name='file_number_max', mode='spinner')),
