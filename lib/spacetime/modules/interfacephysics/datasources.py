@@ -76,7 +76,10 @@ class OldGasCabinet(MultiTrend):
 
 
 class TEMHeater(MultiTrend):
-	month_names = dict((m, i+1) for (i, m) in enumerate(('jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec')))
+	month_names = dict((m, i+1) for (i, m) in enumerate(('Jan', 'Feb', 'Mar', 'Apr', 'May', 'June', 'July', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec')))
+	month_names.update(dict((m, i+1) for (i, m) in enumerate(('jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'))))
+	decimal_separator = '.'
+
 	lasttime = 0.
 	offset = 0.
 
@@ -90,7 +93,9 @@ class TEMHeater(MultiTrend):
 			day, month, year = date.split(' ')
 
 			time = fp.readline().strip()
-			HMS, ms = time.split(',')
+			if ',' in time:
+				self.decimal_separator = ','
+			HMS, ms = time.split(self.decimal_separator)
 			H, M, S = HMS.split(':')
 		
 			self.tstart = util.mpldtlikedatetime(int(year), self.month_names[month], int(day), int(H), int(M), int(S), int(ms)*1000)
@@ -112,7 +117,9 @@ class TEMHeater(MultiTrend):
 		time = []
 		data = []
 		for line in fp:
-			line = line.strip().replace(',', '.').split('\t')
+			if self.decimal_separator != '.':
+				line = line.replace(self.decimal_separator, '.')
+			line = line.strip().split('\t')
 			time.append(self.tstart + self._parsetime(line[1]))
 			data.append(tuple(float(i) for i in line[2:]))
 
