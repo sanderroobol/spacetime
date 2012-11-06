@@ -440,6 +440,10 @@ class MainWindowHandler(traitsui.Handler):
 	def do_graphmanager(self, info):
 		windows.GraphManager.run_static(info.ui.context['object'].context)
 
+	def do_reload(self, info):
+		app = info.ui.context['object']
+		for tab in app.tabs:
+			tab.reload = True
 
 
 class Frame(traits.HasTraits):
@@ -744,6 +748,7 @@ class App(traits.HasTraits):
 		traitsui.Menu(
 			traitsui.Action(name='&Add...', action='do_add', accelerator='Ctrl+A', image=support.GetIcon('add')),
 			traitsui.Action(name='&Manage...', action='do_graphmanager', image=support.GetIcon('manage')),
+			traitsui.Action(name='&Reload all', action='do_reload', accelerator='Ctrl+R', image=support.GetIcon('reload')),
 			name='&Graphs',
 		),
 		traitsui.Menu(
@@ -780,6 +785,7 @@ class App(traits.HasTraits):
 		'graphs',
 			traitsui.Action(name='Add', action='do_add', tooltip='Add graph', image=support.GetIcon('add')),
 			traitsui.Action(name='Manage', action='do_graphmanager', tooltip='Graph manager', image=support.GetIcon('manage')),
+			traitsui.Action(name='Reload', action='do_reload', tooltip='Reload all', image=support.GetIcon('reload')),
 		'view',
 			traitsui.Action(name='Fit', action='do_fit', tooltip='Zoom to fit', image=support.GetIcon('fit')),
 			traitsui.Action(name='Zoom', action='do_zoom', tooltip='Zoom rectangle', image=support.GetIcon('zoom'), checked_when='zoom_checked', style='toggle'),
