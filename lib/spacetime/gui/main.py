@@ -442,8 +442,9 @@ class MainWindowHandler(traitsui.Handler):
 
 	def do_reload(self, info):
 		app = info.ui.context['object']
-		for tab in app.tabs:
-			tab.reload = True
+		with app.drawmgr.hold():
+			for tab in app.tabs:
+				tab.reload = True
 
 
 class Frame(traits.HasTraits):
