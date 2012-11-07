@@ -29,7 +29,7 @@ class Normalization(object):
 			self.normalization_channel = 1
 
 
-class MSTrend(Normalization, MultiTrend):
+class MSTrend(MultiTrend, Normalization):
 	def setup(self):
 		super(MSTrend, self).setup()
 		self.axes.set_ylabel('Ion current (A)')
@@ -38,7 +38,7 @@ class MSTrend(Normalization, MultiTrend):
 		return chandata.value * self.normalization_factor / self.normalization_channel
 
 
-class MS2D(Normalization, Time2D):
+class MS2D(Time2D, Normalization):
 	def setup(self):
 		super(MS2D, self).setup()
 		self.axes.set_ylabel('Mass (a.m.u.)')
