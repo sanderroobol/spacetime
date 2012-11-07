@@ -562,7 +562,7 @@ class DM3(object):
 		except:
 			print "Warning: could not save thumbnail."
 
-	def getImage(self):
+	def getImage(self, number=0):
 		'''Extracts image data as Image'''
 		
 		# DataTypes for image data <--> PIL decoders
@@ -572,6 +572,7 @@ class DM3(object):
 			7: 'F;32',   #32-bit LE unsigned integer
 			10: 'F;16',    #16-bit LE unsigned integer
 			}
+		dataSize = {1:2, 2:4, 7:4, 10:2} # bits per point for the four dataTypes
 		
 		# get relevant Tags			
 		data_offset = int( self.tags['root.ImageList.1.ImageData.Data.Offset'] )
@@ -579,6 +580,10 @@ class DM3(object):
 		data_type = int( self.tags['root.ImageList.1.ImageData.DataType'] )
 		im_width = int( self.tags['root.ImageList.1.ImageData.Dimensions.0'] )
 		im_height = int( self.tags['root.ImageList.1.ImageData.Dimensions.1'] )
+		im_stack = int( self.tags['root.ImageList.1.ImageData.Dimensions.2'] )
+
+		if number >= im_stack:
+			raise Exception('stack contiains %d images, requested number %d' % (im_stack, number))
 
 		if self.debug>0:
 			print "Notice: image data in %s starts at %s"%(os.path.split(self.__filename)[1], hex(data_offset))
@@ -590,8 +595,9 @@ class DM3(object):
 			if self.debug>0:
 				print "Notice: image data read as %s"%decoder
 				t1 = time.time()
-			self.__f.seek( data_offset )
-			rawdata = self.__f.read(data_size)
+			im_data_size = im_width * im_height * dataSize[data_type] 
+			self.__f.seek( data_offset + number * im_data_size)
+			rawdata = self.__f.read(im_data_size)
 			im = Image.fromstring( 'F', (im_width,im_height), rawdata, 'raw', decoder )
 			if self.debug>0:
 				t2 = time.time()
@@ -603,9 +609,9 @@ class DM3(object):
 		
 	image = property(getImage)
 
-	def getImageData(self):
+	def getImageData(self, number=0):
 		'''Extracts image data as numpy.array'''
-		return im2ar(self.image)
+		return im2ar(self.getImage(number=number))
 
 	imagedata = property(getImageData)
 	
