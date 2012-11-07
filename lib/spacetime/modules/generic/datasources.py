@@ -280,7 +280,7 @@ class PILImage(RGBImage):
 
 class DM3Image(RGBImage):
 	def loadfile(self):
-		return matplotlib.image.pil_to_array(dm3lib.DM3(self.filename).getImage())
+		return dm3lib.DM3(self.filename).getImageData() 
 
 	@staticmethod
 	def get_timeinfo(filename):
@@ -310,4 +310,4 @@ class DM3Stack(DataSource):
 	def iterframes(self):
 		tstart = self.tstart + self.frameno * (self.exposure + self.delay)
 		tend = tstart + self.exposure
-		yield ImageFrame(image=matplotlib.image.pil_to_array(self.dm3.getImage(self.frameno)), tstart=tstart, tend=tend)
+		yield ImageFrame(image=self.dm3.getImageData(self.frameno), tstart=tstart, tend=tend)
