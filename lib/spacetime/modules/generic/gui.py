@@ -795,6 +795,11 @@ class SingleFrameAnimation(traits.HasTraits):
 
 
 class ImageGUI(SubplotGUI):
+	def _plot_default(self):
+		plot = self.plotfactory()
+		plot.mode = 'single frame'
+		return plot
+
 	def reset_autoscale(self):
 		self.rebuild()
 
@@ -1009,10 +1014,6 @@ class RGBImageGUI(ImageGUI, SingleFrameAnimation):
 		config.on_trait_change(self.load_files, 'active')
 		return config
 
-	def _plot_default(self):
-		plot = self.plotfactory()
-		plot.mode = 'single frame'
-		return plot
 
 	@traits.cached_property
 	def _get_file_number_max(self):
@@ -1076,5 +1077,65 @@ class RGBImageGUI(ImageGUI, SingleFrameAnimation):
 				show_labels=False,
 				show_border=True,
 				label='Files',
+			),
+		)
+
+
+class DM3Stack(ImageGUI, SingleFrameAnimation):
+	id = 'dm3stack'
+	label = 'DM3 stack'
+	desc = 'Stack of DM3 microscopy images with manual timing'
+
+	animation_framenumber_trait = 'framenumber'
+	animation_framenumber_low = 0
+	animation_framenumber_high = 'framecount'
+
+	datafactory = datasources.DM3Stack
+	plotfactory = subplots.Image
+
+	framemax = traits.Int(0)
+	framenumber = traits.Int(0)
+
+	exposure = traits.Float(1000)
+	delay = traits.Float(0)
+	tstart = gui.support.DateTimeSelector()
+	tstart_mpldt = traits.DelegatesTo('tstart', 'mpldt')
+	
+	traits_saved = 'framenumber', 'exposure', 'delay', 'tstart_mpldt'
+
+	@traits.on_trait_change('filename, reload')
+	def load_file(self):
+		self.data = self.datafactory(self.filename)
+		self.plot.set_data(self.data)
+		self.framemax = self.data.framecount - 1
+		if self.framenumber > self.framemax:
+			self.framenumber = self.framemax
+		else:
+			self.settings_changed()
+
+	@traits.on_trait_change('framenumber, exposure, delay, tstart_mpldt')
+	def settings_changed(self):
+		if not self.data:
+			return
+		self.data.set_settings(self.framenumber, self.tstart_mpldt, self.exposure/864e5, self.delay/864e5)
+		self.rebuild()
+
+	def traits_view(self):
+		return gui.support.PanelView(
+			traitsui.Group(
+				traitsui.Item('visible'),
+				traitsui.Item('filename', editor=gui.support.FileEditor(filter=['DM3 files', '*.dm3', 'All files', '*'], entries=0)),
+				traitsui.Item('reload', show_label=False),
+				traitsui.Item('size'),
+				traitsui.Item('framenumber', editor=traitsui.RangeEditor(low=0, high_name='framemax', mode='spinner')),
+				show_border=True,
+				label='General',
+			),
+			traitsui.Group(
+				traitsui.Item('tstart', label='Acquisition start', style='custom', editor=traitsui.InstanceEditor()),
+				traitsui.Item('exposure', label='Exposure (ms)'),
+				traitsui.Item('delay', label='Delay (ms)'),
+				show_border=True,
+				label='Manual timing',
 			),
 		)
