@@ -41,6 +41,7 @@ import traceback
 import copy
 
 import logging
+logging.basicConfig()
 logger = logging.getLogger(__name__)
 
 

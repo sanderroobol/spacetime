@@ -42,7 +42,7 @@ def _win32_get_appdata():
 		c_int,
 		wintypes.HANDLE,
 		wintypes.DWORD,
- 		wintypes.LPCWSTR
+		wintypes.LPCWSTR
 	)
 
 	path = wintypes.create_unicode_buffer(wintypes.MAX_PATH)
