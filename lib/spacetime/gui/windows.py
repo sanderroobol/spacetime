@@ -231,11 +231,12 @@ GNU General Public License as published by the Free Software Foundation, either 
 3 of the License, or (at your option) any later version.
 
 The Spacetime logo contains STM data by Kees Herbschleb, Catal. Today 154, 61 (2010).""")
+	image = traits.Any
 
 	traits_view = traitsui.View(
 		traitsui.HGroup(
 			traitsui.Group(
-				traitsui.Item('none', editor=traitsui.ImageEditor(image=support.GetIcon('spacetime-logo'))),
+				traitsui.Item('image', editor=traitsui.ImageEditor(image=support.GetIcon('spacetime-logo'))),
 				show_labels=False,
 				padding=5,
 			),
@@ -248,7 +249,7 @@ The Spacetime logo contains STM data by Kees Herbschleb, Catal. Today 154, 61 (2
 		),
 		title='About {0}'.format(version.name),
 		buttons=[traitsui.OKButton],
-		kind='modal',
+		kind='livemodal',
 	)
 
 
