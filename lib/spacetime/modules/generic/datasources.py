@@ -280,7 +280,7 @@ class PILImage(RGBImage):
 
 class DM3Image(RGBImage):
 	def loadfile(self):
-		return matplotlib.image.pil_to_array(dm3lib.DM3(self.filename).getImage())
+		return dm3lib.DM3(self.filename).getImageData() 
 
 	@staticmethod
 	def get_timeinfo(filename):
@@ -290,3 +290,24 @@ class DM3Image(RGBImage):
 		timestamp = util.mpldtstrptime('{0} {1}'.format(date, time), '%m/%d/%Y %I:%M:%S %p')
 		exposure = float(dm3.tags['root.ImageList.1.ImageTags.Acquisition.Parameters.High Level.Exposure (s)']) * 1e3
 		return timestamp, exposure
+
+
+class DM3Stack(DataSource):
+	frameno = 0
+
+	def __init__(self, *args, **kwargs):
+		super(DM3Stack, self).__init__(*args, **kwargs)
+		self.dm3 = dm3lib.DM3(self.filename)
+		self.framecount = int(self.dm3.tags['root.ImageList.1.ImageData.Dimensions.2'])
+
+	def set_settings(self, frameno, tstart, exposure, delay):
+		# unfortunately, there is no timing info embedded in these files...
+		self.frameno = frameno
+		self.tstart = tstart
+		self.exposure = exposure
+		self.delay = delay
+
+	def iterframes(self):
+		tstart = self.tstart + self.frameno * (self.exposure + self.delay)
+		tend = tstart + self.exposure
+		yield ImageFrame(image=self.dm3.getImageData(self.frameno), tstart=tstart, tend=tend)

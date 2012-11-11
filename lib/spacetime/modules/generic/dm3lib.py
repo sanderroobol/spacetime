@@ -580,7 +580,10 @@ class DM3(object):
 		data_type = int( self.tags['root.ImageList.1.ImageData.DataType'] )
 		im_width = int( self.tags['root.ImageList.1.ImageData.Dimensions.0'] )
 		im_height = int( self.tags['root.ImageList.1.ImageData.Dimensions.1'] )
-		im_stack = int( self.tags['root.ImageList.1.ImageData.Dimensions.2'] )
+		if 'root.ImageList.1.ImageData.Dimensions.2'  in self.tags:
+			im_stack = int( self.tags['root.ImageList.1.ImageData.Dimensions.2'] )
+		else:
+			im_stack = 1
 
 		if number >= im_stack:
 			raise Exception('stack contiains %d images, requested number %d' % (im_stack, number))

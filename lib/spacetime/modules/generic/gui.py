@@ -35,6 +35,7 @@ logger = logging.getLogger(__name__)
 from ... import gui, util
 
 from . import subplots, datasources, datasinks
+from ..lpmcamera import filters
 
 
 class Tab(traits.HasTraits):
@@ -795,6 +796,14 @@ class SingleFrameAnimation(traits.HasTraits):
 
 
 class ImageGUI(SubplotGUI):
+	colormap = 'gray'
+
+	def _plot_default(self):
+		plot = self.plotfactory()
+		plot.set_colormap(self.colormap)
+		plot.mode = 'single frame'
+		return plot
+
 	def reset_autoscale(self):
 		self.rebuild()
 
@@ -985,7 +994,7 @@ class RGBImageConfigurationEditor(RGBImageConfiguration, NonLiveComponentEditor)
 class RGBImageGUI(ImageGUI, SingleFrameAnimation):
 	id = 'rgbimage'
 	label = 'Image'
-	desc = 'Any bitmap image (PNG, JPEG, TIFF, BMP, ...)'
+	desc = 'DM3 microscopy images and ordinary bitmaps (PNG, JPEG, TIFF, BMP, ...)'
 
 	configuration = traits.Instance(RGBImageConfiguration)
 	select_files = traits.Button
@@ -994,7 +1003,9 @@ class RGBImageGUI(ImageGUI, SingleFrameAnimation):
 	selected_index = traits.Int(0)
 	selected_index_lock = traits.Instance(object, args=())
 	file_number_max = traits.Property(depends_on='files')
-	traits_saved = 'configuration.*', 'selected_index', 
+	clip = traits.Float(3)
+
+	traits_saved = 'configuration.*', 'selected_index', 'clip'
 	traits_not_saved = 'filename',
 
 	plotfactory = subplots.Image
@@ -1009,10 +1020,6 @@ class RGBImageGUI(ImageGUI, SingleFrameAnimation):
 		config.on_trait_change(self.load_files, 'active')
 		return config
 
-	def _plot_default(self):
-		plot = self.plotfactory()
-		plot.mode = 'single frame'
-		return plot
 
 	@traits.cached_property
 	def _get_file_number_max(self):
@@ -1047,13 +1054,17 @@ class RGBImageGUI(ImageGUI, SingleFrameAnimation):
 		self.files[self.selected_index].checked = True
 		self.file_changed()
 
+	@traits.on_trait_change('clip')
 	def file_changed(self):
 		f = self.files[self.selected_index]
 		if f.exposure:
 			tend = f.timestamp + f.exposure / 864e5
 		else:
 			tend = None
-		self.plot.set_data(self.datafactory.autodetect(f.path, f.timestamp, tend))
+		data = self.datafactory.autodetect(f.path, f.timestamp, tend)
+		if self.clip > 0:
+			data = data.apply_filter(filters.ClipStdDev(self.clip))
+		self.plot.set_data(data)
 		self.rebuild()
 
 	def _select_files_fired(self):
@@ -1067,7 +1078,7 @@ class RGBImageGUI(ImageGUI, SingleFrameAnimation):
 				traitsui.Item('select_files', show_label=False),
 				traitsui.Item('reload', show_label=False, enabled_when='configuration.active'),
 				traitsui.Item('selected_index', label='Number', editor=traitsui.RangeEditor(low=0, high_name='file_number_max', mode='spinner')),
-			
+				traitsui.Item('clip', label='Color clipping', tooltip='Clip DM3 greyscale at <number> standard deviations away from the average (0 to disable)', editor=gui.support.FloatEditor()),
 				show_border=True,
 				label='General',
 			),
@@ -1076,5 +1087,72 @@ class RGBImageGUI(ImageGUI, SingleFrameAnimation):
 				show_labels=False,
 				show_border=True,
 				label='Files',
+			),
+		)
+
+
+class DM3Stack(ImageGUI, SingleFrameAnimation):
+	id = 'dm3stack'
+	label = 'DM3 stack'
+	desc = 'Stack of DM3 microscopy images with manual timing'
+
+	animation_framenumber_trait = 'framenumber'
+	animation_framenumber_low = 0
+	animation_framenumber_high = 'framecount'
+
+	datafactory = datasources.DM3Stack
+	plotfactory = subplots.Image
+
+	framemax = traits.Int(0)
+	framenumber = traits.Int(0)
+
+	exposure = traits.Float(1000)
+	delay = traits.Float(0)
+	tstart = gui.support.DateTimeSelector()
+	tstart_mpldt = traits.DelegatesTo('tstart', 'mpldt')
+
+	clip = traits.Float(3)
+	
+	traits_saved = 'framenumber', 'exposure', 'delay', 'tstart_mpldt', 'clip'
+
+	@traits.on_trait_change('filename, reload')
+	def load_file(self):
+		data = self.data = self.datafactory(self.filename)
+		self.framemax = self.data.framecount - 1
+		if self.framenumber > self.framemax:
+			self.framenumber = self.framemax
+		else:
+			self.settings_changed()
+
+	@traits.on_trait_change('framenumber, exposure, delay, tstart_mpldt, clip')
+	def settings_changed(self):
+		if not self.data:
+			return
+		self.data.set_settings(self.framenumber, self.tstart_mpldt, self.exposure/864e5, self.delay/864e5)
+		if self.clip > 0:
+			data = self.data.apply_filter(filters.ClipStdDev(self.clip))
+			self.plot.set_data(data)
+		else:
+			self.plot.set_data(self.data)
+		self.rebuild()
+
+	def traits_view(self):
+		return gui.support.PanelView(
+			traitsui.Group(
+				traitsui.Item('visible'),
+				traitsui.Item('filename', editor=gui.support.FileEditor(filter=['DM3 files', '*.dm3', 'All files', '*'], entries=0)),
+				traitsui.Item('reload', show_label=False),
+				traitsui.Item('size'),
+				traitsui.Item('framenumber', editor=traitsui.RangeEditor(low=0, high_name='framemax', mode='spinner')),
+				traitsui.Item('clip', label='Color clipping', tooltip='Clip DM3 greyscale at <number> standard deviations away from the average (0 to disable)', editor=gui.support.FloatEditor()),
+				show_border=True,
+				label='General',
+			),
+			traitsui.Group(
+				traitsui.Item('tstart', label='Acquisition start', style='custom', editor=traitsui.InstanceEditor()),
+				traitsui.Item('exposure', label='Exposure (ms)'),
+				traitsui.Item('delay', label='Delay (ms)'),
+				show_border=True,
+				label='Manual timing',
 			),
 		)
