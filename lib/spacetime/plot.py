@@ -322,10 +322,16 @@ class Plot(object):
 		self.rezero_offset = offset
 
 	def correct_time(self, value):
-		return (value - self.rezero_offset) * self.rezero_unit 
+		if self.rezero:
+			return (value - self.rezero_offset) * self.rezero_unit
+		else:
+			return value
 
 	def correct_time_inverse(self, value):
-		return value / self.rezero_unit + self.rezero_offset
+		if self.rezero:
+			return value / self.rezero_unit + self.rezero_offset
+		else:
+			return value
 
 	def get_ax_limits(self, ax):
 		low, up = ax.get_xlim()
