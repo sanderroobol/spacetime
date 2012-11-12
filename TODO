@@ -1,10 +1,7 @@
-TODO for 1.0
-============
-* Proper raster image support 
-  - choice of manual file selection or directory+pattern
-  - timestamp selection: exif, filename strptime pattern, ctime/mtime, start/exposure/delay
-* Bugfix: zoom to fit / autoscale doesn't work for images
-
+TODO for next release
+=====================
+* Enhance raster image support 
+   - allow for manual file selection
 
 Unprioritized TODO's:
 =====================
@@ -15,34 +12,37 @@ Plotting / presentation
 * Bug: markers can cause autoscaled axes to include [0, 1]
 * Reduce number of digits in FloatEditors
 * Axes labels (mostly y-axis, but also others)
+* Editable channel names
 * Multi-image-mode for multi-channel images
 * Interactive reverse markers: click in time graph and jump to image
 * Colorbar for false color images
 * Support non-uniformly spaced Time2D datasets (through pcolorfast)
 * Custom cursor text for Images (value for false color plots, RGB for raster images; also time for scanning images)
+* Preview size/resolution for export image/movie
+* Remember settings for movie export
+* Scalebars for images
 
 Code structure:
 ---------------
 * Separate concept of Plot and Canvas: multi canvas plots (dual-plot/semi-clone presentation mode)
-
 * Relative paths in project files (introduce File Dependency object for Panels). Possibly 'Bloated project' containing all data files.
 * Multi-file support for most subplots (auto chaining)
 * Generalize DoubleMultiTrend to an arbitrary number of subplots (with or without twinx'ed graphs).
 * Enh: rework subplot management:
         - X-axis labels and vertical spacing when using non-shared axes
 * New: API docs and examples
-* Centralize and enhance mass spec tricks (normalization, fragmentation factors, ionization probabilities)
 
 Other:
 ------
 * Gwyddion Image module (like general raster images, but somehow using the Gwyddion file modules)
 * Movie import for raster image module
 * Open frame in external editor (link to WSxM/Gwyddion/Camera)
+* Enhance mass spec tricks (fragmentation factors & ionization probabilities)
 
 Packaging:
 ----------
 * Native Mac OS X package
-* .deb package for Debian-based Linux distritbutions
+* .deb package for Debian-based Linux distributions
 
 LPM Camera related:
 -------------------
