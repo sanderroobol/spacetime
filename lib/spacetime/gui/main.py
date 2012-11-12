@@ -609,7 +609,7 @@ class App(traits.HasTraits):
 				progress.update(2+p)
 			self.project_path = path
 			wx.CallAfter(self.clear_project_modified)
-			wx.CallAfter(lambda: progress.update(progress.max), progress.close())
+			wx.CallAfter(lambda: (progress.update(progress.max), progress.close()))
 
 	def save_project(self, path):
 		data = [('general', self.tabs[0].get_serialized())]
