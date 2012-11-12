@@ -18,7 +18,6 @@ import sys, os, time
 import struct
 from PIL import Image
 import numpy
-import scipy.misc
 
 __all__ = ["DM3","version"]
 
@@ -27,20 +26,18 @@ version='0.99beta'
 debugLevel = 0   # 0=none, 1-3=basic, 4-5=simple, 6-10 verbose
 
 
+class DM3Exception(Exception):
+	pass
+
+
 ### utility fuctions ###
 # Image to Array
 def im2ar( im ):
 	if im.mode in ('L','I','F'):
 	    # Warning: only works with PIL.Image.Image whose mode is 'L', 'I' or 'F'
     	#          => error if mode == 'I;16' for instance
-	    a = scipy.misc.fromimage( im )
-    	return a
-#	else:
-#		return False
-		
-## Array to image file
-def ar2imfile(filename, a):
-    scipy.misc.imsave(filename, a)
+		return numpy.array(im)
+	raise DM3Exception('invalid mode for conversion of PIL Image to array')
 
 
 ### binary data reading functions ###
@@ -211,7 +208,7 @@ class DM3(object):
 	def __readTagType(self):
 		delim = readString(self.__f, 4)
 		if ( delim != "%%%%" ):
-			raise Exception, hex( self.__f.tell() )+": Tag Type delimiter not %%%%"
+			raise DM3Exception(hex( self.__f.tell() )+": Tag Type delimiter not %%%%")
 		nInTag = readLong(self.__f)
 		self.__readAnyData()
 		return 1
@@ -256,7 +253,7 @@ class DM3(object):
 			arrayTypes = self.__readArrayTypes()
 			self.__readArrayData(arrayTypes)
 		else:
-			raise Exception, "rAnD, " + hex(self.__f.tell()) + ": Can't understand encoded type"		
+			raise DM3Exception("rAnD, " + hex(self.__f.tell()) + ": Can't understand encoded type")
 		return 1
 	
 	def __readNativeData(self, encodedType, etSize):
@@ -264,7 +261,7 @@ class DM3(object):
 		if encodedType in readFunc.keys():
 			val = readFunc[encodedType](self.__f)
 		else:
-			raise Exception, "rND, " + hex(self.__f.tell()) + ": Unknown data type " + str(encodedType)		
+			raise DM3Exception("rND, " + hex(self.__f.tell()) + ": Unknown data type " + str(encodedType))
 		if ( debugLevel > 3 ):
 			print "rND, " + hex(self.__f.tell()) + ": " + str(val)
 		elif ( debugLevel > 0 ):
@@ -353,7 +350,7 @@ class DM3(object):
 			print "nFields = ", nFields
 	
 		if ( nFields > 100 ):
-			raise Exception, hex(self.__f.tell())+": Too many fields"
+			raise DM3Exception(hex(self.__f.tell())+": Too many fields")
 			
 		fieldTypes = []	
 		nameLength = 0
@@ -430,7 +427,7 @@ class DM3(object):
 			isDM3 = False
 		# check file header, raise Exception if not DM3
 		if not isDM3:
-			raise Exception, "%s does not appear to be a DM3 file."%os.path.split(self.__filename)[1]
+			raise DM3Exception("%s does not appear to be a DM3 file."%os.path.split(self.__filename)[1])
 		elif self.debug > 0:
 			print "%s appears to be a DM3 file"%(self.__filename)
 			
@@ -516,7 +513,7 @@ class DM3(object):
 			
 		sizeError = False
 		if (tn_width*tn_height*4) != tn_size:
-			raise Exception, "Cannot extract thumbnail from %s"%os.path.split(self.__filename)[1]
+			raise DM3Exception("Cannot extract thumbnail from %s"%os.path.split(self.__filename)[1])
 		else:
 			self.__f.seek( tn_offset )			
 			rawdata = self.__f.read(tn_size)	
@@ -586,7 +583,7 @@ class DM3(object):
 			im_stack = 1
 
 		if number >= im_stack:
-			raise Exception('stack contiains %d images, requested number %d' % (im_stack, number))
+			raise DM3Exception('stack contiains %d images, requested number %d' % (im_stack, number))
 
 		if self.debug>0:
 			print "Notice: image data in %s starts at %s"%(os.path.split(self.__filename)[1], hex(data_offset))
@@ -606,7 +603,7 @@ class DM3(object):
 				t2 = time.time()
 				print "| read image data: %.3g s"%(t2-t1)
 		else:	
-			raise Exception, "Cannot extract image data from %s: unimplemented DataType."%os.path.split(self.__filename)[1]
+			raise DM3Exception("Cannot extract image data from %s: unimplemented DataType."%os.path.split(self.__filename)[1])
 			
 		return im
 		
