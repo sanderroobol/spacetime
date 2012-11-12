@@ -20,6 +20,7 @@ import enthought.traits.api as traits
 import enthought.traits.ui.api as traitsui
 from enthought.traits.ui.table_column import ObjectColumn
 from enthought.traits.ui.extras.checkbox_column import CheckboxColumn
+from enthought.pyface.api import ProgressDialog
 
 import os
 import wx
@@ -28,6 +29,7 @@ import operator
 import string
 import matplotlib.cm
 import PIL.Image
+import math
 
 import logging
 logger = logging.getLogger(__name__)
@@ -118,14 +120,27 @@ class SerializableComponent(SerializableBase):
 	def activate(self):
 		pass
 
+	def copy_from(self, source, deep=True):
+		self.copy_traits(source, self.traits_saved)
+
 
 class ActivationComponent(SerializableComponent):
 	active = traits.Bool(False)
+	gui_active = False
 	traits_saved = 'active',
 
 	def activate(self):
-		self.active = False
 		self.active = True
+	
+	def activate_gui(self):
+		self.gui_active = True
+
+
+class NonLiveComponentHandler(traitsui.Handler):
+	def close(self, info, is_ok=None):
+		obj = info.ui.context['object']
+		obj.gui_active = False
+		return True
 
 
 class NonLiveComponentEditor(SerializableComponent):
@@ -134,10 +149,11 @@ class NonLiveComponentEditor(SerializableComponent):
 	@classmethod
 	def edit_nonlive(cls, source):
 		obj = cls(id=source.id, parent=source.parent)
-		obj.copy_traits(source, obj.traits_saved)
+		obj.copy_from(source, deep=True)
+		obj.activate_gui()
+
 		if obj.edit_traits().result:
-			source.copy_traits(obj, obj.traits_saved)
-			source.copy_traits(obj, obj.traits_nonlive_synced)
+			source.copy_from(obj, deep=False)
 			source.activate()
 			return True
 		return False
@@ -816,25 +832,6 @@ class FalseColorImageGUI(FalseColorMap, ImageGUI):
 		return plot
 
 
-class RGBImageConfigurationHandler(traitsui.Handler):
-	def close(self, info, is_ok=None):
-		if not is_ok:
-			return True
-
-		obj = info.ui.context['object']
-		return True
-
-		data = obj.datafactory()
-		data.set_config(filename=obj.filename, delimiter=obj.csv_delimiter, skip_lines=obj.csv_skip_lines, time_type=obj.time_type, time_strptime=obj.time_format.strip(), time_column=obj.time_column)
-		try:
-			data.load(probe=True)
-		except:
-			gui.support.Message.exception('The file does not load correctly.', desc='Check the output below and resolve the problem.', title='Loading failed.', parent=info.ui.control)
-			return False
-		else:
-			return True
-
-
 def ImageListEditor():
 	return traitsui.TableEditor(
 		sortable = True,
@@ -894,6 +891,10 @@ class ImageFile(traits.HasTraits):
 					f.checked = False
 					return
 
+	@classmethod
+	def copy(cls, org, parent):
+		return cls(id=org.id, checked=org.checked, path=org.path, timestamp=org.timestamp, exposure=org.exposure, parent=parent)
+
 
 class RGBImageConfiguration(ActivationComponent):
 	directory = traits.Directory
@@ -908,6 +909,15 @@ class RGBImageConfiguration(ActivationComponent):
 	time_delay = traits.Float(0)
 
 	traits_saved = 'directory', 'pattern', 'time_source', 'time_start', 'time_exposure', 'time_delay', 'time_source', 'active'
+
+	def copy_from(self, source, deep=True):
+		super(RGBImageConfiguration, self).copy_from(source, deep)
+		if deep:
+			self.files = []
+			files = [ImageFile.copy(f, parent=self.files) for f in source.files]
+			self.files.extend(files)
+		else:
+			self.files = source.files
 
 	def get_timestamp(self, i, fn):
 		try:
@@ -928,9 +938,25 @@ class RGBImageConfiguration(ActivationComponent):
 		return files
 
 	def get_files(self, reload=False):
+		chunksize = self.parent.probe_progress_chunksize
+
 		if reload or not self.files:
+			filenames = glob.glob(os.path.join(self.directory, self.pattern))
+			chunkcount = int(math.ceil(float(len(filenames)) / chunksize))
+			if chunkcount > 1:
+				progress = ProgressDialog(title="Images", message="Loading images", max=chunkcount, can_cancel=False, parent=self.parent.context.uiparent)
+			else:
+				progress = gui.support.DummyProgressDialog()
+
 			files = []
-			files.extend(ImageFile.probefile(files, i, fn, self.get_timestamp) for (i, fn) in enumerate(glob.glob(os.path.join(self.directory, self.pattern))))
+			progress.open()
+			for i in range(chunkcount):
+				eiter = enumerate(filenames[chunksize*i:chunksize*(i+1)], chunksize*i)
+				files.extend(ImageFile.probefile(files, i, fn, self.get_timestamp) for (i, fn) in eiter)
+				progress.update(i)
+				import time; time.sleep(0.1)
+			progress.update(progress.max)
+			progress.close()
 		self.files = self.sort_files(files)
 
 
@@ -945,13 +971,30 @@ class RGBImageConfigurationEditor(RGBImageConfiguration, NonLiveComponentEditor)
 
 	@traits.on_trait_change('directory, pattern')
 	def reload_files(self):
-		self.get_files(reload=True)
+		if self.gui_active:
+			self.get_files(reload=True)
 
 	@traits.on_trait_change('time_source')
 	def retime_files(self):
+		if not self.gui_active:
+			return
+		chunksize = self.parent.probe_progress_chunksize
+		chunkcount = int(math.ceil(float(len(self.files)) / chunksize))
+		if chunkcount > 1:
+			progress = ProgressDialog(title="Images", message="Loading images", max=chunkcount, can_cancel=False, parent=self.context.uiparent)
+		else:
+			progress = gui.support.DummyProgressDialog()
+
+		progress.open()
 		for i, f in enumerate(self.files):
+			if i % chunksize == 0:
+				progress.update(i / chunksize)
 			f.timestamp, f.exposure = self.get_timestamp(i, f.path)
+			import time; time.sleep(0.1)
+			
 		self.files = self.sort_files(self.files)
+		progress.update(progress.max)
+		progress.close()
 
 	@traits.on_trait_change('time_start, time_exposure, time_delay')
 	def manual_retime_files(self):
@@ -983,7 +1026,7 @@ class RGBImageConfigurationEditor(RGBImageConfiguration, NonLiveComponentEditor)
 				),
 				layout='normal',
 			),
-			handler=RGBImageConfigurationHandler(),
+			handler=NonLiveComponentHandler(),
 			buttons=traitsui.OKCancelButtons,
 			width=500,
 			kind='livemodal',
@@ -1015,11 +1058,12 @@ class RGBImageGUI(ImageGUI, SingleFrameAnimation):
 	animation_framenumber_low = 0
 	animation_framenumber_high = 'file_number_max'
 
+	probe_progress_chunksize = 25
+
 	def _configuration_default(self):
 		config = RGBImageConfiguration(id=self.id+'.configuration', parent=self)
 		config.on_trait_change(self.load_files, 'active')
 		return config
-
 
 	@traits.cached_property
 	def _get_file_number_max(self):

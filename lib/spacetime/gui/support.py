@@ -348,3 +348,15 @@ def EnumMapping(items):
 			key, value = item
 		out[key] = "{0:0{pad}}:{1}".format(n, value, pad=pad)
 	return out
+
+
+class DummyProgressDialog(object):
+	def noop(self, *args, **kwargs):
+		pass
+	
+	open = noop
+	update = noop
+	close = noop
+
+	min = None
+	max = None
