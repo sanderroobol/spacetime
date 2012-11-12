@@ -919,6 +919,9 @@ class RGBImageConfiguration(ActivationComponent):
 		else:
 			self.files = source.files
 
+	def activate(self):
+		self.trait_setq(active=True)
+
 	def get_timestamp(self, i, fn):
 		try:
 			if self.time_source == 'manual':
@@ -954,7 +957,6 @@ class RGBImageConfiguration(ActivationComponent):
 				eiter = enumerate(filenames[chunksize*i:chunksize*(i+1)], chunksize*i)
 				files.extend(ImageFile.probefile(files, i, fn, self.get_timestamp) for (i, fn) in eiter)
 				progress.update(i)
-				import time; time.sleep(0.1)
 			progress.update(progress.max)
 			progress.close()
 		self.files = self.sort_files(files)
@@ -990,7 +992,6 @@ class RGBImageConfigurationEditor(RGBImageConfiguration, NonLiveComponentEditor)
 			if i % chunksize == 0:
 				progress.update(i / chunksize)
 			f.timestamp, f.exposure = self.get_timestamp(i, f.path)
-			import time; time.sleep(0.1)
 			
 		self.files = self.sort_files(self.files)
 		progress.update(progress.max)
