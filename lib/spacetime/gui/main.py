@@ -379,7 +379,8 @@ class MainWindowHandler(traitsui.Handler):
 			return
 		except:
 			exc_info = sys.exc_info()[2]
-			movie.close()
+			if movie:
+				movie.close()
 			if stdout_cb:
 				try:
 					stdout = stdout_cb()
