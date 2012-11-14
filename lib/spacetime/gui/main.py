@@ -22,7 +22,6 @@ from __future__ import division
 from .figure import MPLFigureEditor, DrawManager, CallbackLoopManager
 
 from .. import plot, modules, version, prefs, util, pypymanager
-from ..modules import loader
 from . import support, windows
 
 import enthought.traits.api as traits
@@ -41,7 +40,6 @@ import traceback
 import copy
 
 import logging
-logging.basicConfig()
 logger = logging.getLogger(__name__)
 
 
@@ -502,7 +500,7 @@ class App(traits.HasTraits):
 	maintab = traits.Instance(MainTab)
 	status = traits.DelegatesTo('maintab')
 	drawmgr = traits.Instance(DrawManager)
-	moduleloader = traits.Instance(modules.loader.Loader, args=())
+	moduleloader = traits.Instance(modules.loader.Loader)
 	frame = traits.Instance(Frame)
 	figurewindowui = None
 	figure_fullscreen = traits.Bool(False)
@@ -845,6 +843,7 @@ class App(traits.HasTraits):
 		try:
 			app = wx.PySimpleApp()
 
+			self.moduleloader = modules.loader.Loader()
 			self.ui = self.edit_traits()
 			self.context.uiparent = self.ui.control
 			self.context.plot = self.plot

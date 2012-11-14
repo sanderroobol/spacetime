@@ -21,8 +21,6 @@ import enthought.traits.ui.api as traitsui
 
 from ..generic.gui import DoubleTimeTrendGUI
 from ..generic.datasources import CSVFactory
-from ..lpmcamera.gui import CameraTrendGUI
-from ..lpmcamera.datasources import Camera as CameraDataSource
 from ..lpmgascabinet import subplots as lpmsubplots
 from ...gui import support
 

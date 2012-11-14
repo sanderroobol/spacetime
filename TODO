@@ -2,6 +2,7 @@ TODO for next release
 =====================
 * Enhance raster image support 
    - allow for manual file selection
+* Make Python Camera module optional
 
 Unprioritized TODO's:
 =====================

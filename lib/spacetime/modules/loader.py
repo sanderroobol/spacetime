@@ -17,7 +17,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from .generic.gui import SubplotGUI
-import os, glob
+import os, glob, logging, traceback
+logging.getLogger(__name__)
 
 class Loader(object):
 	def __init__(self):
@@ -48,8 +49,19 @@ class Loader(object):
 		gui_files = glob.glob(os.path.join(mdir, '*', 'gui.py'))
 		modules = [os.path.split(os.path.split(f)[0])[1] for f in gui_files]
 		for mname in modules:
-			self.modules[mname] = getattr(__import__('spacetime.modules', globals(), locals(), [mname], -1), mname)
-			module = __import__('spacetime.modules.{0}'.format(mname), globals(), locals(), ['gui'], -1)
+			try:
+				self.modules[mname] = getattr(__import__('spacetime.modules', globals(), locals(), [mname], -1), mname)
+			except ImportError as e:
+				logging.warning('cannot load module: spacetime.modules.{0}: {1}'.format(mname, e))
+				logging.debug(traceback.format_exc())
+				continue
+			try:
+				module = __import__('spacetime.modules.{0}'.format(mname), globals(), locals(), ['gui'], -1)
+			except ImportError as e:
+				del self.modules[mname]
+				logging.warning('cannot load module: spacetime.modules.{0}.gui: {1}'.format(mname, e))
+				logging.debug(traceback.format_exc())
+				continue
 			self.guis_by_module[mname] = []
 			for i in dir(module.gui):
 				obj = getattr(module.gui, i)
