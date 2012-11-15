@@ -223,7 +223,7 @@ class SubplotGUI(SerializableTab):
 
 	relativistic_group = traitsui.Group(
 		traitsui.Item('simultaneity_offset', label='Simultaneity offset (s)', editor=gui.support.FloatEditor()),
-		traitsui.Item('time_dilation_factor', editor=traitsui.RangeEditor(low=.999, high=1.001)),
+		traitsui.Item('time_dilation_factor', editor=gui.support.RangeEditor(low=.999, high=1.001)),
 		show_border=True,
 		label='Relativistic corrections',
 	)
@@ -803,8 +803,8 @@ class SingleFrameAnimation(traits.HasTraits):
 		rangeopts = {'mode':'spinner', lkey:self.animation_framenumber_low, hkey:self.animation_framenumber_high}
 		return traitsui.View(traitsui.Group(
 			traitsui.Group(
-				traitsui.Item('animation_firstframe', label='First', editor=traitsui.RangeEditor(**rangeopts)),
-				traitsui.Item('animation_lastframe', label='Last', editor=traitsui.RangeEditor(**rangeopts)),
+				traitsui.Item('animation_firstframe', label='First', editor=gui.support.RangeEditor(**rangeopts)),
+				traitsui.Item('animation_lastframe', label='Last', editor=gui.support.RangeEditor(**rangeopts)),
 				label='Frames',
 				show_border=True,
 			)
@@ -1007,7 +1007,7 @@ class RGBImageConfigurationEditor(RGBImageConfiguration, NonLiveComponentEditor)
 			traitsui.Group(
 				traitsui.Group(
 					traitsui.Item('directory', editor=gui.support.DirectoryEditor()),
-					traitsui.Item('pattern'),
+					traitsui.Item('pattern', editor=gui.support.TextEditor(),
 					label='Files',
 					show_border=True,
 				),
@@ -1122,7 +1122,7 @@ class RGBImageGUI(ImageGUI, SingleFrameAnimation):
 				traitsui.Item('size'),
 				traitsui.Item('select_files', show_label=False),
 				traitsui.Item('reload', show_label=False, enabled_when='configuration.active'),
-				traitsui.Item('selected_index', label='Number', editor=traitsui.RangeEditor(low=0, high_name='file_number_max', mode='spinner', enter_set=True, auto_set=False)),
+				traitsui.Item('selected_index', label='Number', editor=gui.support.RangeEditor(low=0, high_name='file_number_max', mode='spinner')),
 				traitsui.Item('clip', label='Color clipping', tooltip='Clip DM3 greyscale at <number> standard deviations away from the average (0 to disable)', editor=gui.support.FloatEditor()),
 				show_border=True,
 				label='General',
@@ -1188,7 +1188,7 @@ class DM3Stack(ImageGUI, SingleFrameAnimation):
 				traitsui.Item('filename', editor=gui.support.FileEditor(filter=['DM3 files', '*.dm3', 'All files', '*'], entries=0)),
 				traitsui.Item('reload', show_label=False),
 				traitsui.Item('size'),
-				traitsui.Item('framenumber', editor=traitsui.RangeEditor(low=0, high_name='framemax', mode='spinner', enter_set=True, auto_set=False)),
+				traitsui.Item('framenumber', editor=gui.support.RangeEditor(low=0, high_name='framemax', mode='spinner', enter_set=True, auto_set=False)),
 				traitsui.Item('clip', label='Color clipping', tooltip='Clip DM3 greyscale at <number> standard deviations away from the average (0 to disable)', editor=gui.support.FloatEditor()),
 				show_border=True,
 				label='General',

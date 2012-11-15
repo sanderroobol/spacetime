@@ -175,8 +175,14 @@ class TimeEditor(enthought.traits.ui.basic_editor_factory.BasicEditorFactory, tr
 	klass = TimeEditorImplementation
 
 
+def TextEditor(**kwargs):
+	return traitsui.TextEditor(auto_set=False, enter_set=True, **kwargs)
+
 def FloatEditor(**kwargs):
-	return traitsui.TextEditor(auto_set=False, enter_set=True, evaluate=float, **kwargs)
+	return TextEditor(evaluate=float, **kwargs)
+
+def RangeEditor(**kwargs):
+	return traitsui.RangeEditor(auto_set=False, enter_set=True, **kwargs)
 
 
 class AxisLimits(traits.HasTraits):
@@ -278,7 +284,7 @@ class DateTimeSelector(traits.HasTraits):
 		traitsui.VGroup(
 			traitsui.Item('date'),
 			traitsui.Item('time', editor=traitsui.TimeEditor()),
-			traitsui.Item('usecs', label='Microseconds', editor=traitsui.RangeEditor(low=0, high=999999))
+			traitsui.Item('usecs', label='Microseconds', editor=RangeEditor(low=0, high=999999))
 	))
 
 
