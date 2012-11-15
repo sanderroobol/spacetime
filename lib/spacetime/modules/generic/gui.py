@@ -341,7 +341,7 @@ class TimeTrendGUI(SubplotGUI):
 			self.ymin, self.ymax = ax.get_ylim()
 		if not self.context.callbacks.is_avoiding(self.ylimits):
 			self.yauto = False
-		logger.info('%s.ylim_callback: %s', self.__class__.__name__, self.ylimits)
+		logger.debug('%s.ylim_callback: %s', self.__class__.__name__, self.ylimits)
 
 	def update_channel_names(self):
 		if self.channel_names:
@@ -376,7 +376,7 @@ class TimeTrendGUI(SubplotGUI):
 	@traits.on_trait_change('ymin, ymax, yauto')
 	@gui.figure.CallbackLoopManager.decorator('ylimits')
 	def ylim_changed(self):
-		logger.info('%s.ylim_changed: %s', self.__class__.__name__, self.ylimits)
+		logger.debug('%s.ylim_changed: %s', self.__class__.__name__, self.ylimits)
 		self.ymin, self.ymax = self.plot.set_ylim(self.ylimits.min, self.ylimits.max, self.ylimits.auto)
 		self.redraw()
 
@@ -457,13 +457,13 @@ class DoubleTimeTrendGUI(TimeTrendGUI):
 				self.ymin, self.ymax = ax.get_ylim()
 			if not self.context.callbacks.is_avoiding(self.ylimits):
 				self.yauto = False
-			logger.info('%s.ylim_callback primary: %s', self.__class__.__name__, self.ylimits)
+			logger.debug('%s.ylim_callback primary: %s', self.__class__.__name__, self.ylimits)
 		elif ax is self.plot.secondaryaxes:
 			with self.context.callbacks.avoid(self.ylimits2):
 				self.ymin2, self.ymax2 = ax.get_ylim()
 			if not self.context.callbacks.is_avoiding(self.ylimits2):
 				self.yauto2 = False
-			logger.info('%s.ylim_callback secondary: %s', self.__class__.__name__, self.ylimits2)
+			logger.debug('%s.ylim_callback secondary: %s', self.__class__.__name__, self.ylimits2)
 
 	# extend the callback protection to include ylimits2 as well
 	@traits.on_trait_change('ymin, ymax, yauto')
@@ -475,7 +475,7 @@ class DoubleTimeTrendGUI(TimeTrendGUI):
 	@traits.on_trait_change('ymin2, ymax2, yauto2')
 	@gui.figure.CallbackLoopManager.decorator('ylimits', 'ylimits2')
 	def ylim2_changed(self):
-		logger.info('%s.ylim2_changed: %s', self.__class__.__name__, self.ylimits2)
+		logger.debug('%s.ylim2_changed: %s', self.__class__.__name__, self.ylimits2)
 		self.ymin2, self.ymax2 = self.plot.set_ylim2(self.ylimits2.min, self.ylimits2.max, self.ylimits2.auto)
 		self.redraw()
 
@@ -526,7 +526,7 @@ class XlimitsGUI(traits.HasTraits):
 	@traits.on_trait_change('xmin, xmax, xauto')
 	@gui.figure.CallbackLoopManager.decorator('xlimits')
 	def xlim_changed(self):
-		logger.info('%s.xlim_changed: %s', self.__class__.__name__, self.xlimits)
+		logger.debug('%s.xlim_changed: %s', self.__class__.__name__, self.xlimits)
 		self.xmin, self.xmax = self.plot.set_xlim(self.xlimits.min, self.xlimits.max, self.xlimits.auto)
 		self.redraw()
 
@@ -540,7 +540,7 @@ class XlimitsGUI(traits.HasTraits):
 			self.xmin, self.xmax = ax.get_xlim()
 		if not self.context.callbacks.is_avoiding(self.xlimits):
 			self.xauto = False
-		logger.info('%s.xlim_callback: %s', self.__class__.__name__, self.xlimits)
+		logger.debug('%s.xlim_callback: %s', self.__class__.__name__, self.xlimits)
 
 	def reset_autoscale(self):
 		self.xauto = True
@@ -704,12 +704,12 @@ class FalseColorMap(traits.HasTraits):
 	def clim_callback(self, cmin, cmax):
 		self.cmin = cmin
 		self.cmax = cmax
-		logger.info('%s.clim_callback: %s', self.__class__.__name__, self.climits)
+		logger.debug('%s.clim_callback: %s', self.__class__.__name__, self.climits)
 
 	@traits.on_trait_change('cmin, cmax, cauto, clog')
 	@gui.figure.CallbackLoopManager.decorator('climits')
 	def clim_changed(self):
-		logger.info('%s.clim_changed: %s', self.__class__.__name__, self.climits)
+		logger.debug('%s.clim_changed: %s', self.__class__.__name__, self.climits)
 		self.plot.set_clim(self.climits.min, self.climits.max, self.climits.auto, self.climits.log)
 		self.rebuild()
 

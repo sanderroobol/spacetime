@@ -40,6 +40,7 @@ import traceback
 import copy
 
 import logging
+logging.basicConfig()
 logger = logging.getLogger(__name__)
 
 
@@ -74,12 +75,12 @@ class MainTab(modules.generic.gui.SerializableTab):
 			self.xmin_mpldt, self.xmax_mpldt = self.context.plot.get_ax_limits(ax)
 		if not self.context.callbacks.is_avoiding(self.xlimits):
 			self.xauto = False
-		logger.info('%s.xlim_callback: (%s, %s) %s', self.__class__.__name__, self.xlimits.min, self.xlimits.max, 'auto' if self.xauto else 'manual')
+		logger.debug('%s.xlim_callback: (%s, %s) %s', self.__class__.__name__, self.xlimits.min, self.xlimits.max, 'auto' if self.xauto else 'manual')
 
 	@traits.on_trait_change('xmin_mpldt, xmax_mpldt, xauto')
 	@CallbackLoopManager.decorator('xlimits')
 	def xlim_changed(self):
-		logger.info('%s.xlim_changed: (%s, %s) %s', self.__class__.__name__, self.xlimits.min, self.xlimits.max, 'auto' if self.xauto else 'manual')
+		logger.debug('%s.xlim_changed: (%s, %s) %s', self.__class__.__name__, self.xlimits.min, self.xlimits.max, 'auto' if self.xauto else 'manual')
 		self.xmin_mpldt, self.xmax_mpldt = self.context.plot.set_shared_xlim(self.xmin_mpldt, self.xmax_mpldt, self.xauto)
 		self.context.canvas.redraw()
 
@@ -521,7 +522,7 @@ class App(traits.HasTraits):
 	tabs_selected = traits.Instance(modules.generic.gui.Tab)
 
 	def on_figure_resize(self, event):
-		logger.info('on_figure_resize called')
+		logger.debug('on_figure_resize called')
 		self.context.canvas.redraw()
 
 	def redraw_canvas(self):
@@ -830,11 +831,11 @@ class App(traits.HasTraits):
 	def run(self):
 		options, args = self.parseargs()
 
+		logger = logging.getLogger()
 		if options.debug:
-			loglevel = logging.DEBUG
+			logger.setLevel(logging.DEBUG)
 		else:
-			loglevel = logging.WARNING
-		logging.basicConfig(level=loglevel)
+			logger.setLevel(logging.WARNING)
 
 		if options.pypy:
 			pypymanager.set_executable('pypy')

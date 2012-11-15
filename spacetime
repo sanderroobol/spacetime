@@ -19,6 +19,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys
+import logging
+
+if '--debug' in sys.argv:
+	logging.basicConfig(level=logging.DEBUG)
+else:
+	logging.basicConfig(level=logging.WARNING)
+logger = logging.getLogger(__name__)
 
 try:
 	import spacetime.gui.main
@@ -27,13 +34,13 @@ except ImportError:
 	try:
 		import spacetime.gui.main
 	except ImportError:
-		sys.stderr.write("Unable to load Spacetime module spacetime.app\n"
-			"Please install Spacetime in your PYTHONPATH or in ./lib\n")
-		exit(1)
+		logger.error("Unable to load Spacetime module spacetime.app\n"
+			"Please install Spacetime in your PYTHONPATH or in ./lib")
+		sys.exit(1)
 	else:
-		sys.stderr.write("Loading Spacetime from ./lib\n")
+		logger.info("Loading Spacetime from ./lib")
 
 app = spacetime.gui.main.App()
 context = app.context
-del app, sys, spacetime
+del sys, logging, logger, spacetime, app
 context.app.run()

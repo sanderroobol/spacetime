@@ -214,20 +214,20 @@ class CallbackLoopManager(object):
 
 	def is_avoiding(self, *objs):
 		if self._general_blockade:
-			logger.info("is_avoiding: general blockade (%r)", objs)
+			logger.debug("is_avoiding: general blockade (%r)", objs)
 			return True
 		for obj in objs:
 			if obj in self.objects:
-				logger.info("is_avoiding: deny (%r + %r)", self.objects, objs)
+				logger.debug("is_avoiding: deny (%r + %r)", self.objects, objs)
 				return True
-		logger.info("is_avoiding: allow (%r + %r)", self.objects, objs)
+		logger.debug("is_avoiding: allow (%r + %r)", self.objects, objs)
 		return False
 
 	def avoid(self, *objs):
 		return util.ContextManager(lambda: self._acquire(objs), lambda x,y,z: self._release(objs))
 
 	def _acquire(self, objs):
-		logger.info("_acquire: %r", objs)
+		logger.debug("_acquire: %r", objs)
 		for obj in objs:
 			if obj in self.objects:
 				self.objects[obj] += 1
@@ -235,7 +235,7 @@ class CallbackLoopManager(object):
 				self.objects[obj] = 1
 		
 	def _release(self, objs):
-		logger.info("_release: %r", objs)
+		logger.debug("_release: %r", objs)
 		for obj in objs:
 			self.objects[obj] -= 1
 			if not self.objects[obj]:

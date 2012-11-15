@@ -18,7 +18,7 @@
 
 from .generic.gui import SubplotGUI
 import os, glob, logging, traceback
-logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 class Loader(object):
 	def __init__(self):
@@ -51,16 +51,16 @@ class Loader(object):
 		for mname in modules:
 			try:
 				self.modules[mname] = getattr(__import__('spacetime.modules', globals(), locals(), [mname], -1), mname)
-			except ImportError as e:
-				logging.warning('cannot load module: spacetime.modules.{0}: {1}'.format(mname, e))
-				logging.debug(traceback.format_exc())
+			except ImportError:
+				logger.warning('cannot resolve dependencies for spacetime.modules.{0}'.format(mname))
+				logger.debug(traceback.format_exc())
 				continue
 			try:
 				module = __import__('spacetime.modules.{0}'.format(mname), globals(), locals(), ['gui'], -1)
-			except ImportError as e:
+			except ImportError:
 				del self.modules[mname]
-				logging.warning('cannot load module: spacetime.modules.{0}.gui: {1}'.format(mname, e))
-				logging.debug(traceback.format_exc())
+				logger.warning('cannot resolve dependencies for spacetime.modules.{0}.gui'.format(mname))
+				logger.debug(traceback.format_exc())
 				continue
 			self.guis_by_module[mname] = []
 			for i in dir(module.gui):
