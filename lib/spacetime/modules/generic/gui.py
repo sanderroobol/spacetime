@@ -1007,7 +1007,7 @@ class RGBImageConfigurationEditor(RGBImageConfiguration, NonLiveComponentEditor)
 			traitsui.Group(
 				traitsui.Group(
 					traitsui.Item('directory', editor=gui.support.DirectoryEditor()),
-					traitsui.Item('pattern', editor=gui.support.TextEditor(),
+					traitsui.Item('pattern', editor=gui.support.TextEditor()),
 					label='Files',
 					show_border=True,
 				),
