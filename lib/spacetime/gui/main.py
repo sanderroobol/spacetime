@@ -446,6 +446,10 @@ class MainWindowHandler(traitsui.Handler):
 			for tab in app.tabs:
 				tab.reload = True
 
+	def do_copy(self, info):
+		context = info.ui.context['object'].context
+		context.plot.figure.canvas.Copy_to_Clipboard()
+
 
 class Frame(traits.HasTraits):
 	pass
@@ -774,9 +778,10 @@ class App(traits.HasTraits):
 		),
 		traitsui.Menu(
 			'export',
-				traitsui.Action(name='&Export data...', action='do_export_image', accelerator='Ctrl+D', image=support.GetIcon('export')),
-				traitsui.Action(name='&Export image...', action='do_export_image', accelerator='Ctrl+E', image=support.GetIcon('image')),
-				traitsui.Action(name='&Export movie...', action='do_export_movie', accelerator='Ctrl+M', image=support.GetIcon('movie')),
+				traitsui.Action(name='Export &data...', action='do_export_image', accelerator='Ctrl+D', image=support.GetIcon('export')),
+				traitsui.Action(name='Export &image...', action='do_export_image', accelerator='Ctrl+E', image=support.GetIcon('image')),
+				traitsui.Action(name='&Copy to clipboard', action='do_copy', accelerator='Ctrl+C', tooltip='Copy to clipboard', image=support.GetIcon('copy')),
+				traitsui.Action(name='Export &movie...', action='do_export_movie', accelerator='Ctrl+M', image=support.GetIcon('movie')),
 			'python',
 				traitsui.Action(name='&Python console...', action='do_python', image=support.GetIcon('python')),
 			name='&Tools',
@@ -803,6 +808,8 @@ class App(traits.HasTraits):
 		'export',
 			traitsui.Action(name='Export data', action='do_export_data', tooltip='Export data', image=support.GetIcon('export')),
 			traitsui.Action(name='Export image', action='do_export_image', tooltip='Export image', image=support.GetIcon('image')),
+			traitsui.Action(name='&Copy to clipboard', action='do_copy', accelerator='Ctrl+C', tooltip='Copy to clipboard', image=support.GetIcon('copy')),
+
 			traitsui.Action(name='Export movie', action='do_export_movie', tooltip='Export movie', image=support.GetIcon('movie')),
 		'python', 
 			traitsui.Action(name='Python', action='do_python', tooltip='Python console', image=support.GetIcon('python')),
