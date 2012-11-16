@@ -1188,7 +1188,7 @@ class DM3Stack(ImageGUI, SingleFrameAnimation):
 				traitsui.Item('filename', editor=gui.support.FileEditor(filter=['DM3 files', '*.dm3', 'All files', '*'], entries=0)),
 				traitsui.Item('reload', show_label=False),
 				traitsui.Item('size'),
-				traitsui.Item('framenumber', editor=gui.support.RangeEditor(low=0, high_name='framemax', mode='spinner', enter_set=True, auto_set=False)),
+				traitsui.Item('framenumber', editor=gui.support.RangeEditor(low=0, high_name='framemax', mode='spinner')),
 				traitsui.Item('clip', label='Color clipping', tooltip='Clip DM3 greyscale at <number> standard deviations away from the average (0 to disable)', editor=gui.support.FloatEditor()),
 				show_border=True,
 				label='General',
