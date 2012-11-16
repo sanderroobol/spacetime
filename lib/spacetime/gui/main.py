@@ -272,9 +272,8 @@ class MainWindowHandler(traitsui.Handler):
 		
 	def do_export_image(self, info):
 		context = info.ui.context['object'].context
-		mainwindow = context.app
 		
-		exportdialog = windows.ExportDialog(context=context)
+		exportdialog = context.app.export_image_dialog
 		if not exportdialog.run().result:
 			return
 
@@ -306,7 +305,7 @@ class MainWindowHandler(traitsui.Handler):
 	def do_export_movie(self, info):
 		context = info.ui.context['object'].context
 		
-		moviedialog = windows.MovieDialog(context=context)
+		moviedialog = context.app.export_movie_dialog
 		try:
 			if not moviedialog.run().result:
 				return
@@ -509,6 +508,9 @@ class App(traits.HasTraits):
 
 	context = traits.Instance(Context)
 
+	export_image_dialog = traits.Instance(traits.HasTraits)
+	export_movie_dialog = traits.Instance(traits.HasTraits)
+
 	pan_checked = traits.Bool(False)
 	zoom_checked = traits.Bool(False)
 	presentation_mode = traits.Bool(False)
@@ -546,6 +548,12 @@ class App(traits.HasTraits):
 
 	def _drawmgr_default(self):
 		return DrawManager(self.rebuild_figure, self.redraw_canvas)
+
+	def _export_image_dialog_default(self):
+		return windows.ExportDialog(context=self.context)
+
+	def _export_movie_dialog_default(self):
+		return windows.MovieDialog(context=self.context)
 
 	def _tabs_changed(self):
 		self._tabs_modified = True
