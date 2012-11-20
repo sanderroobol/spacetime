@@ -1,4 +1,4 @@
-# This file is part of Spacetime.
+# Thi file is part of Spacetime.
 #
 # Copyright (C) 2010-2012 Leiden University.
 # Written by Sander Roobol.
@@ -376,7 +376,6 @@ class MainWindowHandler(traitsui.Handler):
 			movie.abort()
 			return
 		except:
-			exc_info = sys.exc_info()[2]
 			if movie:
 				movie.close()
 			if stdout_cb:
@@ -390,7 +389,7 @@ class MainWindowHandler(traitsui.Handler):
 				parent=context.uiparent, 
 				message='Movie export failed', title='Exception occured',
 				desc='Something went wrong while exporting the movie. Detailed debugging information can be found below.',
-				bt="FFMPEG output:\n{0}\n\nBACKTRACE:\n{1}".format(stdout, traceback.format_exc(exc_info))
+				bt="FFMPEG output:\n{0}\n\nBACKTRACE:\n{1}".format(stdout, traceback.format_exc())
 			)
 			return
 		finally:
