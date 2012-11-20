@@ -1080,9 +1080,9 @@ class RGBImageGUI(ImageGUI, SingleFrameAnimation):
 	@traits.on_trait_change('files, files.checked')
 	def files_changed(self, object, name, old, new):
 		# CallbackLoopManager.decorator is not compatible with the extra parameters for trait notification, so check and avoid manually
-		if self.context.callbacks.is_avoiding('selected_index_lock'):
+		if self.context.callbacks.is_avoiding(self.selected_index_lock):
 			return
-		with self.context.callbacks.avoid('selected_index_lock'):
+		with self.context.callbacks.avoid(self.selected_index_lock):
 			# ignore uncheck events, unless unchecking the last file
 			if name == 'checked' and old == True and new == False:
 				if sum(f.checked for f in self.files) == 0:
