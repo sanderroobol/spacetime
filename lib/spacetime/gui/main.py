@@ -398,7 +398,7 @@ class MainWindowHandler(traitsui.Handler):
 				stdout = stdout_cb()
 			progress.close()
 			try:
-				os.remove(tempfile)
+				os.remove(temppath)
 			except:
 				pass
 			context.plot.relocate(oldfig)
