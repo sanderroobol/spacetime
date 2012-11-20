@@ -67,8 +67,15 @@ class Message(traits.HasTraits):
 		return klass(**kwargs).edit_traits(parent=parent).result
 	
 	@classmethod
-	def exception(klass, message, desc='', title='Exception occured', parent=None):
-		return klass.show(message=message, desc=desc, title=title, bt=traceback.format_exc(sys.exc_info()[2]), parent=parent)
+	def exception(klass, **kwargs):
+		title = kwargs.pop('title', 'Exception occurred')
+		message = kwargs.pop('message', 'An unexpected error has occurred')
+		desc = kwargs.pop('desc', 'Some objects could be in an undefined state, but it is often possible to continue working. Detailed information on the error can be found below.')
+		if 'bt' in kwargs:
+			bt = kwargs.pop('bt')
+		else:
+			bt = traceback.format_exc()
+		return klass.show(title=title, message=message, desc=desc, bt=bt, **kwargs)
 
 	@classmethod
 	def file_open_failed(klass, filename, parent=None):

@@ -527,6 +527,8 @@ class App(traits.HasTraits):
 	tabs = traits.List(traits.Instance(modules.generic.gui.Tab))
 	tabs_selected = traits.Instance(modules.generic.gui.Tab)
 
+	debug = False
+
 	def on_figure_resize(self, event):
 		logger.debug('on_figure_resize called')
 		self.context.canvas.redraw()
@@ -745,7 +747,14 @@ class App(traits.HasTraits):
 	def excepthook(self, type, value, tb):
 		text = ''.join(traceback.format_exception(type, value, tb))
 		logger.error(text)
-		support.Message.show(parent=self.context.uiparent, title='Exception occured', message='An unexpected error has occured', desc='Some objects could be in an undefined state, but it is often possible to continue working. Detailed information on the error can be found below.', bt=text)
+		if self.debug:
+			support.Message.exception(parent=self.context.uiparent, bt=text)
+
+	def trait_exception_handler(self, object, trait_name, old_value, new_value):
+		text = 'Exception occurred in traits notification handler for object: {0!r}, trait: {1}, old value: {2!r}, new value: {3!r}\n{4}'.format(object, trait_name, old_value, new_value, traceback.format_exc())
+		logger.error(text)
+		if self.debug:
+			support.Message.exception(parent=self.context.uiparent, bt=text)
 
 
 	menubar =  traitsui.MenuBar(
@@ -856,8 +865,10 @@ class App(traits.HasTraits):
 			logger.setLevel(logging.DEBUG)
 		else:
 			logger.setLevel(logging.WARNING)
+		self.debug = options.debug
 
 		sys.excepthook = self.excepthook
+		traits.push_exception_handler(self.trait_exception_handler, main=True, locked=True)
 
 		if options.pypy:
 			pypymanager.set_executable('pypy')
