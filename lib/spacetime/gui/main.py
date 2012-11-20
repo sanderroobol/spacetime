@@ -742,6 +742,11 @@ class App(traits.HasTraits):
 			first.SetItemLabel('(none)')
 			first.Enable(False)
 
+	def excepthook(self, type, value, tb):
+		text = ''.join(traceback.format_exception(type, value, tb))
+		logger.error(text)
+		support.Message.show(parent=self.context.uiparent, title='Exception occured', message='An unexpected error has occured', desc='Some objects could be in an undefined state, but it is often possible to continue working. Detailed information on the error can be found below.', bt=text)
+
 
 	menubar =  traitsui.MenuBar(
 		traitsui.Menu(
@@ -851,6 +856,8 @@ class App(traits.HasTraits):
 			logger.setLevel(logging.DEBUG)
 		else:
 			logger.setLevel(logging.WARNING)
+
+		sys.excepthook = self.excepthook
 
 		if options.pypy:
 			pypymanager.set_executable('pypy')
