@@ -116,6 +116,7 @@ Section
   File /r /x .* python-dist\Lib
 
   File debug.bat
+  File reset_preferences.py
 
   ; AUTOMATICALLY GENERATED LIST OF FILES AND DIRS
 """
@@ -133,6 +134,7 @@ print r"""
   CreateDirectory "$SMPROGRAMS\Spacetime"
   CreateShortCut "$SMPROGRAMS\Spacetime\Spacetime.lnk" "$INSTDIR\pythonw.exe" "-m spacetime.gui.main" "$INSTDIR\spacetime\icons\spacetime-icon.ico"
   CreateShortCut "$SMPROGRAMS\Spacetime\Spacetime (debug mode).lnk" "$INSTDIR\debug.bat" "" "$INSTDIR\spacetime\icons\spacetime-icon.ico"
+  CreateShortCut "$SMPROGRAMS\Spacetime\Reset preferences.lnk" "$INSTDIR\python.exe" "reset_preferences.py"
   CreateShortCut "$SMPROGRAMS\Spacetime\Uninstall.lnk" "$INSTDIR\Uninstall.exe"
   
   !insertmacro APP_ASSOCIATE "spacetime" "Spacetime.Project" "Spacetime project" "$INSTDIR\spacetime\icons\spacetime-project.ico" "Open with Spacetime" '$INSTDIR\pythonw.exe -m spacetime.gui.main "%1"'
