@@ -557,7 +557,7 @@ class CSVConfigurationHandler(traitsui.Handler):
 		try:
 			data.load(probe=True)
 		except:
-			gui.support.Message.exception('The file does not load correctly.', desc='Check the output below and resolve the problem.', title='Loading failed.', parent=info.ui.control)
+			gui.support.Message.exception(message='The file does not load correctly.', desc='Check the output below and resolve the problem.', title='Loading failed.', parent=info.ui.control)
 			return False
 		else:
 			return True
@@ -566,7 +566,7 @@ class CSVConfigurationHandler(traitsui.Handler):
 class CSVConfiguration(ActivationComponent):
 	filename = traits.File
 
-	delimiter = traits.Enum('\t', ',', ';');
+	delimiter = traits.Enum('\t', ',', ';', ' ');
 	skip_lines = traits.Int(0)
 
 	time_type = traits.Enum('unix', 'labview', 'matplotlib', 'strptime')
@@ -602,7 +602,7 @@ class CSVConfigurationEditor(CSVConfiguration, NonLiveComponentEditor):
 			traitsui.Group(
 				traitsui.Group(
 					traitsui.Item('filename', editor=gui.support.FileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),
-					traitsui.Item('delimiter', label='Delimiter', editor=traitsui.EnumEditor(values=gui.support.EnumMapping([('\t', 'tab'), ',', ';']))),
+					traitsui.Item('delimiter', label='Delimiter', editor=traitsui.EnumEditor(values=gui.support.EnumMapping([('\t', 'tab'), ',', ';', (' ', 'space')]))),
 					traitsui.Item('skip_lines', label='Skip header lines'), 
 					label='Data',
 					show_border=True,

@@ -37,7 +37,7 @@ class FourierFilterHandler(traitsui.Handler):
 			func = filters.code2func(ff.transferfunc, ff.preexec, variable='f')
 			func(numpy.linspace(-100., 100., 100))
 		except:
-			support.Message.exception('The filter function does not evaluate properly.', desc='Check the output below and resolve the problem.', title='Invalid filter', parent=info.ui.control)
+			support.Message.exception(message='The filter function does not evaluate properly.', desc='Check the output below and resolve the problem.', title='Invalid filter', parent=info.ui.control)
 			return False
 		else:
 			return True
