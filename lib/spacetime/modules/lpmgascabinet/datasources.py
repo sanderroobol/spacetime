@@ -17,7 +17,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import itertools
-import numpy
 
 from ..generic.datasources import CustomCSV
 

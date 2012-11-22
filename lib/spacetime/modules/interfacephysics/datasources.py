@@ -18,7 +18,6 @@
 
 from __future__ import division
 
-import datetime
 import numpy
 import re
 import codecs

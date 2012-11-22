@@ -14,7 +14,7 @@
 ## http://imagejdocu.tudor.lu/doku.php?id=plugin:utilities:python_dm3_reader:start
 ################################################################################
 
-import sys, os, time
+import os, time
 import struct
 from PIL import Image
 import numpy

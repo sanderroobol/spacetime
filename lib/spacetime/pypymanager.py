@@ -15,12 +15,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys, os
+import sys
 import traceback
 import subprocess
 import threading
-import cPickle as pickle
-import struct
+try:
+	import cPickle as pickle
+except ImportError:
+	import pickle
 
 # this module behaves as a singleton object when imported, and also serves as
 # the entry point for the delegate (pypy) process

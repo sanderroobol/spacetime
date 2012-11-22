@@ -28,7 +28,6 @@ import glob
 import operator
 import string
 import matplotlib.cm
-import PIL.Image
 import math
 
 import logging
@@ -1162,7 +1161,7 @@ class DM3Stack(ImageGUI, SingleFrameAnimation):
 
 	@traits.on_trait_change('filename, reload')
 	def load_file(self):
-		data = self.data = self.datafactory(self.filename)
+		self.data = self.datafactory(self.filename)
 		self.framemax = self.data.framecount - 1
 		if self.framenumber > self.framemax:
 			self.framenumber = self.framemax

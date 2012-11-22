@@ -19,7 +19,6 @@
 import enthought.traits.api as traits
 import enthought.traits.ui.api as traitsui
 import numpy
-import scipy.signal
 
 from ..generic.gui import SerializableComponent, SubplotGUI, DoubleTimeTrendGUI, XlimitsGUI, FalseColorImageGUI, SingleFrameAnimation
 from ..generic.subplots import Image

@@ -16,12 +16,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import os.path, sys, traceback
+import os.path, traceback
 import datetime
 
 import numpy
 
-from .. import prefs, util
+from .. import util
 
 import enthought.traits.api as traits
 import enthought.traits.ui.api as traitsui
@@ -103,7 +103,7 @@ class FileEditorImplementation(enthought.traits.ui.wx.file_editor.SimpleEditor):
 		elif self.factory.dialog_style == 'open':
 			style = wx.FD_OPEN
 		else:
-			style = ex.FD_DEFAULT_STYLE
+			style = wx.FD_DEFAULT_STYLE
 
 		dlg = wx.FileDialog( self.control,
 		                     message  = 'Select a File',
