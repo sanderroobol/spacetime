@@ -305,7 +305,8 @@ class MultiTrend(YAxisHandling, Subplot):
 		if self.legend and self.axes:
 			handles, labels = self.get_legend_items()
 			if handles:
-				self.get_legend_axes().legend(handles, labels, loc=self.legend, prop=self.legendprops)
+				l = self.get_legend_axes().legend(handles, labels, loc=self.legend, prop=self.legendprops)
+				l.draggable(state=True)
 			else:
 				self.get_legend_axes().legend_ = None
 
