@@ -707,7 +707,7 @@ class App(traits.HasTraits):
 
 	def rebuild_recent_menu(self):
 		recents = self.prefs.get_recent('project')
-		self.recent_paths = [i for i in recents] # make a copy to maintain consistency even if the menu loses sync with the prefs
+		self.recent_paths = [i for i in recents if os.path.exists(i)]
 		for i, p in enumerate(self.recent_paths):
 			item = self.recent_menu_items[i]
 			item.SetItemLabel(os.path.basename(p))
