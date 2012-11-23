@@ -299,7 +299,7 @@ class TimeTrendChannel(traits.HasTraits):
 class TimeTrendGUI(SubplotGUI):
 	plotfactory = subplots.MultiTrend
 	sinkfactory = datasinks.MultiTrendTextSink
-	legend = traits.Enum('auto', 'off', 'upper right', 'upper left', 'lower left', 'lower right', 'center left', 'center right', 'lower center', 'upper center', 'center')
+	legend = traits.Enum('upper right', 'upper left', 'lower left', 'lower right', 'center left', 'center right', 'lower center', 'upper center', 'center', 'auto', 'off')
 	ylimits = traits.Instance(gui.support.LogAxisLimits, args=())
 	yauto = traits.DelegatesTo('ylimits', 'auto')
 	ymin = traits.DelegatesTo('ylimits', 'min')
@@ -665,6 +665,8 @@ class CSVGUI(DoubleTimeTrendGUI):
 				traitsui.Item('visible'),
 				traitsui.Item('edit_configuration', show_label=False, editor=traitsui.ButtonEditor(label='Select file...')),
 				traitsui.Item('reload', show_label=False),
+				traitsui.Item('legend'),
+				traitsui.Item('size'),
 				label='General',
 				show_border=True,
 			),
@@ -1119,9 +1121,9 @@ class RGBImageGUI(ImageGUI, SingleFrameAnimation):
 		return gui.support.PanelView(
 			traitsui.Group(
 				traitsui.Item('visible'),
-				traitsui.Item('size'),
 				traitsui.Item('select_files', show_label=False),
 				traitsui.Item('reload', show_label=False, enabled_when='configuration.active'),
+				traitsui.Item('size'),
 				traitsui.Item('selected_index', label='Number', editor=gui.support.RangeEditor(low=0, high_name='file_number_max', mode='spinner')),
 				traitsui.Item('clip', label='Color clipping', tooltip='Clip DM3 greyscale at <number> standard deviations away from the average (0 to disable)', editor=gui.support.FloatEditor()),
 				show_border=True,

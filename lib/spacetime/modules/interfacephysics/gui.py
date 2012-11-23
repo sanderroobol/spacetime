@@ -60,6 +60,7 @@ class TPDirkGUI(DoubleTimeTrendGUI):
 				traitsui.Item('filename', editor=support.FileEditor(filter=list(self.filter) + ['All files', '*'], entries=0)),
 				traitsui.Item('reload', show_label=False),
 				traitsui.Item('legend'),
+				traitsui.Item('size'),
 				show_border=True,
 				label='General',
 			),
