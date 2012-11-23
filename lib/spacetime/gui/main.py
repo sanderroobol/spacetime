@@ -526,8 +526,6 @@ class App(traits.HasTraits):
 	tabs = traits.List(traits.Instance(modules.generic.gui.Tab))
 	tabs_selected = traits.Instance(modules.generic.gui.Tab)
 
-	debug = False
-
 	def on_figure_resize(self, event):
 		logger.debug('on_figure_resize called')
 		self.context.canvas.redraw()
@@ -743,16 +741,28 @@ class App(traits.HasTraits):
 			first.SetItemLabel('(none)')
 			first.Enable(False)
 
+	def is_known_exception(self, type, value, tb):
+		return False
+	
+	def is_known_traits_exception(self, object, trait_name, old_value, new_value):
+		if sys.platform == 'win32' and util.instance_fqcn(object) == 'traitsui.wx.table_model.TableModel' and trait_name == 'click':
+			return True
+		return False
+
 	def excepthook(self, type, value, tb):
 		text = ''.join(traceback.format_exception(type, value, tb))
-		logger.error(text)
-		if self.debug:
+		if self.is_known_exception(type, value, tb):
+			logger.warning('Ignoring known exception:\n' + text)
+		else:
+			logger.error(text)
 			support.Message.exception(parent=self.context.uiparent, bt=text)
 
 	def trait_exception_handler(self, object, trait_name, old_value, new_value):
 		text = 'Exception occurred in traits notification handler for object: {0!r}, trait: {1}, old value: {2!r}, new value: {3!r}\n{4}'.format(object, trait_name, old_value, new_value, traceback.format_exc())
-		logger.error(text)
-		if self.debug:
+		if self.is_known_traits_exception(object, trait_name, old_value, new_value):
+			logger.warning('Ignoring known traits exception:\n' + text)			
+		else:
+			logger.error(text)
 			support.Message.exception(parent=self.context.uiparent, bt=text)
 
 
@@ -864,7 +874,6 @@ class App(traits.HasTraits):
 			logger.setLevel(logging.DEBUG)
 		else:
 			logger.setLevel(logging.WARNING)
-		self.debug = options.debug
 
 		sys.excepthook = self.excepthook
 		traits.push_exception_handler(self.trait_exception_handler, main=True, locked=True)

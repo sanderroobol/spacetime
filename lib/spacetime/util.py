@@ -207,3 +207,9 @@ def pypy(func):
 		return pypymanager.run(func, *args, **kwargs)
 	wrapper.__name__ = func.__name__
 	return wrapper
+
+def class_fqn(cls):
+	return '{0.__module__}.{0.__name__}'.format(cls)
+
+def instance_fqcn(obj):
+	return class_fqn(obj.__class__)
