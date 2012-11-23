@@ -606,10 +606,15 @@ class Image(ImageBase):
 			return 10 * 10**magn
 
 	def draw_scalebar(self, image):
-		if not image.pixelsize:
+		if image.pixelsize is None:
 			return
-		size = self.find_nice_number(0.1 * image.image.shape[1] * image.pixelsize)
-		pixelsize = size / image.pixelsize
+
+		if image.pixelsize == 0:
+			size = 0
+			pixelsize = 0.1 * image.image.shape[1]
+		else:		
+			size = self.find_nice_number(0.1 * image.image.shape[1] * image.pixelsize)
+			pixelsize = size / image.pixelsize
 		
 		label = u'{0}{1}{2}'.format(size, ' ' if image.pixelunit else '', image.pixelunit or '')
 		self.axes.add_artist(Scalebar(self.axes.transData, size=pixelsize, label=label, loc=4))
