@@ -19,7 +19,7 @@
 from __future__ import division
 
 import numpy
-import matplotlib.patches, matplotlib.cm, matplotlib.colors, matplotlib.dates, matplotlib.font_manager, matplotlib.transforms
+import matplotlib.cm, matplotlib.colors, matplotlib.dates, matplotlib.font_manager, matplotlib.offsetbox, matplotlib.patches, matplotlib.transforms
 
 from ... import util
 
@@ -455,6 +455,40 @@ class Time2D(YAxisHandling, ImageBase):
 			marker.add_callback(lambda: ax.lines.remove(line))
 
 
+# based on the matplotlib anchored_artists example
+class Scalebar(matplotlib.offsetbox.AnchoredOffsetbox):
+	def __init__(self, transform, size, label, loc,
+				 pad=0.2, borderpad=0.4, sep=5, prop=None, frameon=True, color='black'):
+		"""
+		Draw a horizontal bar with the size in data coordinate of the give axes.
+		A label will be drawn underneath (center-aligned).
+
+		pad, borderpad in fraction of the legend font size (or prop)
+		sep in points.
+		"""
+		self.size_bar = matplotlib.offsetbox.AuxTransformBox(transform)
+		self.size_bar.add_artist(matplotlib.patches.Rectangle((0,0), size, 0, fc="none", ec=color, lw=3))
+
+		self.txt_label = matplotlib.offsetbox.TextArea(label, minimumdescent=False, textprops=dict(color=color))
+
+		self._box = matplotlib.offsetbox.VPacker(children=[self.size_bar, self.txt_label],
+							align="center",
+							pad=0, sep=sep)
+
+		super(Scalebar, self).__init__(loc, pad=pad, borderpad=borderpad,
+									child=self._box,
+									prop=prop,
+									frameon=frameon)
+
+		self.patch = matplotlib.patches.FancyBboxPatch(
+			xy=(0.0, 0.0), width=1., height=1.,
+			facecolor='w', edgecolor='none',
+			mutation_scale=self.prop.get_size_in_points(),
+			snap=True
+		)
+		self.patch.set_boxstyle("square",pad=pad)
+
+
 class Image(ImageBase):
 	colormap = 'afmhot'
 	interpolation = 'nearest'
@@ -462,6 +496,7 @@ class Image(ImageBase):
 	mode = 'film strip'
 	rotate = False
 	marker = None
+	scalebar = True
 
 	def __init__(self, *args, **kwargs):
 		self.vspans = []
@@ -502,6 +537,9 @@ class Image(ImageBase):
 				self.axes.imshow(image, aspect='equal', cmap=self.colormap, interpolation=self.interpolation, norm=self.get_clim_norm())
 
 				self.marker = self.parent.markers.add(tstart, tend)
+
+				if self.scalebar:
+					self.draw_scalebar(d)
 			else:
 				tendzoom = tstart + (tend - tstart) * self.tzoom
 				self.axes.imshow(numpy.rot90(d.image), extent=(tstart, tendzoom, 0, 1), aspect='auto', cmap=self.colormap, interpolation=self.interpolation, norm=self.get_clim_norm())
@@ -530,13 +568,12 @@ class Image(ImageBase):
 	def clear(self, quick=False):
 		if not quick:
 			if self.axes:
-				del self.axes.lines[:], self.axes.images[:], self.axes.patches[:]
+				del self.axes.lines[:], self.axes.images[:], self.axes.patches[:], self.axes.artists[:]
 				self.axes.relim()
 			if self.marker:
 				self.parent.markers.remove(self.marker)
 		self.marker = None
 		super(Image, self).clear(quick)
-
 
 	def set_rotate(self, rotate):
 		if rotate == self.rotate:
@@ -554,3 +591,25 @@ class Image(ImageBase):
 	def draw_marker(self, marker):
 		pass
 
+	@staticmethod
+	def find_nice_number(near):
+		# returns 1, 2, 5, 10, 20, 50, ...
+		magn = int(numpy.floor(numpy.log10(near)))
+		val = int(round(float(near) / 10**magn))
+		if val == 1:
+			return 1 * 10**magn
+		elif val <= 3:
+			return 2 * 10**magn
+		elif val <= 7:
+			return 5 * 10**magn
+		else:
+			return 10 * 10**magn
+
+	def draw_scalebar(self, image):
+		if not image.pixelsize:
+			return
+		size = self.find_nice_number(0.1 * image.image.shape[1] * image.pixelsize)
+		pixelsize = size / image.pixelsize
+		
+		label = u'{0}{1}{2}'.format(size, ' ' if image.pixelunit else '', image.pixelunit or '')
+		self.axes.add_artist(Scalebar(self.axes.transData, size=pixelsize, label=label, loc=4))

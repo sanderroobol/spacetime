@@ -280,6 +280,7 @@ class CameraFrameGUI(FalseColorImageGUI, CameraGUI, SingleFrameAnimation):
 		),
 		traitsui.Group(
 			traitsui.Item('size'),
+			traitsui.Item('scalebar'),
 			traitsui.Item('colormap'),
 			traitsui.Item('interpolation', editor=traitsui.EnumEditor(values=support.EnumMapping([('nearest', 'none'), 'bilinear', 'bicubic']))),
 			traitsui.Item('climits', style='custom', label='Color scale'),

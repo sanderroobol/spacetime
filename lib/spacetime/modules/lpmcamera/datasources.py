@@ -54,6 +54,9 @@ class Camera(MultiTrend):
 		ret.pixelrate = frameinfo.pixelclock_kHz * 1000 / frameinfo.samplesPerPoint
 		ret.tstart = util.mpldtfromtimestamp(frameinfo.acquisitionTime)
 		ret.tend = ret.tstart + ret.lrimage.size * 2 / ret.pixelrate / 86400
+		
+		ret.pixelsize = frameinfo.xstep_pm / 1000
+		ret.pixelunit = 'nm'
 		return ret
 
 	def getchanneldata(self, channel, frameiter=None):

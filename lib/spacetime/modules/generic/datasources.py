@@ -40,6 +40,8 @@ class ImageFrame(DataObject):
 	tstart = None
 	tend = None
 	image = None
+	pixelsize = None
+	pixelunit = None
 
 
 class DataSource(object):
@@ -238,7 +240,7 @@ class RGBImage(DataSource):
 		self.tend = tend
 	
 	def getframe(self):
-		return ImageFrame(image=self.loadfile(), tstart=self.tstart, tend=self.tend)
+		return ImageFrame(image=self.loadfile(), tstart=self.tstart, tend=self.tend, **self.get_scale())
 	
 	def iterframes(self):
 		yield self.getframe()
@@ -263,6 +265,9 @@ class RGBImage(DataSource):
 	def autodetect_timeinfo(cls, filename):
 		return cls.detect_subclass(filename).get_timeinfo(filename)
 
+	def get_scale(self):
+		return dict()
+
 
 class PILImage(RGBImage):
 	def loadfile(self):
@@ -278,9 +283,17 @@ class PILImage(RGBImage):
 		return timestamp, exposure
 
 
-class DM3Image(RGBImage):
+class DM3Scaling(object):
+	def get_scale(self):
+		size = float(self.dm3.tags['root.ImageList.1.ImageData.Calibrations.Dimension.0.Scale'])
+		unit = self.dm3.tags['root.ImageList.1.ImageData.Calibrations.Dimension.0.Units']
+		return dict(pixelsize=size, pixelunit=unit)
+
+
+class DM3Image(DM3Scaling, RGBImage):
 	def loadfile(self):
-		return dm3lib.DM3(self.filename).getImageData() 
+		self.dm3 = dm3lib.DM3(self.filename)
+		return self.dm3.getImageData() 
 
 	@staticmethod
 	def get_timeinfo(filename):
@@ -292,7 +305,7 @@ class DM3Image(RGBImage):
 		return timestamp, exposure
 
 
-class DM3Stack(DataSource):
+class DM3Stack(DataSource, DM3Scaling):
 	frameno = 0
 
 	def __init__(self, *args, **kwargs):
@@ -310,4 +323,4 @@ class DM3Stack(DataSource):
 	def iterframes(self):
 		tstart = self.tstart + self.frameno * (self.exposure + self.delay)
 		tend = tstart + self.exposure
-		yield ImageFrame(image=self.dm3.getImageData(self.frameno), tstart=tstart, tend=tend)
+		yield ImageFrame(image=self.dm3.getImageData(self.frameno), tstart=tstart, tend=tend, **self.get_scale())

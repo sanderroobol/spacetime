@@ -815,6 +815,9 @@ class SingleFrameAnimation(traits.HasTraits):
 
 class ImageGUI(SubplotGUI):
 	colormap = 'gray'
+	scalebar = traits.Bool(True)
+	
+	traits_saved = 'scalebar',
 
 	def _plot_default(self):
 		plot = self.plotfactory()
@@ -823,6 +826,10 @@ class ImageGUI(SubplotGUI):
 		return plot
 
 	def reset_autoscale(self):
+		self.rebuild()
+
+	def _scalebar_changed(self):
+		self.plot.scalebar = self.scalebar
 		self.rebuild()
 
 
@@ -1124,6 +1131,7 @@ class RGBImageGUI(ImageGUI, SingleFrameAnimation):
 				traitsui.Item('select_files', show_label=False),
 				traitsui.Item('reload', show_label=False, enabled_when='configuration.active'),
 				traitsui.Item('size'),
+				traitsui.Item('scalebar'),
 				traitsui.Item('selected_index', label='Number', editor=gui.support.RangeEditor(low=0, high_name='file_number_max', mode='spinner')),
 				traitsui.Item('clip', label='Color clipping', tooltip='Clip DM3 greyscale at <number> standard deviations away from the average (0 to disable)', editor=gui.support.FloatEditor()),
 				show_border=True,
@@ -1190,6 +1198,7 @@ class DM3Stack(ImageGUI, SingleFrameAnimation):
 				traitsui.Item('filename', editor=gui.support.FileEditor(filter=['DM3 files', '*.dm3', 'All files', '*'], entries=0)),
 				traitsui.Item('reload', show_label=False),
 				traitsui.Item('size'),
+				traitsui.Item('scalebar'),
 				traitsui.Item('framenumber', editor=gui.support.RangeEditor(low=0, high_name='framemax', mode='spinner')),
 				traitsui.Item('clip', label='Color clipping', tooltip='Clip DM3 greyscale at <number> standard deviations away from the average (0 to disable)', editor=gui.support.FloatEditor()),
 				show_border=True,
