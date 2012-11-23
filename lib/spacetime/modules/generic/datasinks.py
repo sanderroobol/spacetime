@@ -17,6 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import itertools
 import numpy
 
 
@@ -29,12 +30,17 @@ class MultiTrendTextSink(DataSink):
 	def save(self, plot, destdir, prefix):
 		channelnamecounts = {}
 		
-		for d in plot.data.iterchannels():
+		if getattr(plot, 'secondarydata', False):
+			chaniter = itertools.chain(plot.data.iterchannels(), plot.secondarydata.iterchannels())
+		else:
+			chainter = plot.data.iterchannels()
+
+		for d in chaniter:
 			if d.id in channelnamecounts:
 				channelnamecounts[d.id] += 1
-				label = '{0} {1}'.format(d.id, channelnamecounts[d.id])
+				label = u'{0} {1}'.format(d.id, channelnamecounts[d.id])
 			else:
 				channelnamecounts[d.id] = 1
 				label = d.id
-			path = os.path.join(destdir, '{0} - {1}.txt'.format(prefix, label))
+			path = os.path.join(destdir, u'{0} - {1}.txt'.format(prefix, label))
 			numpy.savetxt(path, numpy.vstack((plot.get_xdata(d), plot.get_ydata(d))).transpose())

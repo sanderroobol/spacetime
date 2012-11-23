@@ -399,7 +399,8 @@ class TimeTrendGUI(SubplotGUI):
 		self.redraw()
 
 	def export(self, destdir):
-		return self.sinkfactory().save(self.plot, destdir, self.label)
+		if self.visible:
+			return self.sinkfactory().save(self.plot, destdir, self.label)
 
 	def get_general_view_group(self):
 		return traitsui.Group(
