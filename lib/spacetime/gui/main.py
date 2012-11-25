@@ -899,7 +899,7 @@ class App(traits.HasTraits):
 
 			app.MainLoop()
 		finally:
-			pypymanager.shutdown()
+			pypymanager.shutdown_delegate()
 
 if __name__ == '__main__':
 	app = App()

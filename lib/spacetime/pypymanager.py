@@ -45,12 +45,13 @@ def set_executable(executable):
 	global _executable
 	_executable = executable
 
-def shutdown():
+def shutdown_delegate():
 	global delegate, stderrthread
 
 	if delegate:
-		delegate.terminate()
-		delegate.wait()
+		if delegate.poll() is None:
+			delegate.terminate()
+			delegate.wait()
 		# FIXME: do something with delegate.returncode?
 		delegate = None
 
@@ -60,6 +61,8 @@ def shutdown():
 
 def launch_delegate():
 	global delegate, stderrthread
+	shutdown_delegate() # cleanup any old delegates first
+
 	delegate = subprocess.Popen(
 			[_executable, '-m', 'spacetime.pypymanager'],
 			stdin=subprocess.PIPE,
