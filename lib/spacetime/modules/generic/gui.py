@@ -129,6 +129,7 @@ class ActivationComponent(SerializableComponent):
 	traits_saved = 'active',
 
 	def activate(self):
+		self.active = False
 		self.active = True
 	
 	def activate_gui(self):
