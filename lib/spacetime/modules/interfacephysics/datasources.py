@@ -52,8 +52,8 @@ class TPDirk(MultiTrend):
 
 
 class OldGasCabinet(MultiTrend):
-	controllers = ['MFC CO', 'MFC NO', 'MFC H2', 'MFC O2', 'MFC Shunt', 'BPC1', 'BPC2', 'MFM Ar']
-	parameters = ['valve output', 'measure', 'set point']
+	controllers = ['MFC_CO', 'MFC_NO', 'MFC_H2', 'MFC_O2', 'MFC_Shunt', 'BPC1', 'BPC2', 'MFM_Ar']
+	parameters = ['valve position', 'measure', 'setpoint']
 	data = None
 
 	def __init__(self, *args, **kwargs):
@@ -70,7 +70,7 @@ class OldGasCabinet(MultiTrend):
 		for i in range((columns - 2) // 4):
 			time = self.data[:,i*4]/86400 + self.offset
 			for j, p in enumerate(self.parameters):
-				self.channels.append(DataChannel(time=time, value=self.data[:,i*4+j+1], id='{0} {1}'.format(self.controllers[i], p), parameter=p, controller=self.controllers[i]))
+				self.channels.append(DataChannel(time=time, value=self.data[:,i*4+j+1], id='{0} {1}'.format(self.controllers[i], p), parameter=p, controller=self.controllers[i], type='controller'))
 		# NOTE: the last two columns (Leak dectector) are ignored
 
 
