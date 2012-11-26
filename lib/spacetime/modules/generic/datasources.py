@@ -208,19 +208,14 @@ class CSV(MultiTrend):
 
 			time_columns = self.get_time_columns()
 
+			if probe:
+				fp = itertools.islice(fp, 10)
+
 			if self.time_type == 'strptime':
-				data = []
-				for line in itertools.islice(fp, 0, 10 if probe else None):
-					data.append(tuple(util.mpldtstrptime(v.strip(), self.time_strptime) if i in time_columns else float(v) for (i, v) in enumerate(line.strip().split(self.delimiter))))
-				self.data = numpy.array(data)
+				time_columns = set(time_columns)
+				self.data = numpy.array([tuple(util.mpldtstrptime(v.strip(), self.time_strptime) if i in time_columns else float(v) for (i, v) in enumerate(line.split(self.delimiter))) for line in fp])
 			else:
-				if probe:
-					data = []
-					for line in itertools.islice(fp, 10):
-						data.append(tuple(float(i) for i in line.split(self.delimiter)))
-					self.data = numpy.array(data)
-				else:
-					self.data = numpy.loadtxt(fp, delimiter=self.delimiter)
+				self.data = util.loadtxt(fp, delimiter=self.delimiter)
 
 				for i in time_columns:
 					self.data[:, i] = self.convert_time(self.data[:, i])

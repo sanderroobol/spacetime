@@ -213,3 +213,14 @@ def class_fqn(cls):
 
 def instance_fqcn(obj):
 	return class_fqn(obj.__class__)
+
+
+def loadtxt(file, delimiter=None, skip_lines=0):
+	# simplified & faster version of numpy.loadtxt
+	if isinstance(file, basestring):
+		file = open(file)
+	
+	for i in range(skip_lines):
+		next(file)
+
+	return numpy.array([line.split(delimiter) for line in file], dtype=float)

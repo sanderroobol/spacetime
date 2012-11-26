@@ -58,7 +58,7 @@ class OldGasCabinet(MultiTrend):
 
 	def __init__(self, *args, **kwargs):
 		super(OldGasCabinet, self).__init__(*args, **kwargs)
-		self.data = numpy.loadtxt(self.filename)
+		self.data = util.loadtxt(self.filename)
 		# FIXME: this is an ugly hack to determine the date. the fileformat should be
 		# modified such that date information is stored INSIDE the file
 		y, m, d = re.search('(20[0-9]{2})([0-9]{2})([0-9]{2})', self.filename).groups()
