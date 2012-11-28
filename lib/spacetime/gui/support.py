@@ -28,7 +28,7 @@ import enthought.traits.ui.api as traitsui
 from enthought.pyface.api import ImageResource
 
 import enthought.traits.ui.basic_editor_factory
-import enthought.traits.ui.wx.file_editor, enthought.traits.ui.wx.time_editor
+import enthought.traits.ui.wx.file_editor, enthought.traits.ui.wx.time_editor, enthought.traits.ui.wx.range_editor
 import wx
 
 
@@ -182,14 +182,22 @@ class TimeEditor(enthought.traits.ui.basic_editor_factory.BasicEditorFactory, tr
 	klass = TimeEditorImplementation
 
 
+class RangeEditorImplementation(enthought.traits.ui.wx.range_editor.SimpleSpinEditor):
+	def update_object(self, event):
+		if event.GetEventType() != wx.EVT_TEXT.typeId:
+			return super(RangeEditorImplementation, self).update_object(event)
+
+
+class RangeEditor(traitsui.RangeEditor):
+	def _get_simple_editor_class(self):
+		return RangeEditorImplementation
+
+
 def TextEditor(**kwargs):
 	return traitsui.TextEditor(auto_set=False, enter_set=True, **kwargs)
 
 def FloatEditor(**kwargs):
 	return TextEditor(evaluate=float, **kwargs)
-
-def RangeEditor(**kwargs):
-	return traitsui.RangeEditor(auto_set=False, enter_set=True, **kwargs)
 
 
 class AxisLimits(traits.HasTraits):
