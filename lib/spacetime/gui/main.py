@@ -537,12 +537,6 @@ class App(traits.HasTraits):
 	def get_new_tab(self, klass):
 		return klass(context=self.context)
 
-	def add_tab(self, klass, serialized_data=None):
-		tab = self.get_new_tab(klass)
-		if serialized_data is not None:
-			tab.from_serialized(serialized_data)
-		self.tabs.append(tab)
-
 	def _context_default(self):
 		return Context(app=self, canvas=self.drawmgr, prefs=self.prefs)
 
@@ -609,14 +603,18 @@ class App(traits.HasTraits):
 		progress.open()
 		with self.context.canvas.hold_delayed():
 			self.tabs[0].from_serialized(data.pop(0)[1])
+			tabs = [self.tabs[0]]
 			progress.update(1)
 			# FIXME: check version number and emit warning
 			for p, (id, props) in enumerate(data):
 				try:
-					self.add_tab(self.moduleloader.get_class_by_id(id), props)
+					tab = self.get_new_tab(self.moduleloader.get_class_by_id(id))
+					tab.from_serialized(props)
+					tabs.append(tab)
 				except KeyError:
 					support.Message.show(title='Warning', message='Warning: incompatible project file', desc='Ignoring unknown graph id "{0}". Project might not be completely functional.'.format(id))
 				progress.update(2+p)
+			self.tabs = tabs
 			self.project_path = path
 			wx.CallAfter(self.clear_project_modified)
 			wx.CallAfter(lambda: (progress.update(progress.max), progress.close()))
