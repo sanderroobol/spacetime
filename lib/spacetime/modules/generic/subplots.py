@@ -250,7 +250,7 @@ class MultiTrendFormatter(object):
 
 
 class MultiTrend(YAxisHandling, Subplot):
-	legend = 'best'
+	legend = 'upper-right'
 	legendprops = matplotlib.font_manager.FontProperties(size='medium')
 
 	def __init__(self, data=None, formatter=None):
