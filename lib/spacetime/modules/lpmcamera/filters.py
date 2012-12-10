@@ -21,8 +21,6 @@ from __future__ import division
 import numpy
 import scipy.stats
 
-from camera.formats import raw
-
 
 def bgs_line_by_line(data):
 	new = numpy.zeros(data.shape)
@@ -114,7 +112,7 @@ def code2func(expr, preexec, variable='x'):
 
 def fourier(filter, window=None):
 	def fourierfilter(frame):
-		if frame.direction == (raw.RawFileChannelInfo.LR | raw.RawFileChannelInfo.RL):
+		if frame.direction == 'both':
 			data = frame.image
 		else:
 			data = merge_directions(frame.lrimage, frame.rlimage)
@@ -129,9 +127,9 @@ def fourier(filter, window=None):
 		filtered_data = scipy.fftpack.ifft(filter(freq) * z).real.reshape(data.shape)
 
 		frame.lrimage, frame.rlimage = split_directions(filtered_data)
-		if frame.direction == (raw.RawFileChannelInfo.LR | raw.RawFileChannelInfo.RL):
+		if frame.direction == 'both':
 			frame.image = filtered_data
-		elif frame.direction == raw.RawFileChannelInfo.LR:
+		elif frame.direction == 'l2r':
 			frame.image = frame.lrimage
 		else:
 			frame.image = frame.rlimage

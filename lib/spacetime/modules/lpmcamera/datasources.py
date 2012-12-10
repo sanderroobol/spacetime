@@ -42,13 +42,15 @@ class Camera(MultiTrend):
 		ret = ImageFrame()
 		ret.lrimage = self.rawfile.channelImage(frame, channel).asArray(direction=raw.RawFileChannelInfo.LR)
 		ret.rlimage = self.rawfile.channelImage(frame, channel).asArray(direction=raw.RawFileChannelInfo.RL)
-		ret.direction = self.direction
 		if self.direction == (raw.RawFileChannelInfo.LR | raw.RawFileChannelInfo.RL):
+			ret.direction = 'both'
 			ret.image = filters.merge_directions(ret.lrimage, ret.rlimage)
 		elif self.direction == raw.RawFileChannelInfo.LR:
 			ret.image = ret.lrimage
+			ret.direction = 'l2r'
 		else:
 			ret.image = ret.rlimage
+			ret.direction = 'r2l'
 
 		frameinfo = self.rawfile.frameInfo(frame)
 		ret.pixelrate = frameinfo.pixelclock_kHz * 1000 / frameinfo.samplesPerPoint
