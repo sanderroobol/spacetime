@@ -1119,7 +1119,7 @@ class RGBImageGUI(ImageGUI, SingleFrameAnimation):
 		else:
 			tend = None
 		data = self.datafactory.autodetect(f.path, f.timestamp, tend)
-		if self.clip > 0:
+		if not isinstance(data, datasources.PILImage) and self.clip > 0:
 			data = data.apply_filter(filters.ClipStdDev(self.clip))
 		self.plot.set_data(data)
 		self.rebuild()
