@@ -1056,6 +1056,7 @@ class RGBImageGUI(ImageGUI, SingleFrameAnimation):
 
 	selected_index = traits.Int(0)
 	selected_index_lock = traits.Instance(object, args=())
+	selected_filename = traits.Str('n/a')
 	file_number_max = traits.Property(depends_on='files')
 	clip = traits.Float(3)
 
@@ -1112,6 +1113,7 @@ class RGBImageGUI(ImageGUI, SingleFrameAnimation):
 	@traits.on_trait_change('clip')
 	def file_changed(self):
 		f = self.files[self.selected_index]
+		self.selected_filename = f.shortpath
 		if f.exposure:
 			tend = f.timestamp + f.exposure / 864e5
 		else:
@@ -1134,6 +1136,7 @@ class RGBImageGUI(ImageGUI, SingleFrameAnimation):
 				traitsui.Item('size'),
 				traitsui.Item('scalebar'),
 				traitsui.Item('selected_index', label='Number', editor=gui.support.RangeEditor(low=0, high_name='file_number_max', mode='spinner')),
+				traitsui.Item('selected_filename', label='Filename', style='readonly'),
 				traitsui.Item('clip', label='Color clipping', tooltip='Clip DM3 greyscale at <number> standard deviations away from the average (0 to disable)', editor=gui.support.FloatEditor()),
 				show_border=True,
 				label='General',
