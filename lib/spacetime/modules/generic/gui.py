@@ -1059,6 +1059,7 @@ class RGBImageGUI(ImageGUI, SingleFrameAnimation):
 	selected_filename = traits.Str('n/a')
 	file_number_max = traits.Property(depends_on='files')
 	clip = traits.Float(3)
+	clip_enabled = traits.Bool(True)
 
 	traits_saved = 'configuration.*', 'selected_index', 'clip'
 	traits_not_saved = 'filename',
@@ -1119,7 +1120,8 @@ class RGBImageGUI(ImageGUI, SingleFrameAnimation):
 		else:
 			tend = None
 		data = self.datafactory.autodetect(f.path, f.timestamp, tend)
-		if not isinstance(data, datasources.PILImage) and self.clip > 0:
+		self.clip_enabled = not isinstance(data, datasources.PILImage)
+		if self.clip_enabled and self.clip > 0:
 			data = data.apply_filter(filters.ClipStdDev(self.clip))
 		self.plot.set_data(data)
 		self.rebuild()
@@ -1137,7 +1139,7 @@ class RGBImageGUI(ImageGUI, SingleFrameAnimation):
 				traitsui.Item('scalebar'),
 				traitsui.Item('selected_index', label='Number', editor=gui.support.RangeEditor(low=0, high_name='file_number_max', mode='spinner')),
 				traitsui.Item('selected_filename', label='Filename', style='readonly'),
-				traitsui.Item('clip', label='Color clipping', tooltip='Clip DM3 greyscale at <number> standard deviations away from the average (0 to disable)', editor=gui.support.FloatEditor()),
+				traitsui.Item('clip', label='Color clipping', tooltip='Clip DM3 greyscale at <number> standard deviations away from the average (0 to disable)', editor=gui.support.FloatEditor(), enabled_when='clip_enabled'),
 				show_border=True,
 				label='General',
 			),
