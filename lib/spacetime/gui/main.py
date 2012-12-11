@@ -801,7 +801,7 @@ class App(traits.HasTraits):
 		),
 		traitsui.Menu(
 			'export',
-				traitsui.Action(name='Export &data...', action='do_export_image', accelerator='Ctrl+D', image=support.GetIcon('export')),
+				traitsui.Action(name='Export &data...', action='do_export_data', accelerator='Ctrl+D', image=support.GetIcon('export')),
 				traitsui.Action(name='Export &image...', action='do_export_image', accelerator='Ctrl+E', image=support.GetIcon('image')),
 				traitsui.Action(name='&Copy to clipboard', action='do_copy', accelerator='Ctrl+C', tooltip='Copy to clipboard', image=support.GetIcon('copy')),
 				traitsui.Action(name='Export &movie...', action='do_export_movie', accelerator='Ctrl+M', image=support.GetIcon('movie')),
