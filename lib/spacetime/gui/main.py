@@ -753,7 +753,8 @@ class App(traits.HasTraits):
 			logger.warning('Ignoring known exception:\n' + text)
 		else:
 			logger.error(text)
-			support.Message.exception(parent=self.context.uiparent, bt=text)
+			# DISABLE FOR 0.15
+			#support.Message.exception(parent=self.context.uiparent, bt=text)
 
 	def trait_exception_handler(self, object, trait_name, old_value, new_value):
 		text = 'Exception occurred in traits notification handler for object: {0!r}, trait: {1}, old value: {2!r}, new value: {3!r}\n{4}'.format(object, trait_name, old_value, new_value, traceback.format_exc())
@@ -761,7 +762,8 @@ class App(traits.HasTraits):
 			logger.warning('Ignoring known traits exception:\n' + text)			
 		else:
 			logger.error(text)
-			support.Message.exception(parent=self.context.uiparent, bt=text)
+			# DISABLE FOR 0.15
+			#support.Message.exception(parent=self.context.uiparent, bt=text)
 
 
 	menubar =  traitsui.MenuBar(
