@@ -20,6 +20,7 @@ import enthought.traits.api as traits
 import enthought.traits.ui.api as traitsui
 
 import matplotlib.figure
+import wx
 
 from . import support
 from .figure import MPLFigureEditor
@@ -63,13 +64,19 @@ class GUIModuleTreeRoot(traits.HasTraits):
 
 class GUIModuleSelectorHandler(traitsui.Controller):
 	def on_dclick(self, obj):
-		self.info.ui.control.Close()
+		# to distinguish a closing-the-window-by-a-doubleclick from
+		# closing-the-window-by-closing-the-window:
+		self.info.ui.context['object'].dclick = True
+		# calling dispose() triggers a segfault on Linux and Windows...
+		# CallAfter avoids it but still triggers an GTK assertion
+		wx.CallAfter(self.info.ui.dispose)
 
 
 class GUIModuleSelector(support.UtilityWindow):
 	moduleloader = traits.Instance(loader.Loader)
 	selected = traits.List()
 	root = traits.Instance(GUIModuleTreeRoot)
+	dclick = False
 
 	def _moduleloader_default(self):
 		return self.context.app.moduleloader
@@ -93,7 +100,7 @@ class GUIModuleSelector(support.UtilityWindow):
 	@classmethod
 	def run_static(cls, context, live=True):
 		gms = cls(context=context)
-		if gms.run().result:
+		if gms.run().result or gms.dclick:
 			tabs = [context.app.get_new_tab(gms.moduleloader.get_class_by_id(id)) for id in gms.iter_selected()]
 			if live:
 				context.app.tabs.extend(tabs)
@@ -117,6 +124,7 @@ class GUIModuleSelector(support.UtilityWindow):
 		buttons=traitsui.OKCancelButtons,
 		kind='livemodal',
 		handler=GUIModuleSelectorHandler(),
+		close_result=False,
 	)
 
 
