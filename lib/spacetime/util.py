@@ -223,4 +223,5 @@ def loadtxt(file, delimiter=None, skip_lines=0):
 	for i in range(skip_lines):
 		next(file)
 
-	return numpy.array([line.split(delimiter) for line in file], dtype=float)
+	lines = (line.strip() for line in file)
+	return numpy.array([line.split(delimiter) for line in lines if line], dtype=float)
