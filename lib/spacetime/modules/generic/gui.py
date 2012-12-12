@@ -223,7 +223,8 @@ class SubplotGUI(SerializableTab):
 
 	relativistic_group = traitsui.Group(
 		traitsui.Item('simultaneity_offset', label='Simultaneity offset (s)', editor=gui.support.FloatEditor()),
-		traitsui.Item('time_dilation_factor', editor=gui.support.RangeEditor(low=.999, high=1.001)),
+		# gui.support.RangeEditor is limited to integers, fall back on the ordinary RangeEditor (no enter_set=True...)
+		traitsui.Item('time_dilation_factor', editor=traitsui.RangeEditor(low=.999, high=1.001)),
 		show_border=True,
 		label='Relativistic corrections',
 	)
@@ -1149,6 +1150,7 @@ class RGBImageGUI(ImageGUI, SingleFrameAnimation):
 				show_border=True,
 				label='Files',
 			),
+			traitsui.Include('relativistic_group'),
 		)
 
 
@@ -1217,4 +1219,5 @@ class DM3Stack(ImageGUI, SingleFrameAnimation):
 				show_border=True,
 				label='Manual timing',
 			),
+			traitsui.Include('relativistic_group'),
 		)
