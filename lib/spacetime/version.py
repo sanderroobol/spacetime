@@ -17,4 +17,4 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 name = 'Spacetime'
-version = '0.15-dev'
+version = '0.15'
