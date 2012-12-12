@@ -2,7 +2,14 @@ TODO for next release
 =====================
 * Enhance raster image support 
    - allow for manual file selection
-* Make Python Camera module optional
+* User-friendly catch-all exceptions, most importantly file & image related
+* Improved saving/loading:
+  - pre-loading filtering
+  - post-loading activation
+  - customizable (de)serialization per attribute (Files/Directories (convert to relative paths), Cache objects (pickled))
+* Upgrade Windows distribution to Python 2.7
+* Fix spacetime-pydist.bat to use right location of spacetime py files
+* Testing framework based on projects with sample data
 
 Unprioritized TODO's:
 =====================
@@ -20,8 +27,10 @@ Plotting / presentation
 * Support non-uniformly spaced Time2D datasets (through pcolorfast)
 * Custom cursor text for Images (value for false color plots, RGB for raster images; also time for scanning images)
 * Preview size/resolution for export image/movie
-* Remember settings for movie export
-* Scalebars for images
+* Save settings for image/movie export in project
+* Legends outside graphs
+* Persistance for draggable legends
+* Use matplotlib.widgets.MultiCursor
 
 Code structure:
 ---------------
