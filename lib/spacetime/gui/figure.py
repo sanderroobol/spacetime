@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 class ModifiedToolbar(matplotlib.backends.backend_wx.NavigationToolbar2Wx):
 	def __init__(self, canvas, statuscallback):
-		matplotlib.backend_bases.NavigationToolbar2.__init__(self, canvas)
+		matplotlib.backend_bases.NavigationToolbar2.__init__(self, canvas) # skip NavigationToolbar2Wx to keep the toolbar from appearing on Windows
 		self.canvas = canvas
 		self._idle = True
 		self.statbar = None
@@ -111,6 +111,9 @@ class ModifiedToolbar(matplotlib.backends.backend_wx.NavigationToolbar2Wx):
 		pass
 
 	def EnableTool(self, *args, **kwargs):
+		pass
+
+	def set_history_buttons(self): # required since matplotlib 1.2.0
 		pass
 
 
