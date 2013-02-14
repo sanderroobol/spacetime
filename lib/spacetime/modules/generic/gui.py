@@ -30,6 +30,7 @@ import string
 import matplotlib.cm
 import math
 
+import traceback
 import logging
 logger = logging.getLogger(__name__)
 
@@ -942,6 +943,7 @@ class RGBImageConfiguration(ActivationComponent):
 			elif self.time_source == 'header':
 				return datasources.RGBImage.autodetect_timeinfo(fn)
 		except:
+			logger.debug("cannot determine timestamp of '{0}':\n{1}".format(fn, traceback.format_exc()))
 			return 0., 0.
 
 	def sort_files(self, files):

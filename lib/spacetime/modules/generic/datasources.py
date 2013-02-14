@@ -20,6 +20,7 @@ import itertools
 import os.path
 import numpy
 import PIL.Image, matplotlib.image
+import struct
 
 from ... import util
 from . import dm3lib
@@ -264,18 +265,55 @@ class RGBImage(DataSource):
 		return dict()
 
 
+# utility functions for TVIPS TemData header parsing
+def _read_long(fp):
+	return struct.unpack('<l', fp.read(4))[0]
+
+def _read_float(fp):
+	return struct.unpack('<f', fp.read(4))[0]
+
+
 class PILImage(RGBImage):
 	def loadfile(self):
-		return matplotlib.image.pil_to_array(PIL.Image.open(self.filename))
+		self.im = PIL.Image.open(self.filename)
+		return matplotlib.image.pil_to_array(self.im)
 
 	@staticmethod
 	def get_timeinfo(filename):
 		im = PIL.Image.open(filename)
+		if hasattr(im, 'tag') and im.tag.has_key(37706): # TVIPS TemData header
+			offset = im.tag[37706][0]
+			fp = im.fp
+			fp.seek(offset)
+			if _read_long(fp) == 2:
+				fp.seek(offset + 584)
+				date = _read_long(fp)
+				year, month, day = date//65536, (date//256) % 256, date % 256
+				time = _read_long(fp)
+				hour, min, sec = time//3600, (time//60) % 60, time % 60
+				timestamp = util.mpldtlikedatetime(year, month, day, hour, min, sec)
+
+				fp.seek(offset + 3952)
+				exposure = _read_float(fp)
+				
+				return timestamp, exposure
+
 		info = im._getexif()
 		timestamp = util.mpldtstrptime(info[0x132], '%Y:%m:%d %H:%M:%S')
 		exposure = info.get(0x829a, (0,1))
 		exposure = 1e3 * exposure[0] / exposure[1]
 		return timestamp, exposure
+
+	def get_scale(self):
+		if hasattr(self.im, 'tag') and self.im.tag.has_key(37706): # TVIPS TemData header
+			offset = self.im.tag[37706][0]
+			with open(self.filename, 'rb') as fp:
+				fp.seek(offset)
+				if _read_long(fp) == 2:
+					fp.seek(offset + 2968)
+					size = _read_float(fp)
+					return dict(pixelsize=size, pixelunit='nm')
+		return dict()
 
 
 class DM3Scaling(object):
