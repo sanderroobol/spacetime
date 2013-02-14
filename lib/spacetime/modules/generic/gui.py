@@ -943,7 +943,8 @@ class RGBImageConfiguration(ActivationComponent):
 			elif self.time_source == 'header':
 				return datasources.RGBImage.autodetect_timeinfo(fn)
 		except:
-			logger.debug("cannot determine timestamp of '{0}':\n{1}".format(fn, traceback.format_exc()))
+			if logger.isEnabledFor(logging.DEBUG): # don't prepare the traceback if we're not going to show it anyway
+				logger.debug("cannot determine timestamp of '{0}':\n{1}".format(fn, traceback.format_exc()))
 			return 0., 0.
 
 	def sort_files(self, files):
