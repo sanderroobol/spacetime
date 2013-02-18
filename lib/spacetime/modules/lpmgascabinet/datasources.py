@@ -24,7 +24,8 @@ class GasCabinet(CustomCSV):
 	time_columns = 'auto'
 	time_type = 'labview'
 
-	controllers = ['NO', 'H2', 'O2', 'CO', 'Ar', 'Shunt', 'Reactor', 'Pulse']
+	# FIXME: support mfc aliases for real instead of He hack
+	controllers = ['NO', 'H2', 'O2', 'CO', 'Ar', 'He', 'Shunt', 'Reactor', 'Pulse']
 	controller_parameters = ['time', 'measure', 'setpoint', 'valve position']
 
 	controller_aliases = {
