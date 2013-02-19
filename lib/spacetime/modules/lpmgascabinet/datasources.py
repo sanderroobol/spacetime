@@ -24,71 +24,43 @@ class GasCabinet(CustomCSV):
 	time_columns = 'auto'
 	time_type = 'labview'
 
-	# FIXME: support mfc aliases for real instead of He hack
-	controllers = ['NO', 'H2', 'O2', 'CO', 'Ar', 'He', 'Shunt', 'Reactor', 'Pulse']
-	controller_parameters = ['time', 'measure', 'setpoint', 'valve position']
+	controllers = ['NO', 'H2', 'O2', 'CO', 'Ar', 'Shunt', 'Reactor', 'Pulse'] # DO NOT TOUCH, used to generate header for certain malformed files
+	controller_parameters = ['time', 'measure', 'setpoint', 'valve position'] # DO NOT TOUCH, idem
 
-	controller_aliases = {
-		'BPC1': 'Reactor',
-		'BPC2': 'Pulse',
-	}
 	controller_parameter_aliases = {
 		'set point': 'setpoint',
 		'valve output': 'valve position',
 	}
 
-	valves = ['MIX', 'MRS', 'INJ', 'OUT', 'Pump']
-	valve_aliases = {}
-	valve_parameters = ['position']
+	valves = ['MIX', 'MRS', 'INJ', 'OUT', 'Pump'] # DO NOT TOUCH, idem
+	valve_parameters = ['time', 'position']
 	valve_parameter_aliases = {
 		'valve': 'position'
 	}
 
-	def parse_column_names(self, line):
-		labels = line.split('\t')
-		self.channel_kwargs = []
-		self.channel_labels = []
-		for l in labels:
-			info = self.channel_mapping[l.lower()]
-			self.channel_kwargs.append(info)
-			self.channel_labels.append(info['id'])
+	def parse_column_label(self, lbl):
+		ll = lbl.lower()
+
+		for pa, p in itertools.chain(((p, p) for p in self.controller_parameters), self.controller_parameter_aliases.iteritems()):
+			if ll.endswith(' {0}'.format(pa)):
+				return dict(id=lbl, type='controller', controller=lbl[:-len(pa)-1], parameter=p)
+
+		for pa, p in itertools.chain(((p, p) for p in self.valve_parameters), self.valve_parameter_aliases.iteritems()):
+			if ll.endswith(' {0}'.format(pa)):
+				return dict(id=lbl, type='valve', valve=lbl[:-len(pa)-1], parameter=p)
+
+		if ll.endswith(' time') or lbl == 'time':
+			return dict(id=lbl, parameter='time')
+
+		return dict(id=lbl, parameter=None)
 
 	def get_channel_kwargs(self, label, i):
 		return self.channel_kwargs[i]
 
-	def make_channel_mapping(self):
-		# construct mapping with all possible names that we might encounter
-		self.channel_mapping = {}
-
-		controllers = dict((c, c) for c in self.controllers)
-		controllers.update(self.controller_aliases)
-		controller_parameters = dict((p, p) for p in self.controller_parameters)
-		controller_parameters.update(self.controller_parameter_aliases)
-		for (ca, c), (pa, p) in itertools.product(controllers.iteritems(), controller_parameters.iteritems()):
-			self.channel_mapping['{0} {1}'.format(ca, pa).lower()] = dict(
-				id = '{0} {1}'.format(c, p),
-				type = 'controller',
-				controller = c,
-				parameter = p,
-			)
-
-		valves = dict((v, v) for v in self.valves)
-		valves.update(self.valve_aliases)
-		valve_parameters = dict((p, p) for p in self.valve_parameters)
-		valve_parameters.update(self.valve_parameter_aliases)
-		for (va, v), (pa, p) in itertools.product(valves.iteritems(), valve_parameters.iteritems()):
-			self.channel_mapping['{0} {1}'.format(va, pa).lower()] = dict(
-				id = '{0} {1}'.format(v, p),
-				type = 'valve',
-				valve = v,
-			)
-
-		self.channel_mapping['time'] = dict(id='time')
-		self.channel_mapping['valves time'] = dict(id='Valves time')
+	def get_time_columns(self):
+		return [i for (i, d) in enumerate(self.channel_kwargs) if d['parameter'].lower() == 'time']
 
 	def read_header(self, fp):
-		self.make_channel_mapping()
-
 		line1 = fp.readline()
 		line2 = fp.readline()
 		fp.seek(len(line1)) # line2 contains real data, we want to read this again later on
@@ -101,7 +73,7 @@ class GasCabinet(CustomCSV):
 				['Valves time'] + ['{0} valve'.format(v) for v in self.valves]
 			if datacount == 37:
 				columns.pop()
-			self.parse_column_names('\t'.join(columns))
-			self.get_time_columns = lambda: [len(self.controller_parameters) * i for i in range(len(self.controllers))] + [len(self.controllers) * len(self.controller_parameters)] 
+			self.channel_labels = columns
 		else:
-			self.parse_column_names(line1.strip())
+			self.channel_labels = line1.strip().split('\t')
+		self.channel_kwargs = [self.parse_column_label(lbl) for lbl in self.channel_labels]
