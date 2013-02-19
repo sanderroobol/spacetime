@@ -116,6 +116,12 @@ class ModifiedToolbar(matplotlib.backends.backend_wx.NavigationToolbar2Wx):
 	def set_history_buttons(self): # required since matplotlib 1.2.0
 		pass
 
+	def zoom(self, *args):
+		matplotlib.backend_bases.NavigationToolbar2.zoom(self, *args)
+		
+	def pan(self, *args):
+		matplotlib.backend_bases.NavigationToolbar2.pan(self, *args)
+
 
 class _MPLFigureEditor(Editor):
 	scrollable  = True
