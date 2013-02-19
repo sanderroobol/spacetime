@@ -234,12 +234,10 @@ class RGBImage(DataSource):
 		super(RGBImage, self).__init__(filename)
 		self.tstart = tstart
 		self.tend = tend
-	
-	def getframe(self):
-		return ImageFrame(image=self.loadfile(), tstart=self.tstart, tend=self.tend, **self.get_scale())
+		self.imageframe = ImageFrame(image=self.loadfile(), tstart=self.tstart, tend=self.tend, **self.get_scale())
 	
 	def iterframes(self):
-		yield self.getframe()
+		yield self.imageframe
 
 	@classmethod
 	def detect_subclass(cls, filename):
@@ -263,6 +261,9 @@ class RGBImage(DataSource):
 
 	def get_scale(self):
 		return dict()
+
+	def is_greyscale(self):
+		raise NotImplementedError
 
 
 # utility functions for TVIPS TemData header parsing
@@ -315,6 +316,9 @@ class PILImage(RGBImage):
 					return dict(pixelsize=size, pixelunit='nm')
 		return dict()
 
+	def is_greyscale(self):
+		return self.im.mode[0] in 'LIF'
+
 
 class DM3Scaling(object):
 	def get_scale(self):
@@ -336,6 +340,9 @@ class DM3Image(DM3Scaling, RGBImage):
 		timestamp = util.mpldtstrptime('{0} {1}'.format(date, time), '%m/%d/%Y %I:%M:%S %p')
 		exposure = float(dm3.tags['root.ImageList.1.ImageTags.Acquisition.Parameters.High Level.Exposure (s)']) * 1e3
 		return timestamp, exposure
+
+	def is_greyscale(self):
+		return True
 
 
 class DM3Stack(DataSource, DM3Scaling):
