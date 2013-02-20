@@ -49,7 +49,7 @@ class GasCabinet(CustomCSV):
 			if ll.endswith(' {0}'.format(pa)):
 				return dict(id=lbl, type='valve', valve=lbl[:-len(pa)-1], parameter=p)
 
-		if ll.endswith(' time') or lbl == 'time':
+		if ll.endswith(' time') or ll == 'time':
 			return dict(id=lbl, parameter='time')
 
 		return dict(id=lbl, parameter=None)
@@ -58,7 +58,7 @@ class GasCabinet(CustomCSV):
 		return self.channel_kwargs[i]
 
 	def get_time_columns(self):
-		return [i for (i, d) in enumerate(self.channel_kwargs) if d['parameter'].lower() == 'time']
+		return [i for (i, d) in enumerate(self.channel_kwargs) if d['parameter'] and d['parameter'].lower() == 'time']
 
 	def read_header(self, fp):
 		line1 = fp.readline()
