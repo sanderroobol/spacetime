@@ -81,6 +81,17 @@ def ClipStdDev(number):
 	return clip
 
 
+def ClipFraction(fraction):
+	# FIXME: this modifies the frame in-place, I'm not sure if this is desired behaviour
+	def clip(frame):
+		data = frame.image.flatten()
+		data.sort()
+		count = int(round(data.size * fraction / 2.))
+		frame.image = numpy.clip(frame.image, data[count], data[-count])
+		return frame
+	return clip
+
+
 def average(npoints):
 	# FIXME: this modifies the frame in-place, I'm not sure if this is desired behaviour
 	def avgn(data):

@@ -1062,10 +1062,11 @@ class RGBImageGUI(ImageGUI, SingleFrameAnimation):
 	selected_index_lock = traits.Instance(object, args=())
 	selected_filename = traits.Str('n/a')
 	file_number_max = traits.Property(depends_on='files')
-	clip = traits.Float(3)
+	clip_stddev = traits.Float(0)
+	clip_fraction = traits.Float(0.01)
 	clip_enabled = traits.Bool(True)
 
-	traits_saved = 'configuration.*', 'selected_index', 'clip'
+	traits_saved = 'configuration.*', 'selected_index', 'clip_stddev', 'clip_fraction'
 	traits_not_saved = 'filename',
 
 	plotfactory = subplots.Image
@@ -1115,7 +1116,7 @@ class RGBImageGUI(ImageGUI, SingleFrameAnimation):
 		self.files[self.selected_index].checked = True
 		self.file_changed()
 
-	@traits.on_trait_change('clip')
+	@traits.on_trait_change('clip_fraction, clip_stddev')
 	def file_changed(self):
 		f = self.files[self.selected_index]
 		self.selected_filename = f.shortpath
@@ -1125,8 +1126,11 @@ class RGBImageGUI(ImageGUI, SingleFrameAnimation):
 			tend = None
 		data = self.datafactory.autodetect(f.path, f.timestamp, tend)
 		self.clip_enabled = data.is_greyscale()
-		if self.clip_enabled and self.clip > 0:
-			data = data.apply_filter(filters.ClipStdDev(self.clip))
+		if self.clip_enabled:
+			if self.clip_fraction > 0:
+				data = data.apply_filter(filters.ClipFraction(self.clip_fraction))
+			if self.clip_stddev > 0:
+				data = data.apply_filter(filters.ClipStdDev(self.clip_stddev))
 		self.plot.set_data(data)
 		self.rebuild()
 
@@ -1143,9 +1147,14 @@ class RGBImageGUI(ImageGUI, SingleFrameAnimation):
 				traitsui.Item('scalebar'),
 				traitsui.Item('selected_index', label='Number', editor=gui.support.RangeEditor(low=0, high_name='file_number_max', mode='spinner')),
 				traitsui.Item('selected_filename', label='Filename', style='readonly'),
-				traitsui.Item('clip', label='Color clipping', tooltip='Clip DM3 greyscale at <number> standard deviations away from the average (0 to disable)', editor=gui.support.FloatEditor(), enabled_when='clip_enabled'),
 				show_border=True,
 				label='General',
+			),
+			traitsui.Group(
+				traitsui.Item('clip_fraction', label='Fraction of points', tooltip='Remove certain fraction of outlying data points', editor=traitsui.RangeEditor(low=0., high=1.0), enabled_when='clip_enabled'),
+				traitsui.Item('clip_stddev', label='Number of std. dev.', tooltip='Clip at <number> standard deviations away from the average (0 to disable)', editor=gui.support.FloatEditor(), enabled_when='clip_enabled'),
+				show_border=True,
+				label='Color clipping (greyscale only)',
 			),
 			traitsui.Group(
 				traitsui.Item('files', label='File', editor=ImageListEditor()),
