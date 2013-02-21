@@ -225,3 +225,52 @@ def loadtxt(file, delimiter=None, skip_lines=0):
 
 	lines = (line.strip() for line in file)
 	return numpy.array([line.split(delimiter) for line in lines if line], dtype=float)
+
+
+# shamelessly copied from matplotlib 1.2.0 to provide compatibility with older
+# matplotlib versions that do not understand PIL mode I;16
+def pil_to_array( pilImage ):
+	"""
+	Load a PIL image and return it as a numpy array.  For grayscale
+	images, the return array is MxN.  For RGB images, the return value
+	is MxNx3.  For RGBA images the return value is MxNx4
+	"""
+	def toarray(im, dtype=numpy.uint8):
+		"""Teturn a 1D array of dtype."""
+		x_str = im.tostring('raw', im.mode)
+		x = numpy.fromstring(x_str, dtype)
+		return x
+
+	if pilImage.mode in ('RGBA', 'RGBX'):
+		im = pilImage # no need to convert images
+	elif pilImage.mode=='L':
+		im = pilImage # no need to luminance images
+		# return MxN luminance array
+		x = toarray(im)
+		x.shape = im.size[1], im.size[0]
+		return x
+	elif pilImage.mode=='RGB':
+		#return MxNx3 RGB array
+		im = pilImage # no need to RGB images
+		x = toarray(im)
+		x.shape = im.size[1], im.size[0], 3
+		return x
+	elif pilImage.mode.startswith('I;16'):
+		# return MxN luminance array of uint16
+		im = pilImage
+		if im.mode.endswith('B'):
+			x = toarray(im, '>u2')
+		else:
+			x = toarray(im, '<u2')
+		x.shape = im.size[1], im.size[0]
+		return x.astype('=u2')
+	else: # try to convert to an rgba image
+		try:
+			im = pilImage.convert('RGBA')
+		except ValueError:
+			raise RuntimeError('Unknown image mode')
+
+	# return MxNx4 RGBA array
+	x = toarray(im)
+	x.shape = im.size[1], im.size[0], 4
+	return x

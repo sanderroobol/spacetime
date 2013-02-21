@@ -283,7 +283,7 @@ def _read_float(fp):
 class PILImage(RGBImage):
 	def loadfile(self):
 		self.im = PIL.Image.open(self.filename)
-		return matplotlib.image.pil_to_array(self.im)
+		return util.pil_to_array(self.im)
 
 	@staticmethod
 	def get_timeinfo(filename):
