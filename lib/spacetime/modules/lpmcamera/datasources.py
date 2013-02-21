@@ -18,6 +18,7 @@
 
 from __future__ import division
 
+from ..generic import filters
 from ..generic.datasources import DataSource, MultiTrend, DataChannel, ImageFrame
 
 import numpy
@@ -26,7 +27,6 @@ import scipy.fftpack
 from camera.formats import raw
 
 from ... import util
-from . import filters
 
 # Camera class for image mode and trend mode
 class Camera(MultiTrend):

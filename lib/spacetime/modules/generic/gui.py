@@ -36,8 +36,7 @@ logger = logging.getLogger(__name__)
 
 from ... import gui, util
 
-from . import subplots, datasources, datasinks
-from ..lpmcamera import filters
+from . import subplots, datasources, datasinks, filters
 
 
 class Tab(traits.HasTraits):

@@ -20,11 +20,12 @@ import enthought.traits.api as traits
 import enthought.traits.ui.api as traitsui
 import numpy
 
+from ..generic import filters
 from ..generic.gui import SerializableComponent, SubplotGUI, DoubleTimeTrendGUI, XlimitsGUI, FalseColorImageGUI, SingleFrameAnimation
 from ..generic.subplots import Image
 from ...gui import support
 
-from . import datasources, subplots, filters
+from . import datasources, subplots
 
 
 class FourierFilterHandler(traitsui.Handler):
