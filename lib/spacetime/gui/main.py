@@ -1,6 +1,6 @@
 # Thi file is part of Spacetime.
 #
-# Copyright (C) 2010-2012 Leiden University.
+# Copyright (C) 2010-2013 Leiden University.
 # Written by Sander Roobol.
 #
 # Spacetime is free software: you can redistribute it and/or modify

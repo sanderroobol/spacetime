@@ -1,6 +1,6 @@
 # This file is part of Spacetime.
 #
-# Copyright (C) 2010-2012 Leiden University.
+# Copyright (C) 2010-2013 Leiden University.
 # Written by Sander Roobol.
 #
 # Spacetime is free software: you can redistribute it and/or modify
@@ -231,7 +231,7 @@ class PythonWindow(support.PersistantGeometryWindow):
 
 class AboutWindow(support.UtilityWindow):
 	title = traits.Str("{0} {1}".format(version.name, version.version))
-	desc = traits.Str("""Copyright 2010-2012 Leiden University.
+	desc = traits.Str("""Copyright 2010-2013 Leiden University.
 Written by Sander Roobol <roobol@physics.leidenuniv.nl>.
 
 Spacetime is free software: you can redistribute it and/or modify it under the terms of the 
