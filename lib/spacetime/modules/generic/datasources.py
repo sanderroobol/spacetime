@@ -21,6 +21,7 @@ import os.path
 import numpy
 import PIL.Image, matplotlib.image
 import struct
+import copy
 
 from ... import util
 from . import dm3lib
@@ -29,6 +30,11 @@ from . import dm3lib
 class DataObject(object):
 	def __init__(self, **kwargs):
 		self.__dict__.update(kwargs)
+
+	def clone(self, **kwargs):
+		new = copy.copy(self)
+		new.__dict__.update(kwargs)
+		return new
 
 
 class DataChannel(DataObject):

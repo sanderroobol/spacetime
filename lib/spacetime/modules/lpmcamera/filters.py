@@ -66,38 +66,33 @@ def diff_line(data):
 # for use with the bgs_* functions
 def array(func):
 	def filter(frame):
-		# FIXME: this modifies the frame in-place, I'm not sure if this is desired behaviour
-		frame.image = func(frame.image)
-		return frame
+		return frame.clone(image=func(frame.image))
 	return filter
 
 
 def ClipStdDev(number):
-	# FIXME: this modifies the frame in-place, I'm not sure if this is desired behaviour
 	def clip(frame):
 		avg, stddev = frame.image.mean(), frame.image.std()
-		frame.image = numpy.clip(frame.image, avg - number * stddev, avg + number * stddev)
-		return frame
+		image = numpy.clip(frame.image, avg - number * stddev, avg + number * stddev)
+		return frame.clone(image=image)
 	return clip
 
 
 def ClipFraction(fraction):
-	# FIXME: this modifies the frame in-place, I'm not sure if this is desired behaviour
 	def clip(frame):
 		data = frame.image.flatten()
 		data.sort()
 		count = int(round(data.size * fraction / 2.))
-		frame.image = numpy.clip(frame.image, data[count], data[-count])
-		return frame
+		image = numpy.clip(frame.image, data[count], data[-count])
+		return frame.clone(image=image)
 	return clip
 
 
 def average(npoints):
-	# FIXME: this modifies the frame in-place, I'm not sure if this is desired behaviour
 	def avgn(data):
-		data.value = numpy.array(map(numpy.mean, numpy.array_split(data.value, numpy.ceil(data.value.size/npoints))))
-		data.time = numpy.array(map(numpy.mean, numpy.array_split(data.time, numpy.ceil(data.time.size/npoints))))
-		return data
+		value = numpy.array(map(numpy.mean, numpy.array_split(data.value, numpy.ceil(data.value.size/npoints))))
+		time = numpy.array(map(numpy.mean, numpy.array_split(data.time, numpy.ceil(data.time.size/npoints))))
+		return data.clone(value=value, time=time)
 	return avgn
 
 
@@ -137,13 +132,13 @@ def fourier(filter, window=None):
 		freq = scipy.fftpack.fftfreq(z.size, 1/frame.pixelrate)
 		filtered_data = scipy.fftpack.ifft(filter(freq) * z).real.reshape(data.shape)
 
-		frame.lrimage, frame.rlimage = split_directions(filtered_data)
+		lrimage, rlimage = split_directions(filtered_data)
 		if frame.direction == 'both':
-			frame.image = filtered_data
+			image = filtered_data
 		elif frame.direction == 'l2r':
-			frame.image = frame.lrimage
+			image = frame.lrimage
 		else:
-			frame.image = frame.rlimage
+			image = frame.rlimage
 	
-		return frame
+		return frame.clone(lrimage=lrimage, rlimage=rlimage, image=image)
 	return fourierfilter
