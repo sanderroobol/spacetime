@@ -2,6 +2,8 @@ import sys, os
 sys.path.append(os.path.realpath('lib'))
 import spacetime.version
 
+upgrade = '--upgrade' in sys.argv
+
 class Installer(object):
 	def __init__(self):
 		self.install_commands = []
@@ -63,7 +65,13 @@ print r"""
   ;Name and file
 """
 
-print r"""
+if upgrade:
+	print r"""
+  Name "Spacetime upgrade {version}"
+  OutFile "Spacetime-upgrade-{version}.exe"
+""".format(version=spacetime.version.version)
+else:
+	print r"""
   Name "Spacetime {version}"
   OutFile "Spacetime-{version}.exe"
 """.format(version=spacetime.version.version)
@@ -106,15 +114,21 @@ Section
 
   SetOutPath "$INSTDIR"
 
+  File ..\README.html
+  File ..\LICENSE.txt
+  File ..\CREDITS.txt
+"""
+
+if not upgrade:
+	print r"""
   File python-dist\python.exe
   File python-dist\pythonw.exe
   File python-dist\python26.dll
   File python-dist\ffmpeg.exe
-  File ..\README.html
-  File ..\LICENSE.txt
-  File ..\CREDITS.txt
   File /r /x .* python-dist\Lib
+"""
 
+print r"""
   File debug.bat
   File reset_preferences.py
 
