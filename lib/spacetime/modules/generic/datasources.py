@@ -32,7 +32,11 @@ class DataObject(object):
 		self.__dict__.update(kwargs)
 
 	def clone(self, **kwargs):
-		new = copy.copy(self)
+		return self.__class__.transclone(self, **kwargs)
+
+	@classmethod
+	def transclone(cls, source, **kwargs):
+		new = cls(**source.__dict__)
 		new.__dict__.update(kwargs)
 		return new
 
@@ -49,6 +53,22 @@ class ImageFrame(DataObject):
 	image = None
 	pixelsize = None
 	pixelunit = None
+
+	def get_extent(self):
+		if hasattr(self.image, 'shape'):
+			if self.pixelsize:
+				return (0, self.pixelsize * self.image.shape[1], self.pixelsize * self.image.shape[0], 0)
+			else:
+				return (0, self.image.shape[1], self.image.shape[0], 0)
+
+
+class FFTImageFrame(ImageFrame):
+	def get_extent(self):
+		if hasattr(self.image, 'shape'):
+			if self.pixelsize:
+				return (-self.image.shape[1]*self.pixelsize/2,  self.image.shape[1]*self.pixelsize/2, self.image.shape[0]*self.pixelsize/2,  -self.image.shape[0]*self.pixelsize/2)
+			else:
+				return (-.5, .5, .5, -.5)
 
 
 class DataSource(object):

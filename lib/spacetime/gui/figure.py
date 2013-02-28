@@ -18,6 +18,7 @@
 
 import matplotlib
 matplotlib.use('WXAgg')
+matplotlib.rc('mathtext', fontset='stixsans', default='regular')
 
 import matplotlib.figure, matplotlib.transforms, matplotlib.backends.backend_wx, matplotlib.backends.backend_wxagg, matplotlib.backend_bases
 from matplotlib.backend_bases import cursors

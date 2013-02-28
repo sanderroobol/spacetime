@@ -497,6 +497,7 @@ class Image(ImageBase):
 	rotate = False
 	marker = None
 	scalebar = True
+	frame = None
 
 	def __init__(self, *args, **kwargs):
 		self.vspans = []
@@ -530,11 +531,15 @@ class Image(ImageBase):
 				tend = self.correct_time(d.tend)
 
 			if self.mode == 'single frame':
-				# somehow, origin=upper is not respected here for imshow, fix manually
-				image = d.image[::-1,:]
+				self.frame = d
+
 				if self.rotate:
-					image = numpy.rot90(image, 3)
-				self.axes.imshow(image, aspect='equal', cmap=self.colormap, interpolation=self.interpolation, norm=self.get_clim_norm())
+					image = numpy.rot90(d.image, 3)
+				else:
+					image = d.image
+
+				extent = d.get_extent()
+				self.axes.imshow(image, origin='lower', aspect='equal', cmap=self.colormap, interpolation=self.interpolation, norm=self.get_clim_norm(), extent=extent)
 
 				self.marker = self.parent.markers.add(tstart, tend)
 
@@ -547,23 +552,24 @@ class Image(ImageBase):
 
 		self.clim_callback()
 	
-		# imshow() changes the axes xlim/ylim, so go back to something sensible
+		# fix the axes xlim/ylim, imshow() doesn't always do the right thing
 		self.ylim_rescale()
 		try:
 			self.xlim_rescale()
 		except util.SharedXError:
 			pass
-		# NOTE: IMHO the better solution is to change
-		# matplotlib.image.ImageAxes.set_extent(); this should call
-		# axes.autoscale_view(tight=True) instead of messing with the axes
 
 	def ylim_rescale(self):
-		self.autoscale_y(self.axes)
+		if self.mode == 'single frame' and self.frame:
+			extent = self.frame.get_extent()
+			self.axes.set_ylim(extent[2], extent[3])
 
 	def xlim_rescale(self):
 		if self.mode == 'film strip':
 			raise util.SharedXError
-		self.autoscale_x(self.axes)
+		elif self.frame:
+			extent = self.frame.get_extent()
+			self.axes.set_xlim(extent[0], extent[1])
 
 	def clear(self, quick=False):
 		if not quick:
@@ -609,12 +615,13 @@ class Image(ImageBase):
 		if image.pixelsize is None:
 			return
 
+		extent = image.get_extent()
+		length = 0.1 * abs(extent[1] - extent[0])
+
 		if image.pixelsize == 0:
-			size = 0
-			pixelsize = 0.1 * image.image.shape[1]
+			label = 0
 		else:		
-			size = self.find_nice_number(0.1 * image.image.shape[1] * image.pixelsize)
-			pixelsize = size / image.pixelsize
+			label = length = self.find_nice_number(length)
 		
-		label = u'{0}{1}{2}'.format(size, ' ' if image.pixelunit else '', image.pixelunit or '')
-		self.axes.add_artist(Scalebar(self.axes.transData, size=pixelsize, label=label, loc=4))
+		label = u'{0}{1}{2}'.format(label, ' ' if image.pixelunit else '', image.pixelunit or '')
+		self.axes.add_artist(Scalebar(self.axes.transData, size=length, label=label, loc=4))

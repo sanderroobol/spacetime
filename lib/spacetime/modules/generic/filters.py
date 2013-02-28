@@ -18,8 +18,9 @@
 
 from __future__ import division
 
+from . import datasources
 import numpy
-import scipy.stats
+import scipy.stats, scipy.signal, scipy.fftpack
 
 
 def bgs_line_by_line(data):
@@ -142,3 +143,18 @@ def fourier(filter, window=None):
 	
 		return frame.clone(lrimage=lrimage, rlimage=rlimage, image=image)
 	return fourierfilter
+
+def fourier2d(frame):
+	fft = numpy.fft.fft2(frame.image)
+	fft = numpy.fft.fftshift(fft)
+	amp = numpy.log(numpy.abs(fft**2))
+
+	pixelsize = frame.pixelsize
+	if pixelsize:
+		pixelsize = 1/(pixelsize*frame.image.shape[0])
+
+	pixelunit = frame.pixelunit
+	if pixelunit:
+		pixelunit = pixelunit + '$^{-1}$'
+
+	return datasources.FFTImageFrame.transclone(frame, image=numpy.ma.masked_invalid(amp), pixelsize=pixelsize, pixelunit=pixelunit)
