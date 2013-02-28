@@ -22,4 +22,4 @@ winupgr:
 	cd win32 && makensis installer-upgrade.nsi
 
 clean:
-	rm -f win32/installer.nsi
+	rm -f win32/installer.nsi win32/installer-upgrade.nsi
