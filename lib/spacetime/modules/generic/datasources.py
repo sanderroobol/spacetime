@@ -19,9 +19,8 @@
 import itertools
 import os.path
 import numpy
-import PIL.Image, matplotlib.image
+import PIL.Image
 import struct
-import copy
 
 from ... import util
 from . import dm3lib
