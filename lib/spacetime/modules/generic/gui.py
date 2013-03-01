@@ -1187,7 +1187,7 @@ class RGBImageGUI(ImageGUI, SingleFrameAnimation):
 				label='Color clipping (greyscale only)',
 			),
 			traitsui.Group(
-				traitsui.Item('averaging', label='Averaging', tooltip='Average <number> frames, starting from selected frame.', editor=gui.support.RangeEditor(low=1, high_name='file_number_max'), enabled_when='is_greyscale'),
+				traitsui.Item('averaging', label='Averaging', tooltip='Average <number> frames, starting from selected frame.', editor=gui.support.RangeEditor(low=1, high=1000000), enabled_when='is_greyscale'),
 				traitsui.Item('fft', label='2D fourier transform', enabled_when='is_greyscale'),
 				show_border=True,
 				label='Tools (greyscale only)',
