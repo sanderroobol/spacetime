@@ -274,3 +274,34 @@ def pil_to_array( pilImage ):
 	x = toarray(im)
 	x.shape = im.size[1], im.size[0], 4
 	return x
+
+
+class StackCache(object):
+	def __init__(self, limit=None):
+		self.limit = limit
+		self.activity = []
+		self.lookup = {}
+
+	def find(self, key):
+		if key in self.lookup:
+			self.activity.remove(key)
+			self.activity.insert(0, key)
+			return self.lookup[key]
+		return None
+
+	def insert(self, key, value):
+		self.lookup[key] = value
+		self.activity.insert(0, key)
+		self._check_limit()
+
+	def set_limit(self, limit):
+		self.limit = limit
+		self._check_limit()
+
+	def _check_limit(self):
+		if self.limit is None or len(self.activity) <= self.limit:
+			return
+		excess = self.activity[self.limit:]
+		for key in excess:
+			del self.lookup[key]
+		self.activity = self.activity[:self.limit]

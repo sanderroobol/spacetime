@@ -389,3 +389,34 @@ class DM3Stack(DataSource, DM3Scaling):
 		tstart = self.tstart + self.frameno * (self.exposure + self.delay)
 		tend = tstart + self.exposure
 		yield ImageFrame(image=self.dm3.getImageData(self.frameno), tstart=tstart, tend=tend, **self.get_scale())
+
+
+class AveragedImage(DataSource):
+	def __init__(self, images):
+		frames = list(itertools.chain(*(im.iterframes() for im in images)))
+
+		if not all(im.is_greyscale() for im in images) or not all(f.image.ndim == 2 for f in frames):
+			raise ValueError('cannot average: not all images are greyscale')
+
+		if len(set(f.image.shape for f in frames)) != 1:
+			raise ValueError('cannot average: not all images have the same shape')
+		
+		tstart = min(f.tstart for f in frames)
+		tend = max(f.tend for f in frames)
+		pixelsize = set(f.pixelsize for f in frames)
+		if len(pixelsize) == 1:
+			pixelsize = pixelsize.pop()
+		else:
+			pixelsize = None
+		pixelunit = set(f.pixelunit for f in frames)
+		if len(pixelunit) == 1:
+			pixelunit = pixelunit.pop()
+		else:
+			pixelunit = None
+
+		image = numpy.dstack(tuple(f.image for f in frames)).mean(axis=2)
+		self.imageframe = ImageFrame(image=image, tstart=tstart, tend=tend, pixelsize=pixelsize, pixelunit=pixelunit)
+	
+	def iterframes(self):
+		yield self.imageframe
+		

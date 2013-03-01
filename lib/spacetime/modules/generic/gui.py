@@ -1064,10 +1064,11 @@ class RGBImageGUI(ImageGUI, SingleFrameAnimation):
 	clip_stddev = traits.Float(0)
 	clip_fraction = traits.Float(0.01)
 	fft = traits.Bool(False)
+	averaging = traits.Int(1)
 
 	is_greyscale = traits.Bool(True)
 
-	traits_saved = 'configuration.*', 'selected_index', 'clip_stddev', 'clip_fraction'
+	traits_saved = 'configuration.*', 'selected_index', 'clip_stddev', 'clip_fraction', 'fft', 'averaging'
 	traits_not_saved = 'filename',
 
 	plotfactory = subplots.Image
@@ -1078,6 +1079,10 @@ class RGBImageGUI(ImageGUI, SingleFrameAnimation):
 	animation_framenumber_high = 'file_number_max'
 
 	probe_progress_chunksize = 25
+
+	def __init__(self, *args, **kwargs):
+		self._datasource_cache = util.StackCache()
+		super(RGBImageGUI, self).__init__(*args, **kwargs)
 
 	def _configuration_default(self):
 		config = RGBImageConfiguration(id=self.id+'.configuration', parent=self)
@@ -1117,17 +1122,39 @@ class RGBImageGUI(ImageGUI, SingleFrameAnimation):
 		self.files[self.selected_index].checked = True
 		self.file_changed()
 
-	@traits.on_trait_change('clip_fraction, clip_stddev, fft')
-	def file_changed(self):
-		f = self.files[self.selected_index]
-		self.selected_filename = f.shortpath
+	def _get_datasource_by_index(self, index):
+		f = self.files[index]
 		if f.exposure:
 			tend = f.timestamp + f.exposure / 864e5
 		else:
 			tend = None
-		data = self.datafactory.autodetect(f.path, f.timestamp, tend)
+
+		self._datasource_cache.set_limit(max(10, int(math.ceil(self.averaging * 2.5))))
+
+		id = f.path, f.timestamp, tend
+		data = self._datasource_cache.find(id)
+		if not data:
+			data = self.datafactory.autodetect(*id)
+			self._datasource_cache.insert(id, data)
+
+		return f, data
+
+	@traits.on_trait_change('clip_fraction, clip_stddev, averaging, fft')
+	def file_changed(self):
+		fobj, data = self._get_datasource_by_index(self.selected_index)
 		self.is_greyscale = data.is_greyscale()
+		if not self.is_greyscale or self.averaging == 1:
+			self.selected_filename = fobj.shortpath
+
 		if self.is_greyscale:
+			if self.averaging > 1:
+				indices = [i for i in range(self.selected_index + 1, self.selected_index + self.averaging) if i <= self.file_number_max]
+				stack = [data] + list(self._get_datasource_by_index(i)[1] for i in indices)
+				try:
+					data = datasources.AveragedImage(stack)
+					self.selected_filename = 'averaging {0} starting from {1}'.format(len(indices) + 1, fobj.shortpath)
+				except:
+					self.selected_filename = 'averaging failed, non-uniform dataset; only showing {0}'.format(fobj.shortpath)
 			if self.fft:
 				data = data.apply_filter(filters.fourier2d)
 			if self.clip_fraction > 0:
@@ -1160,6 +1187,7 @@ class RGBImageGUI(ImageGUI, SingleFrameAnimation):
 				label='Color clipping (greyscale only)',
 			),
 			traitsui.Group(
+				traitsui.Item('averaging', label='Averaging', tooltip='Average <number> frames, starting from selected frame.', editor=gui.support.RangeEditor(low=1, high_name='file_number_max'), enabled_when='is_greyscale'),
 				traitsui.Item('fft', label='2D fourier transform', enabled_when='is_greyscale'),
 				show_border=True,
 				label='Tools (greyscale only)',
