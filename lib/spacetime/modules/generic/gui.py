@@ -34,7 +34,7 @@ import traceback
 import logging
 logger = logging.getLogger(__name__)
 
-from ... import gui, util
+from ... import gui, util, cache
 
 from . import subplots, datasources, datasinks, filters
 
@@ -891,8 +891,8 @@ class ImageFile(traits.HasTraits):
 		return util.datetimefrommpldt(self.timestamp).strftime('%Y-%m-%d %H:%M:%S.%f')
 
 	@classmethod
-	def probefile(cls, parent, id, path, probefunc):
-		timestamp, exposure = probefunc(id, path)
+	def probefile(cls, parent, cache, id, path, probefunc):
+		timestamp, exposure = probefunc(cache, id, path)
 		return cls(parent=parent, id=id, checked=(id == 0), path=path, timestamp=timestamp, exposure=exposure)
 
 	def _checked_changed(self):
@@ -933,14 +933,18 @@ class RGBImageConfiguration(ActivationComponent):
 	def activate(self):
 		self.trait_setq(active=True)
 
-	def get_timestamp(self, i, fn):
+	def get_timestamp(self, cache, i, fn):
 		try:
 			if self.time_source == 'manual':
 				return self.time_start + i * (self.time_exposure + self.time_delay) / 864e5, self.time_exposure # 864e5 ms per day
 			elif self.time_source in ('ctime', 'mtime'):
 				return util.mpldtfromtimestamp(getattr(os.stat(fn), 'st_' + self.time_source)), 0
 			elif self.time_source == 'header':
-				return datasources.RGBImage.autodetect_timeinfo(fn)
+				timeinfo = cache.lookup(fn)
+				if not timeinfo:
+					timeinfo = datasources.RGBImage.autodetect_timeinfo(fn)
+					cache.put(fn, timeinfo)
+				return timeinfo
 		except:
 			if logger.isEnabledFor(logging.DEBUG): # don't prepare the traceback if we're not going to show it anyway
 				logger.debug("cannot determine timestamp of '{0}':\n{1}".format(fn, traceback.format_exc()))
@@ -965,13 +969,14 @@ class RGBImageConfiguration(ActivationComponent):
 				progress = gui.support.DummyProgressDialog()
 
 			files = []
-			progress.open()
-			for i in range(chunkcount):
-				eiter = enumerate(filenames[chunksize*i:chunksize*(i+1)], chunksize*i)
-				files.extend(ImageFile.probefile(files, i, fn, self.get_timestamp) for (i, fn) in eiter)
-				progress.update(i)
-			progress.update(progress.max)
-			progress.close()
+			with cache.Cache('image_metadata') as c:
+				progress.open()
+				for i in range(chunkcount):
+					eiter = enumerate(filenames[chunksize*i:chunksize*(i+1)], chunksize*i)
+					files.extend(ImageFile.probefile(files, c, i, fn, self.get_timestamp) for (i, fn) in eiter)
+					progress.update(i)
+				progress.update(progress.max)
+				progress.close()
 		self.files = self.sort_files(files)
 
 
@@ -1001,10 +1006,11 @@ class RGBImageConfigurationEditor(RGBImageConfiguration, NonLiveComponentEditor)
 			progress = gui.support.DummyProgressDialog()
 
 		progress.open()
-		for i, f in enumerate(self.files):
-			if i % chunksize == 0:
-				progress.update(i / chunksize)
-			f.timestamp, f.exposure = self.get_timestamp(i, f.path)
+		with cache.Cache('image_metadata') as c:
+			for i, f in enumerate(self.files):
+				if i % chunksize == 0:
+					progress.update(i / chunksize)
+				f.timestamp, f.exposure = self.get_timestamp(c, i, f.path)
 			
 		self.files = self.sort_files(self.files)
 		progress.update(progress.max)

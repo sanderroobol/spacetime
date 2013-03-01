@@ -21,7 +21,7 @@ from __future__ import division
 # keep this import at top to ensure proper matplotlib backend selection
 from .figure import MPLFigureEditor, DrawManager, CallbackLoopManager
 
-from .. import plot, modules, version, prefs, util, pypymanager
+from .. import plot, modules, version, prefs, util, pypymanager, cache
 from . import support, windows
 
 import enthought.traits.api as traits
@@ -233,6 +233,11 @@ class MainWindowHandler(traitsui.Handler):
 
 	def do_python(self, info):
 		windows.PythonWindow.run_static(info.ui.context['object'].context)
+
+	def do_clear_image_cache(self, info):
+		with cache.Cache('image_metadata') as c:
+			c.clear()
+		support.Message.show(title='Cache cleared', message='Image metadata cache has been cleared.')
 
 	def do_about(self, info):
 		windows.AboutWindow.run_static(info.ui.context['object'].context)
@@ -805,8 +810,9 @@ class App(traits.HasTraits):
 				traitsui.Action(name='Export &image...', action='do_export_image', accelerator='Ctrl+E', image=support.GetIcon('image')),
 				traitsui.Action(name='&Copy to clipboard', action='do_copy', accelerator='Ctrl+C', tooltip='Copy to clipboard', image=support.GetIcon('copy')),
 				traitsui.Action(name='Export &movie...', action='do_export_movie', accelerator='Ctrl+M', image=support.GetIcon('movie')),
-			'python',
+			'advanced',
 				traitsui.Action(name='&Python console...', action='do_python', image=support.GetIcon('python')),
+				traitsui.Action(name='Clear image metadata cache', action='do_clear_image_cache'),
 			name='&Tools',
 		),
 		traitsui.Menu(
