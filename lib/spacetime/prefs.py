@@ -18,7 +18,6 @@
 
 import os
 import shutil
-import platform
 try:
 	import cPickle as pickle
 except ImportError:
@@ -29,46 +28,9 @@ from . import util
 import logging
 logger = logging.getLogger(__name__)
 
-def _win32_get_appdata():
-	# inspired by Ryan Ginstrom's winpaths module
-	
-	from ctypes import c_int, wintypes, windll
-
-	CSIDL_APPDATA = 26
-
-	SHGetFolderPathW = windll.shell32.SHGetFolderPathW
-	SHGetFolderPathW.argtypes = (
-		wintypes.HWND,
-		c_int,
-		wintypes.HANDLE,
-		wintypes.DWORD,
-		wintypes.LPCWSTR
-	)
-
-	path = wintypes.create_unicode_buffer(wintypes.MAX_PATH)
-	result = SHGetFolderPathW(0, CSIDL_APPDATA, 0, 0, path)
-	if result == 0:
-		return path.value
-	else:
-		raise Exception('SHGetFolderPathW failed')
-
-def get_prefs_path():
-	if platform.system() == 'Windows':
-		try:
-			appdir = _win32_get_appdata()
-			stdir = os.path.join(appdir, 'Spacetime')
-			if not os.path.exists(stdir):
-				os.mkdir(stdir)
-		except:
-			pass
-		else:
-			return os.path.join(stdir, 'preferences')
-	return os.path.join(os.path.expanduser('~'), '.spacetime.prefs')
-
-
 class Storage(object):
 	def __init__(self):
-		self.filename = get_prefs_path()
+		self.filename = util.get_persistant_path('preferences')
 		self.tempname = '{0}.tmp'.format(self.filename)
 
 		self.data = util.Struct()
