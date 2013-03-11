@@ -105,7 +105,7 @@ def loadmid(filename):
 		header.starttime  = parseExtDT(headerlines[3].split('\t')[1].strip())
 		header.stoptime   = parseExtDT(headerlines[4].split('\t')[1].strip())
 
-		masses = fp.readline().split()
+		masses = fp.readline().strip().split('\t\t\t')
 		columntitles = fp.readline() # not used
 		
 		data = [parseLine(line) for line in fp if line.strip()]
