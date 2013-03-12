@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import sqlite3
 try:
 	import cPickle as pickle
@@ -26,6 +27,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from . import util
+from .modules.generic.datasources import RGBImage
 
 
 # sqlite requires the buffer type for blobs, but pickle doesn't grok that
@@ -70,3 +72,21 @@ class Cache(object):
 
 	def __exit__(self, type, value, traceback):
 		self.close()
+
+
+def populate_image_cache(path):
+	path = os.path.realpath(path)
+	for dirpath, dirnames, filenames in os.walk(path):
+		with Cache('image_metadata') as c:
+			logger.info('{1} files in {0}'.format(dirpath, len(filenames)))
+			for filename in filenames:
+				_populate_image_cache_by_file(c, os.path.join(dirpath, filename))
+
+def _populate_image_cache_by_file(cache, fn):
+	if not cache.lookup(fn):
+		try:
+			timeinfo = RGBImage.autodetect_timeinfo(fn)
+		except:
+			pass
+		else:
+			cache.put(fn, timeinfo)
