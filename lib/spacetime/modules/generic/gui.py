@@ -199,7 +199,13 @@ class SerializableTab(SerializableBase, Tab):
 		self._modified = True
 
 
-class SubplotGUI(SerializableTab):
+# common ancestor for SubplotGUI, XlimitsMixin and YlimitsMixin
+class SubplotBase(SerializableTab):
+	def reset_autoscale(self):
+		pass
+
+
+class SubplotGUI(SubplotBase):
 	# required attributes: id, label
 	desc = '' # not required
 	filename = traits.File
@@ -257,9 +263,6 @@ class SubplotGUI(SerializableTab):
 		self.plot.adjust_time(self.simultaneity_offset, self.time_dilation_factor)
 		self.rebuild()
 
-	def reset_autoscale(self):
-		pass
-
 	def _size_changed(self):
 		self.plot.size = self.size
 		self.rebuild_figure()
@@ -298,21 +301,50 @@ class TimeTrendChannel(traits.HasTraits):
 	checked2 = traits.Bool(False)
 
 
-class TimeTrendGUI(SubplotGUI):
-	plotfactory = subplots.MultiTrend
-	sinkfactory = datasinks.MultiTrendTextSink
-	legend = traits.Enum('upper right', 'upper left', 'lower left', 'lower right', 'center left', 'center right', 'lower center', 'upper center', 'center', 'auto', 'off')
+class YlimitsMixin(SubplotBase):
 	ylimits = traits.Instance(gui.support.LogAxisLimits, args=())
 	yauto = traits.DelegatesTo('ylimits', 'auto')
 	ymin = traits.DelegatesTo('ylimits', 'min')
 	ymax = traits.DelegatesTo('ylimits', 'max')
 	ylog = traits.DelegatesTo('ylimits', 'log')
+
+	traits_saved = 'yauto', 'ymin', 'ymax', 'ylog'
+
+	def ylim_callback(self, ax):
+		with self.context.callbacks.avoid(self.ylimits):
+			self.ymin, self.ymax = self.plot.ax_get_ylim(ax)
+		if not self.context.callbacks.is_avoiding(self.ylimits):
+			self.yauto = False
+		logger.debug('%s.ylim_callback: %s', self.__class__.__name__, self.ylimits)
+
+	@traits.on_trait_change('ymin, ymax, yauto')
+	@gui.figure.CallbackLoopManager.decorator('ylimits')
+	def ylim_changed(self):
+		logger.debug('%s.ylim_changed: %s', self.__class__.__name__, self.ylimits)
+		self.ymin, self.ymax = self.plot.set_ylim(self.ylimits.min, self.ylimits.max, self.ylimits.auto)
+		self.redraw()
+
+	@gui.figure.CallbackLoopManager.decorator('ylimits')
+	def _ylog_changed(self):
+		self.plot.set_ylog(self.ylog)
+		self.redraw()
+
+	def reset_autoscale(self):
+		super(YlimitsMixin, self).reset_autoscale()
+		self.yauto = True
+
+
+class TimeTrendGUI(SubplotGUI, YlimitsMixin):
+	plotfactory = subplots.MultiTrend
+	sinkfactory = datasinks.MultiTrendTextSink
+	legend = traits.Enum('upper right', 'upper left', 'lower left', 'lower right', 'center left', 'center right', 'lower center', 'upper center', 'center', 'auto', 'off')
+
 	channel_names = traits.List(traits.Str)
 	channelobjs = traits.Property(traits.List(TimeTrendChannel), depends_on='channel_names')
 	selected_primary_channels = traits.Property(depends_on='channelobjs.checked')
 	data = traits.Instance(datasources.DataSource)
 
-	traits_saved = 'legend', 'yauto', 'ymin', 'ymax', 'ylog', 'selected_primary_channels'
+	traits_saved = 'legend', 'selected_primary_channels'
 
 	def _plot_default(self):
 		plot = self.plotfactory()
@@ -336,13 +368,6 @@ class TimeTrendGUI(SubplotGUI):
 				chan.checked = True
 			else:
 				chan.checked = False
-
-	def ylim_callback(self, ax):
-		with self.context.callbacks.avoid(self.ylimits):
-			self.ymin, self.ymax = ax.get_ylim()
-		if not self.context.callbacks.is_avoiding(self.ylimits):
-			self.yauto = False
-		logger.debug('%s.ylim_callback: %s', self.__class__.__name__, self.ylimits)
 
 	def update_channel_names(self):
 		if self.channel_names:
@@ -373,22 +398,6 @@ class TimeTrendGUI(SubplotGUI):
 			return
 		self.plot.set_data(self.data.selectchannels(lambda chan: chan.id in self.selected_primary_channels))
 		self.rebuild()
-
-	@traits.on_trait_change('ymin, ymax, yauto')
-	@gui.figure.CallbackLoopManager.decorator('ylimits')
-	def ylim_changed(self):
-		logger.debug('%s.ylim_changed: %s', self.__class__.__name__, self.ylimits)
-		self.ymin, self.ymax = self.plot.set_ylim(self.ylimits.min, self.ylimits.max, self.ylimits.auto)
-		self.redraw()
-
-	@gui.figure.CallbackLoopManager.decorator('ylimits')
-	def _ylog_changed(self):
-		self.plot.set_ylog(self.ylog)
-		self.redraw()
-
-	def reset_autoscale(self):
-		super(TimeTrendGUI, self).reset_autoscale()
-		self.yauto = True
 
 	def _legend_changed(self):
 		if self.legend == 'off':
@@ -456,13 +465,13 @@ class DoubleTimeTrendGUI(TimeTrendGUI):
 	def ylim_callback(self, ax):
 		if ax is self.plot.axes:
 			with self.context.callbacks.avoid(self.ylimits):
-				self.ymin, self.ymax = ax.get_ylim()
+				self.ymin, self.ymax = self.plot.ax_get_ylim(ax)
 			if not self.context.callbacks.is_avoiding(self.ylimits):
 				self.yauto = False
 			logger.debug('%s.ylim_callback primary: %s', self.__class__.__name__, self.ylimits)
 		elif ax is self.plot.secondaryaxes:
 			with self.context.callbacks.avoid(self.ylimits2):
-				self.ymin2, self.ymax2 = ax.get_ylim()
+				self.ymin2, self.ymax2 = self.plot.ax_get_ylim(ax)
 			if not self.context.callbacks.is_avoiding(self.ylimits2):
 				self.yauto2 = False
 			logger.debug('%s.ylim_callback secondary: %s', self.__class__.__name__, self.ylimits2)
@@ -516,7 +525,7 @@ class DoubleTimeTrendGUI(TimeTrendGUI):
 		)
 
 
-class XlimitsGUI(traits.HasTraits):
+class XlimitsMixin(SubplotBase):
 	xlimits = traits.Instance(gui.support.LogAxisLimits, args=())
 	xauto = traits.DelegatesTo('xlimits', 'auto')
 	xmin = traits.DelegatesTo('xlimits', 'min')
@@ -539,12 +548,13 @@ class XlimitsGUI(traits.HasTraits):
 
 	def xlim_callback(self, ax):
 		with self.context.callbacks.avoid(self.xlimits):
-			self.xmin, self.xmax = ax.get_xlim()
+			self.xmin, self.xmax = self.plot.ax_get_xlim(ax)
 		if not self.context.callbacks.is_avoiding(self.xlimits):
 			self.xauto = False
 		logger.debug('%s.xlim_callback: %s', self.__class__.__name__, self.xlimits)
 
 	def reset_autoscale(self):
+		super(XlimitsMixin, self).reset_autoscale()
 		self.xauto = True
 
 
@@ -815,24 +825,32 @@ class SingleFrameAnimation(traits.HasTraits):
 		))
 
 
-class ImageGUI(SubplotGUI):
+class ImageGUI(SubplotGUI, XlimitsMixin, YlimitsMixin):
 	colormap = 'gray'
 	scalebar = traits.Bool(True)
+	xlimits = traits.Instance(gui.support.AxisLimits, args=())
+	ylimits = traits.Instance(gui.support.AxisLimits, args=())
 	
 	traits_saved = 'scalebar',
 
 	def _plot_default(self):
 		plot = self.plotfactory()
 		plot.set_colormap(self.colormap)
+		plot.set_xlim_callback(self.xlim_callback)
+		plot.set_ylim_callback(self.ylim_callback)
 		plot.mode = 'single frame'
 		return plot
-
-	def reset_autoscale(self):
-		self.rebuild()
 
 	def _scalebar_changed(self):
 		self.plot.scalebar = self.scalebar
 		self.rebuild()
+
+	xylimits_group = traitsui.Group(
+		traitsui.Item('xlimits', style='custom', label='X scale'),
+		traitsui.Item('ylimits', style='custom', label='Y scale'),
+		show_border=True,
+		label='Limits',
+	)
 
 
 class FalseColorImageGUI(FalseColorMap, ImageGUI):
@@ -1198,6 +1216,7 @@ class RGBImageGUI(ImageGUI, SingleFrameAnimation):
 				show_border=True,
 				label='Tools (greyscale only)',
 			),
+			traitsui.Include('xylimits_group'),
 			traitsui.Group(
 				traitsui.Item('files', label='File', editor=ImageListEditor()),
 				show_labels=False,
@@ -1273,5 +1292,6 @@ class DM3Stack(ImageGUI, SingleFrameAnimation):
 				show_border=True,
 				label='Manual timing',
 			),
+			traitsui.Include('xylimits_group'),
 			traitsui.Include('relativistic_group'),
 		)

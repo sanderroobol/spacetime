@@ -63,8 +63,7 @@ class Subplot(object):
 		# Subplot and leave the axes untouched
 		pass
 
-	@staticmethod
-	def autoscale_x(axes):
+	def autoscale_x(self, axes):
 		# FIXME: Look at Axes.autoscale_view (line 1761) in matplotlib/axes.py
 		# See also Plot.autoscale_x_shared
 		xshared = axes._shared_x_axes.get_siblings(axes)
@@ -75,13 +74,12 @@ class Subplot(object):
 		else:
 			x0, x1 = 0, 1
 		XL = axes.xaxis.get_major_locator().view_limits(x0, x1)
-		axes.set_xlim(XL)
+		self.ax_set_xlim(axes, *XL)
 
-	@staticmethod
-	def autoscale_y(axes):
+	def autoscale_y(self, axes):
 		y0, y1 = axes.dataLim.intervaly
 		YL = axes.yaxis.get_major_locator().view_limits(y0, y1)
-		axes.set_ylim(YL)
+		self.ax_set_ylim(axes, *YL)
 
 	def draw_markers(self):
 		for marker in self.parent.markers:
@@ -108,16 +106,24 @@ class XAxisHandling(object):
 	xlim_auto = True
 	xlog = False
 
+	@staticmethod
+	def ax_get_xlim(ax):
+		return ax.get_xlim()
+	
+	@staticmethod
+	def ax_set_xlim(ax, min, max):
+		return ax.set_xlim(min, max)
+
 	def get_axes_requirements(self):
 		return [AxesRequirements(size=self.size, independent_x=True)]
 
 	def xlim_callback(self, ax):
-		self.xlim_min, self.xlim_max = ax.get_xlim()
+		self.xlim_min, self.xlim_max = self.ax_get_xlim(ax)
 		if self.xlim_callback_ext:
 			self.xlim_callback_ext(ax)
 
 	def set_xlim_callback(self, func):
-		self.xlim_callback = func
+		self.xlim_callback_ext = func
 
 	def set_xlim(self, min, max, auto):
 		self.xlim_min = min
@@ -129,7 +135,7 @@ class XAxisHandling(object):
 			# this is needed for graphs that can enable/disable the shared x axis
 			pass
 		if self.axes:
-			return self.axes.get_xlim()
+			return self.ax_get_xlim(self.axes)
 		else:
 			return self.xlim_min, self.xlim_max
 
@@ -139,7 +145,7 @@ class XAxisHandling(object):
 		if self.xlim_auto:
 			self.autoscale_x(self.axes)
 		else:
-			self.axes.set_xlim(self.xlim_min, self.xlim_max)
+			self.ax_set_xlim(self.axes, self.xlim_min, self.xlim_max)
 
 	# any class that inherits from XAxisHandling is responsible to call set_xlog() at the end of draw()
 	def set_xlog(self, xlog=None):
@@ -158,8 +164,16 @@ class YAxisHandling(object):
 	ylim_auto = True
 	ylog = False
 
+	@staticmethod
+	def ax_get_ylim(ax):
+		return ax.get_ylim()
+	
+	@staticmethod
+	def ax_set_ylim(ax, min, max):
+		return ax.set_ylim(min, max)
+
 	def ylim_callback(self, ax):
-		self.ylim_min, self.ylim_max = ax.get_ylim()
+		self.ylim_min, self.ylim_max = self.ax_get_ylim(ax)
 		if self.ylim_callback_ext:
 			self.ylim_callback_ext(ax)
 
@@ -172,7 +186,7 @@ class YAxisHandling(object):
 		self.ylim_auto = auto
 		self.ylim_rescale()
 		if self.axes:
-			return self.axes.get_ylim()
+			return self.ax_get_ylim(self.axes)
 		else:
 			return self.ylim_min, self.ylim_max
 
@@ -182,12 +196,23 @@ class YAxisHandling(object):
 		if self.ylim_auto:
 			self.autoscale_y(self.axes)
 		else:
-			self.axes.set_ylim(self.ylim_min, self.ylim_max)
+			self.ax_set_ylim(self.axes, self.ylim_min, self.ylim_max)
 
 	def set_ylog(self, ylog):
 		self.ylog = ylog
 		if self.axes:
 			self.axes.set_yscale('log' if ylog else 'linear')
+
+
+class InverseYAxisHandling(YAxisHandling):
+	@staticmethod
+	def ax_get_ylim(ax):
+		min, max = ax.get_ylim()
+		return max, min
+	
+	@staticmethod
+	def ax_set_ylim(ax, min, max):
+		return ax.set_ylim(max, min)
 
 
 class DoubleYAxisHandling(YAxisHandling):
@@ -200,9 +225,9 @@ class DoubleYAxisHandling(YAxisHandling):
 
 	def ylim_callback(self, ax):
 		if ax is self.axes:
-			self.ylim_min, self.ylim_max = ax.get_ylim()
+			self.ylim_min, self.ylim_max = self.ax_get_ylim(ax)
 		elif ax is self.secondaryaxes:
-			self.ylim2_min, self.ylim2_max = ax.get_ylim()
+			self.ylim2_min, self.ylim2_max = self.ax_get_ylim(ax)
 		if self.ylim_callback_ext:
 			self.ylim_callback_ext(ax)
 
@@ -212,7 +237,7 @@ class DoubleYAxisHandling(YAxisHandling):
 		self.ylim2_auto = auto
 		self.ylim_rescale()
 		if self.secondaryaxes:
-			return self.secondaryaxes.get_ylim()
+			return self.ax_get_ylim(self.secondaryaxes)
 		else:
 			return self.ylim2_min, self.ylim2_max
 
@@ -223,7 +248,7 @@ class DoubleYAxisHandling(YAxisHandling):
 		if self.ylim2_auto:
 			self.autoscale_y(self.secondaryaxes)
 		else:
-			self.secondaryaxes.set_ylim(self.ylim2_min, self.ylim2_max)
+			self.ax_set_ylim(self.secondaryaxes, self.ylim2_min, self.ylim2_max)
 
 	def set_ylog2(self, ylog2):
 		self.ylog2 = ylog2
@@ -489,7 +514,7 @@ class Scalebar(matplotlib.offsetbox.AnchoredOffsetbox):
 		self.patch.set_boxstyle("square",pad=pad)
 
 
-class Image(ImageBase):
+class Image(ImageBase, XAxisHandling, InverseYAxisHandling):
 	colormap = 'afmhot'
 	interpolation = 'nearest'
 	tzoom = 1
@@ -515,6 +540,8 @@ class Image(ImageBase):
 		if self.mode == 'single frame':
 			self.axes.set_xticks([])
 			self.axes.fmt_xdata = None
+			self.axes.callbacks.connect('xlim_changed', self.xlim_callback)
+		self.axes.callbacks.connect('ylim_changed', self.ylim_callback)
 	
 	def draw(self):
 		if not self.data:
@@ -549,27 +576,10 @@ class Image(ImageBase):
 				tendzoom = tstart + (tend - tstart) * self.tzoom
 				self.axes.imshow(numpy.rot90(d.image), extent=(tstart, tendzoom, 0, 1), aspect='auto', cmap=self.colormap, interpolation=self.interpolation, norm=self.get_clim_norm())
 				self.axes.add_patch(matplotlib.patches.Rectangle((tstart, 0), tendzoom-tstart, 1, linewidth=1, edgecolor='black', fill=False))
-
-		self.clim_callback()
-	
-		# fix the axes xlim/ylim, imshow() doesn't always do the right thing
-		self.ylim_rescale()
-		try:
-			self.xlim_rescale()
-		except util.SharedXError:
-			pass
-
-	def ylim_rescale(self):
-		if self.mode == 'single frame' and self.frame:
-			extent = self.frame.get_extent()
-			self.axes.set_ylim(extent[3], extent[2])
-
+		
 	def xlim_rescale(self):
-		if self.mode == 'film strip':
-			raise util.SharedXError
-		elif self.frame:
-			extent = self.frame.get_extent()
-			self.axes.set_xlim(extent[0], extent[1])
+		if self.mode == 'single frame':
+			super(ImageBase, self).xlim_rescale()
 
 	def clear(self, quick=False):
 		if not quick:

@@ -21,7 +21,7 @@ import enthought.traits.ui.api as traitsui
 import numpy
 
 from ..generic import filters
-from ..generic.gui import SerializableComponent, SubplotGUI, DoubleTimeTrendGUI, XlimitsGUI, FalseColorImageGUI, SingleFrameAnimation
+from ..generic.gui import SerializableComponent, SubplotGUI, DoubleTimeTrendGUI, XlimitsMixin, FalseColorImageGUI, SingleFrameAnimation
 from ..generic.subplots import Image
 from ...gui import support
 
@@ -292,12 +292,13 @@ class CameraFrameGUI(FalseColorImageGUI, CameraGUI, SingleFrameAnimation):
 			show_border=True,
 			label='Display',
 		),
+		traitsui.Include('xylimits_group'),
 		traitsui.Include('relativistic_group'),
 		handler=CameraFrameGUIHandler()
 	)
 
 
-class CameraTrendGUI(DoubleTimeTrendGUI, CameraGUI, XlimitsGUI):
+class CameraTrendGUI(DoubleTimeTrendGUI, CameraGUI, XlimitsMixin):
 	id = 'cameratrend'
 	label = 'Camera Trend'
 	desc = 'Reads Camera RAW files and makes graphs of one or more channels as a function of time, frequency (performing FFT) or versus another channel.'
@@ -329,10 +330,6 @@ class CameraTrendGUI(DoubleTimeTrendGUI, CameraGUI, XlimitsGUI):
 	@traits.cached_property
 	def _get_xaxis_type_options(self):
 		return support.EnumMapping([('time', 'Time'), ('fft', 'Frequency (FFT)')] + [(i, 'Channel {0}'.format(i)) for i in self.channel_names])
-
-	def reset_autoscale(self):
-		DoubleTimeTrendGUI.reset_autoscale(self)
-		XlimitsGUI.reset_autoscale(self)
 
 	def _plot_default(self):
 		plot = super(CameraTrendGUI, self)._plot_default()
