@@ -562,7 +562,7 @@ class Image(ImageBase):
 	def ylim_rescale(self):
 		if self.mode == 'single frame' and self.frame:
 			extent = self.frame.get_extent()
-			self.axes.set_ylim(extent[2], extent[3])
+			self.axes.set_ylim(extent[3], extent[2])
 
 	def xlim_rescale(self):
 		if self.mode == 'film strip':

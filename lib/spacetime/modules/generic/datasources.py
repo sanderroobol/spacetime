@@ -56,18 +56,18 @@ class ImageFrame(DataObject):
 	def get_extent(self):
 		if hasattr(self.image, 'shape'):
 			if self.pixelsize:
-				return (0, self.pixelsize * self.image.shape[1], self.pixelsize * self.image.shape[0], 0)
+				return (0, self.pixelsize * self.image.shape[1], 0, self.pixelsize * self.image.shape[0])
 			else:
-				return (0, self.image.shape[1], self.image.shape[0], 0)
+				return (0, self.image.shape[1], 0, self.image.shape[0])
 
 
 class FFTImageFrame(ImageFrame):
 	def get_extent(self):
 		if hasattr(self.image, 'shape'):
 			if self.pixelsize:
-				return (-self.image.shape[1]*self.pixelsize/2,  self.image.shape[1]*self.pixelsize/2, self.image.shape[0]*self.pixelsize/2,  -self.image.shape[0]*self.pixelsize/2)
+				return (-self.image.shape[1]*self.pixelsize/2,  self.image.shape[1]*self.pixelsize/2, -self.image.shape[0]*self.pixelsize/2,  self.image.shape[0]*self.pixelsize/2)
 			else:
-				return (-.5, .5, .5, -.5)
+				return (-.5, .5, -.5, .5)
 
 
 class DataSource(object):
