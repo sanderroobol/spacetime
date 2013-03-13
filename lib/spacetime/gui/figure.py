@@ -123,6 +123,14 @@ class ModifiedToolbar(matplotlib.backends.backend_wx.NavigationToolbar2Wx):
 	def pan(self, *args):
 		matplotlib.backend_bases.NavigationToolbar2.pan(self, *args)
 
+	def drag_pan(self, event):
+		# the drag callback in pan/zoom mode, enhanced to allow single-axis operation
+		# TODO: turn this into a patch for matplotlib issue 1502
+		for a, ind in self._xypress:
+			if event.key is None or not event.key.isdigit() or event.key == str(ind):
+				a.drag_pan(self._button_pressed, event.key, event.x, event.y)
+		self.dynamic_update()
+
 
 class _MPLFigureEditor(Editor):
 	scrollable  = True
