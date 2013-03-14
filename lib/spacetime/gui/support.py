@@ -204,6 +204,7 @@ class AxisLimits(traits.HasTraits):
 	min = traits.Float(0)
 	max = traits.Float(1)
 	auto = traits.Bool(True)
+	log = traits.Bool(False) # for compatibility with LogAxisLimits
 
 	not_auto = traits.Property(depends_on='auto')
 	auto_list = traits.Property(depends_on='auto')
