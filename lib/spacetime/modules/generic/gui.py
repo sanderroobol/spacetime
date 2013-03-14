@@ -830,6 +830,7 @@ class ImageGUI(SubplotGUI, XlimitsMixin, YlimitsMixin):
 	scalebar = traits.Bool(True)
 	xlimits = traits.Instance(gui.support.AxisLimits, args=())
 	ylimits = traits.Instance(gui.support.AxisLimits, args=())
+	data = traits.Instance(datasources.DataSource)
 	
 	traits_saved = 'scalebar',
 
@@ -1289,6 +1290,77 @@ class DM3Stack(ImageGUI, SingleFrameAnimation):
 				traitsui.Item('tstart', label='Acquisition start', style='custom', editor=traitsui.InstanceEditor()),
 				traitsui.Item('exposure', label='Exposure (ms)'),
 				traitsui.Item('delay', label='Delay (ms)'),
+				show_border=True,
+				label='Manual timing',
+			),
+			traitsui.Include('xylimits_group'),
+			traitsui.Include('relativistic_group'),
+		)
+
+
+class VideoGUI(ImageGUI, SingleFrameAnimation):
+	id = 'video'
+	label = 'Video'
+	desc = 'Read frames from many video formats and codecs. Note that seeking is SLOW.'
+
+	datafactory = datasources.Video
+	plotfactory = subplots.Image
+
+	framenumber = traits.Int(0)
+	framemax = traits.Int(1000000)
+	tstart = gui.support.DateTimeSelector()
+	tstart_mpldt = traits.DelegatesTo('tstart', 'mpldt')
+	
+	traits_saved = 'framenumber', 'tstart_mpldt'
+
+	animation_framenumber_trait = 'framenumber'
+	animation_framenumber_low = 0
+	animation_framenumber_high = 'framemax'
+
+	@traits.on_trait_change('filename, reload')
+	def load_file(self):
+		self.data = self.datafactory(self.filename)
+		self.framemax = self.data.count_frames() - 1
+		if self.framenumber > self.framemax:
+			self.framenumber = self.framemax # triggers settings_changed()
+		else:
+			self.settings_changed()
+
+	def _framenumber_changed(self):
+		if not self.data:
+			return
+		seek = self.framenumber - self.data.frameno
+		if seek < 0:
+			seek = self.framenumber
+		if seek < 100 or wx.MessageBox('You are about to seek {0} frames, this might take a while. Proceed?'.format(seek), 'Video', wx.YES_NO | wx.ICON_EXCLAMATION) == wx.YES:
+			self.settings_changed()
+		else:
+			def reset():
+				self.framenumber = self.data.frameno # triggers _framenumber_changed() again
+			wx.CallAfter(reset)
+			
+	@traits.on_trait_change('tstart_mpldt')
+	def settings_changed(self):
+		if not self.data:
+			return
+		self.data.set_tzero(self.tstart_mpldt)
+		self.data.set_frameno(self.framenumber)
+		self.plot.set_data(self.data)
+		self.rebuild()
+
+	def traits_view(self):
+		return gui.support.PanelView(
+			traitsui.Group(
+				traitsui.Item('visible'),
+				traitsui.Item('filename', editor=gui.support.FileEditor(filter=['Videos (*.avi, *.mpg, *.mp4, *.wmv)', '*.avi;*.mpg;*.mp4;*.wmv', 'All files', '*'], entries=0)),
+				traitsui.Item('reload', show_label=False),
+				traitsui.Item('size'),
+				traitsui.Item('framenumber', editor=gui.support.RangeEditor(low=0, high_name='framemax', mode='spinner')),
+				show_border=True,
+				label='General',
+			),
+			traitsui.Group(
+				traitsui.Item('tstart', label='Acquisition start', style='custom', editor=traitsui.InstanceEditor()),
 				show_border=True,
 				label='Manual timing',
 			),

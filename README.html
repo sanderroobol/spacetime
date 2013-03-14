@@ -36,7 +36,7 @@ h3 {
 <body>
 <h1>Spacetime</h1>
 
-<p>Spacetime is a program that allows you to easily correlate SPM images with some time-dependent external parameter like pressure, temperature, deposition rate, etc. It can directly show you what happened during a specific frame or even scan line. Since this program basically unifies space and time, what name could be more appropriate than Spacetime?</p>
+<p>Spacetime is a program that allows you to easily correlate microscopy images with some time-dependent external parameter like pressure, temperature, deposition rate, etc. It can directly show you what happened during a specific frame or even scan line. Since this program basically unifies space and time, what name could be more appropriate than Spacetime?</p>
 
 <p>Spacetime can work with quite a few different data files, the most important type being LPM Camera .raw files. You can of course plot images from such a file, but you can also plot one or more channels as function of time, frequency (performing FFT) or versus another channel.</p>
 
@@ -52,13 +52,20 @@ h3 {
 <li>Enthought Tool Suite, with the WX backend for TraitsUI</li>
 <li>pytz and dateutil</li>
 <li>Python Imaging Library (PIL)</li>
-<li>Camera Python Package</li>
+<li>pyglet</li>
+</ul>
+
+<p>Optional dependencies:</p>
+<ul>
+<li>FFmpeg (to generate videos)</li>
+<li>AVbin (to load videos)</li>
+<li>Camera Python Package (for the LPM Camera modules)</li>
 </ul>
 
 <h2>Installation</h2>
 
 <h3>Windows installer</h3>
-<p>There is a fully self-contained Windows installer for Spacetime. The only external dependecy is the <a href="http://www.microsoft.com/downloads/en/details.aspx?familyid=A5C84275-3B97-4AB7-A40D-3802B2AF5FC2&amp;displaylang=en">Microsoft Visual C++ 2008 SP1 Redistributable Package (x86)</a>.</p>
+<p>There is a fully self-contained Windows installer for Spacetime. The only external dependency is the <a href="http://www.microsoft.com/downloads/en/details.aspx?familyid=A5C84275-3B97-4AB7-A40D-3802B2AF5FC2&amp;displaylang=en">Microsoft Visual C++ 2008 SP1 Redistributable Package (x86)</a>.</p>
 
 <h3>Linux, Mac OS X, other unix...</h3>
 <p>There are no packages yet. Make sure the spacetime module is in your PYTHONPATH and run the included <q>spacetime</q> executable/script.</p>

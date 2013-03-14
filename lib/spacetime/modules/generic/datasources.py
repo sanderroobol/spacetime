@@ -21,6 +21,7 @@ import os.path
 import numpy
 import PIL.Image
 import struct
+import pyglet
 
 from ... import util
 from . import dm3lib
@@ -420,3 +421,52 @@ class AveragedImage(DataSource):
 	def iterframes(self):
 		yield self.imageframe
 		
+
+
+class Video(DataSource):
+	frameno = 0
+
+	def __init__(self, filename):
+		self.filename = filename
+		self.reload_video()
+
+	def count_frames(self):
+		while self.video.get_next_video_frame() is not None:
+			self.last_frameno += 1
+		count = self.last_frameno + 1
+		self.reload_video()
+		return count
+
+	def reload_video(self):
+		self.video = pyglet.media.load(self.filename)
+		if not self.video.video_format:
+			raise pyglet.media.MediaException("'{0}' does not appear to be a video file".format(self.filename))
+		self.last_frameno = -1
+		self.timestamp = 0
+		self.frame = None
+
+	def set_tzero(self, tzero):
+		self.tzero = tzero
+
+	def set_frameno(self, frameno):
+		self.frameno = frameno
+
+	def stepframe(self):
+		self.last_frameno += 1
+		timestamp = self.video.get_next_video_timestamp()
+		if timestamp is None:
+			return
+
+		print self.last_frameno
+		self.timestamp = timestamp
+		im = self.video.get_next_video_frame().get_image_data()
+		pilim = PIL.Image.fromstring('RGB', (im.width, im.height), im.get_data('RGB', im.width * 3))
+		self.frame = util.pil_to_array(pilim)
+
+	def iterframes(self):
+		if self.frameno < self.last_frameno:
+			self.reload_video()
+		for i in range(self.frameno - self.last_frameno):
+			self.stepframe()
+
+		yield ImageFrame(image=self.frame, tstart=self.tzero + self.timestamp)
