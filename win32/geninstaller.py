@@ -179,6 +179,7 @@ Section "Uninstall"
   RMDir /r "$INSTDIR\Lib"
 
   Delete "$INSTDIR\debug.bat"
+  Delete "$INSTDIR\reset_preferences.py"
   Delete "$INSTDIR\Spacetime.lnk"
   Delete "$INSTDIR\Spacetime (debug mode).lnk"
 
