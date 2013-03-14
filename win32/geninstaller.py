@@ -125,6 +125,7 @@ if not upgrade:
   File python-dist\pythonw.exe
   File python-dist\python26.dll
   File python-dist\ffmpeg.exe
+  File python-dist\avbin.dll
   File /r /x .* python-dist\Lib
 """
 
@@ -171,6 +172,7 @@ Section "Uninstall"
   Delete "$INSTDIR\pythonw.exe"
   Delete "$INSTDIR\python26.dll"
   Delete "$INSTDIR\ffmpeg.exe"
+  Delete "$INSTDIR\avbin.dll"
   Delete "$INSTDIR\README.html"
   Delete "$INSTDIR\LICENSE.txt"
   Delete "$INSTDIR\CREDITS.txt"

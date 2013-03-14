@@ -18,6 +18,15 @@
 
 from __future__ import division
 
+# somehow avbin.dll doesn't play nice with some other libs and must be loaded first on Windows
+import platform
+if platform.system() == 'Windows':
+	try:
+		import ctypes
+		ctypes.cdll.LoadLibrary('avbin')
+	except:
+		pass
+
 # keep this import at top to ensure proper matplotlib backend selection
 from .figure import MPLFigureEditor, DrawManager, CallbackLoopManager
 
