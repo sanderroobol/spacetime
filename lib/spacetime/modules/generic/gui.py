@@ -29,6 +29,7 @@ import operator
 import string
 import matplotlib.cm
 import math
+import time
 
 import traceback
 import logging
@@ -37,6 +38,11 @@ logger = logging.getLogger(__name__)
 from ... import gui, util, cache
 
 from . import subplots, datasources, datasinks, filters
+
+if os.name == 'posix':
+	CTIME_MEANING = 'File last changed'
+else:
+	CTIME_MEANING = 'File created'
 
 
 class Tab(traits.HasTraits):
@@ -1050,7 +1056,7 @@ class RGBImageConfigurationEditor(RGBImageConfiguration, NonLiveComponentEditor)
 					show_border=True,
 				),
 				traitsui.Group(
-					traitsui.Item('time_source', editor=traitsui.EnumEditor(values=gui.support.EnumMapping((('header', 'File header (EXIF/DM3)'), ('ctime', 'File created'), ('mtime', 'File last modified'), ('manual', 'Manual'))))),
+					traitsui.Item('time_source', editor=traitsui.EnumEditor(values=gui.support.EnumMapping((('header', 'File header (EXIF/DM3)'), ('ctime', CTIME_MEANING), ('mtime', 'File last modified'), ('manual', 'Manual'))))),
 					traitsui.Item('time_start_editor', label='Start', style='custom', enabled_when='time_manual', editor=traitsui.InstanceEditor(view='precision_view')),
 					traitsui.Item('time_exposure', label='Exposure (ms)', enabled_when='time_manual', editor=gui.support.FloatEditor()),
 					traitsui.Item('time_delay', label='Delay (ms)', enabled_when='time_manual', editor=gui.support.FloatEditor()),
@@ -1308,14 +1314,20 @@ class VideoGUI(ImageGUI, SingleFrameAnimation):
 
 	framenumber = traits.Int(0)
 	framemax = traits.Int(1000000)
+	tsource = traits.Enum('ctime', 'mtime', 'manual')
+	tsource_manual = traits.Property(depends_on='tsource')
+	tsource_enum = traits.Property(depends_on='filename, reload')
 	tstart = gui.support.DateTimeSelector()
 	tstart_mpldt = traits.DelegatesTo('tstart', 'mpldt')
 	
-	traits_saved = 'framenumber', 'tstart_mpldt'
+	traits_saved = 'framenumber', 'tsource', 'tstart_mpldt'
 
 	animation_framenumber_trait = 'framenumber'
 	animation_framenumber_low = 0
 	animation_framenumber_high = 'framemax'
+
+	def _get_tsource_manual(self):
+		return self.tsource == 'manual'
 
 	@traits.on_trait_change('filename, reload')
 	def load_file(self):
@@ -1338,12 +1350,26 @@ class VideoGUI(ImageGUI, SingleFrameAnimation):
 			def reset():
 				self.framenumber = self.data.frameno # triggers _framenumber_changed() again
 			wx.CallAfter(reset)
-			
-	@traits.on_trait_change('tstart_mpldt')
+
+	@traits.cached_property	
+	def _get_tsource_enum(self):
+		if self.filename:
+			stat = os.stat(self.filename)
+			clabel = CTIME_MEANING + time.strftime(' (%Y-%m-%d %H:%M:%S)', time.localtime(stat.st_ctime))
+			mlabel = time.strftime('File last modified (%Y-%m-%d %H:%M:%S)', time.localtime(stat.st_mtime))
+		else:
+			clabel = CTIME_MEANING
+			mlabel = 'File last modified'
+		return gui.support.EnumMapping((('ctime', clabel), ('mtime', mlabel), ('manual', 'Manual')))
+
+	@traits.on_trait_change('tsource, tstart_mpldt')
 	def settings_changed(self):
 		if not self.data:
 			return
-		self.data.set_tzero(self.tstart_mpldt)
+		if self.tsource == 'manual':
+			self.data.set_tzero(self.tstart_mpldt)
+		else:
+			self.data.set_tzero(util.mpldtfromtimestamp(getattr(os.stat(self.filename), 'st_' + self.tsource)))
 		self.data.set_frameno(self.framenumber)
 		self.plot.set_data(self.data)
 		self.rebuild()
@@ -1360,9 +1386,10 @@ class VideoGUI(ImageGUI, SingleFrameAnimation):
 				label='General',
 			),
 			traitsui.Group(
-				traitsui.Item('tstart', label='Acquisition start', style='custom', editor=traitsui.InstanceEditor()),
+				traitsui.Item('tsource', label='Source', editor=traitsui.EnumEditor(name='tsource_enum')),
+				traitsui.Item('tstart', label='Manual', style='custom', editor=traitsui.InstanceEditor(), enabled_when='tsource_manual'),
 				show_border=True,
-				label='Manual timing',
+				label='Start time',
 			),
 			traitsui.Include('xylimits_group'),
 			traitsui.Include('relativistic_group'),
