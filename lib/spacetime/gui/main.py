@@ -343,7 +343,7 @@ class MainWindowHandler(traitsui.Handler):
 		# preparations, no harm is done if something goes wrong here
 		movie = stdout_cb = stdout = None
 		oldfig = context.plot.figure
-		progress = ProgressDialog(title="Movie", message="Building movie", max=moviedialog.get_framecount()+2, can_cancel=True, parent=context.uiparent)
+		progress = ProgressDialog(title="Movie", message="Building movie", max=moviedialog.get_framecount()+2, can_cancel=True, show_time=True, parent=context.uiparent)
 		newfig = matplotlib.figure.Figure((moviedialog.frame_width / moviedialog.dpi, moviedialog.frame_height / moviedialog.dpi), moviedialog.dpi)
 		canvas = FigureCanvasAgg(newfig)
 
