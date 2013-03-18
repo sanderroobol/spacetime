@@ -214,6 +214,13 @@ class DrawManager(object):
 		else:
 			self._redraw()
 
+	def relocate(self, rebuild=None, redraw=None):
+		if rebuild is None:
+			rebuild = self.rebuild
+		if redraw is None:
+			redraw = self.redraw
+		return self.__class__(rebuild, redraw)
+
 
 class CallbackLoopManager(object):
 	_general_blockade = 0

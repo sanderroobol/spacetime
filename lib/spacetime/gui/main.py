@@ -308,13 +308,13 @@ class MainWindowHandler(traitsui.Handler):
 			canvas = FigureCanvasAgg(newfig)
 			try:
 				context.plot.relocate(newfig)
-				context.app.rebuild_figure()
+				context.canvas.rebuild()
 				newfig.savefig(path, dpi=exportdialog.dpi, format=exportdialog.extension)
 			except:
 				support.Message.file_save_failed(path, parent=info.ui.control)
 			finally:
 				context.plot.relocate(oldfig)
-				context.app.rebuild_figure()
+				context.canvas.rebuild()
 
 	def do_export_movie(self, info):
 		context = info.ui.context['object'].context
@@ -346,6 +346,7 @@ class MainWindowHandler(traitsui.Handler):
 		progress = ProgressDialog(title="Movie", message="Building movie", max=moviedialog.get_framecount()+2, can_cancel=True, show_time=True, parent=context.uiparent)
 		newfig = matplotlib.figure.Figure((moviedialog.frame_width / moviedialog.dpi, moviedialog.frame_height / moviedialog.dpi), moviedialog.dpi)
 		canvas = FigureCanvasAgg(newfig)
+		drawmgr = context.canvas.relocate(redraw=newfig.canvas.draw)
 
 		finalpath = dlg.GetPath()
 		temppath = finalpath + '.temp'
@@ -366,13 +367,18 @@ class MainWindowHandler(traitsui.Handler):
 				moviedialog.ffmpeg_options.split(),
 			)
 			stdout_cb = movie.spawnstdoutthread()
+			drawmgr.rebuild()
 			progress.update(1)
 
-			# FIXME disable drawmanager? relocate? hold?
 			iters = tuple(i() for i in moviedialog.get_animate_functions())
-			for frameno, void in enumerate(itertools.izip_longest(*iters)):
-				context.canvas.rebuild()
-				newfig.canvas.draw()
+			frameiter = enumerate(itertools.izip_longest(*iters))
+			while True:
+				with drawmgr.hold():
+					try:
+						frameno, void = frameiter.next()
+					except StopIteration:
+						progress.update(progress.max-1)
+						break
 				movie.writeframe(newfig.canvas.tostring_rgb())
 				(cont, skip) = progress.update(frameno+2)
 				if not cont or skip:

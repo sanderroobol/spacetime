@@ -370,7 +370,7 @@ class MovieDialogMainTab(traits.HasTraits):
 	label = traits.Str('General')
 	format = traits.Str('mp4')
 	codec = traits.Str('libx264')
-	ffmpeg_options = traits.Str('-x264opts crf=12 -preset medium -profile main -threads 0')
+	ffmpeg_options = traits.Str('-x264opts crf=12 -preset medium -profile:v main -pix_fmt yuv420p -threads 0')
 
 	frame_width = traits.Int(1024)
 	frame_height = traits.Int(768)
