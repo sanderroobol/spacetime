@@ -797,6 +797,8 @@ class Time2DGUI(TimeTrendGUI, FalseColorMap):
 class SingleFrameAnimation(traits.HasTraits):
 	def animate(self):
 		for i in range(self.animation_firstframe, self.animation_lastframe + 1):
+			if i > self._get_current_animation_framenumber_high(): # this allows VideoGUI to not know the number of frames in advance
+				break
 			setattr(self, self.animation_framenumber_trait, i)
 			yield
 
@@ -807,6 +809,12 @@ class SingleFrameAnimation(traits.HasTraits):
 	#animation_framenumber_trait = 'another_trait' # trait to be animated
 	#animation_framenumber_low = 0                 # int or trait name
 	#animation_framenumber_high = 'some_trait'     # idem 
+
+	def _get_current_animation_framenumber_high(self):
+		if isinstance(self.animation_framenumber_high, basestring):
+			return getattr(self, self.animation_framenumber_high)
+		else:	
+			return self.animation_framenumber_high
 
 	def _get_animation_framecount(self):
 		return self.animation_lastframe - self.animation_firstframe + 1
@@ -1313,7 +1321,7 @@ class VideoGUI(ImageGUI, SingleFrameAnimation):
 	plotfactory = subplots.Image
 
 	framenumber = traits.Int(0)
-	framemax = traits.Int(1000000)
+	framemax = traits.Int(10**9)
 	tsource = traits.Enum('ctime', 'mtime', 'manual')
 	tsource_manual = traits.Property(depends_on='tsource')
 	tsource_enum = traits.Property(depends_on='filename, reload')
@@ -1332,11 +1340,10 @@ class VideoGUI(ImageGUI, SingleFrameAnimation):
 	@traits.on_trait_change('filename, reload')
 	def load_file(self):
 		self.data = self.datafactory(self.filename)
-		self.framemax = self.data.count_frames() - 1
-		if self.framenumber > self.framemax:
-			self.framenumber = self.framemax # triggers settings_changed()
-		else:
-			self.settings_changed()
+		self.framemax = 10**9
+		self.settings_changed()
+		if not self.check_framenumber():
+			self.restore_framenumber()
 
 	def _framenumber_changed(self):
 		if not self.data:
@@ -1346,10 +1353,21 @@ class VideoGUI(ImageGUI, SingleFrameAnimation):
 			seek = self.framenumber
 		if seek < 100 or wx.MessageBox('You are about to seek {0} frames, this might take a while. Proceed?'.format(seek), 'Video', wx.YES_NO | wx.ICON_EXCLAMATION) == wx.YES:
 			self.settings_changed()
+			if self.check_framenumber():
+				return
+		self.restore_framenumber()
+
+	def check_framenumber(self):
+		if self.framenumber <= self.data.frameno:
+			return True
 		else:
-			def reset():
-				self.framenumber = self.data.frameno # triggers _framenumber_changed() again
-			wx.CallAfter(reset)
+			self.framemax = self.data.frameno
+			return False
+
+	def restore_framenumber(self):
+		def reset():
+			self.framenumber = self.data.frameno # triggers _framenumber_changed() again
+		wx.CallAfter(reset)
 
 	@traits.cached_property	
 	def _get_tsource_enum(self):

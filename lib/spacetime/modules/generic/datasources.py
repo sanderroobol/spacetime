@@ -430,6 +430,7 @@ class Video(DataSource):
 		self.filename = filename
 		self.reload_video()
 
+	# not used anymore. slow
 	def count_frames(self):
 		while self.video.get_next_video_frame() is not None:
 			self.last_frameno += 1
@@ -452,18 +453,21 @@ class Video(DataSource):
 		self.frameno = frameno
 
 	def stepframe(self):
-		self.last_frameno += 1
 		timestamp = self.video.get_next_video_timestamp()
 		if timestamp is None:
-			return
+			self.frameno = self.last_frameno
+			return False
+		self.last_frameno += 1
 		self.timestamp = timestamp
 		im = self.video.get_next_video_frame().get_image_data()
 		pilim = PIL.Image.fromstring('RGB', (im.width, im.height), im.get_data('RGB', im.width * 3))
 		self.frame = util.pil_to_array(pilim)
+		return True
 
 	def iterframes(self):
 		if self.frameno < self.last_frameno:
 			self.reload_video()
 		for i in range(self.frameno - self.last_frameno):
-			self.stepframe()
-		yield ImageFrame(image=self.frame, tstart=self.tzero + self.timestamp)
+			if not self.stepframe():
+				break
+		yield ImageFrame(image=self.frame, tstart=self.tzero + self.timestamp / 86400.)
