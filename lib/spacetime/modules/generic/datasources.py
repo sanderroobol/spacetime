@@ -423,52 +423,6 @@ class AveragedImage(DataSource):
 		yield self.imageframe
 
 
-# Redefine AVbinStreamInfo struct for frame_rate support (only usable if avbin_have_feature('frame_rate') == 1)
-
-class _AVbinStreamInfoVideo(ctypes.Structure):
-	_fields_ = [
-		('width', ctypes.c_uint),
-		('height', ctypes.c_uint),
-		('sample_aspect_num', ctypes.c_int),
-		('sample_aspect_den', ctypes.c_int),
-		('frame_rate_num', ctypes.c_int),
-		('frame_rate_den', ctypes.c_int),
-	]
-
-class _AVbinStreamInfoUnion(ctypes.Union):
-	_fields_ = [
-		('video', _AVbinStreamInfoVideo),
-		('audio', pyglet.media.avbin._AVbinStreamInfoAudio),
-	]
-
-class AVbinStreamInfo(ctypes.Structure):
-	_fields_ = [
-		('structure_size', ctypes.c_size_t),
-		('type', ctypes.c_int),
-		('u', _AVbinStreamInfoUnion)
-	]
-
-
-def pyglet_count_frames_v8(avfile):
-	file_info = pyglet.media.avbin.AVbinFileInfo()
-	file_info.structure_size = ctypes.sizeof(file_info)
-	pyglet.media.avbin.av.avbin_file_info(avfile, ctypes.byref(file_info))
-
-	pyglet.media.avbin.av.avbin_stream_info.argtypes = [pyglet.media.avbin.AVbinFileP, ctypes.c_int, ctypes.POINTER(AVbinStreamInfo)]
-
-	try:
-		for i in range(file_info.n_streams):
-			info = AVbinStreamInfo()
-			info.structure_size = ctypes.sizeof(info)
-			pyglet.media.avbin.av.avbin_stream_info(avfile, i, info)
-			if info.type == pyglet.media.avbin.AVBIN_STREAM_TYPE_VIDEO and pyglet.media.avbin.av.avbin_open_stream(avfile, i):
-				fps = float(info.u.video.frame_rate_num) / info.u.video.frame_rate_den
-				duration = file_info.duration / 1e6
-				return int(numpy.ceil(duration * fps))
-	finally:
-		pyglet.media.avbin.av.avbin_stream_info.argtypes = [pyglet.media.avbin.AVbinFileP, ctypes.c_int, ctypes.POINTER(pyglet.media.avbin.AVbinStreamInfo)]
-
-
 class Video(DataSource):
 	frameno = 0
 
@@ -477,9 +431,6 @@ class Video(DataSource):
 		self.reload_video()
 
 	def count_frames(self):
-		if pyglet.media.avbin.av.avbin_have_feature('frame_rate'):
-			return pyglet_count_frames_v8(self.video._file)
-
 		while self.video.get_next_video_frame() is not None:
 			self.last_frameno += 1
 		count = self.last_frameno + 1
