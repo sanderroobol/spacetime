@@ -1,0 +1,32 @@
+avbin was downloaded from http://code.google.com/p/avbin/downloads/list 
+
+Copyright (c) 2007 Alex Holkner
+
+From avbin/README:
+
+ | Due to the linkage between AVbin and FFmpeg, AVbin must be licensed under the
+ | LGPL or GPL.  Currently all GPL features of the FFmpeg configuration are
+ | disabled, permitting LGPL use.
+
+Thus, the code is licensed under the GNU LGPL:
+
+ | This library is free software; you can redistribute it and/or
+ | modify it under the terms of the GNU Lesser General Public License as
+ | published by the Free Software Foundation; either version 2.1 of
+ | the License, or (at your option) any later version.
+ |
+ | This library is distributed in the hope that it will be useful,
+ | but WITHOUT ANY WARRANTY; without even the implied warranty of
+ | MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ | Lesser General Public License for more details.
+ |
+ | You should have received a copy of the GNU General Public License
+ | along with this program; if not, write to the Free Software
+ | Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+
+The Debian packaging is Copyright (c) 2009 Andrew Straw and Matthew Johnson
+and is also distributed under the terms of the GNU LGPL.
+
+On Debian GNU/Linux systems, the complete text of the GNU General Public
+License can be found in `/usr/share/common-licenses/GPL' and the text of the
+GNU Lesser General Public License is in `/usr/share/common-licenses/LGPL'.
