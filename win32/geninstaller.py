@@ -123,7 +123,7 @@ if not upgrade:
 	print r"""
   File python-dist\python.exe
   File python-dist\pythonw.exe
-  File python-dist\python26.dll
+  File python-dist\python27.dll
   File python-dist\ffmpeg.exe
   File python-dist\avbin.dll
   File /r /x .* python-dist\Lib
@@ -170,7 +170,7 @@ Section "Uninstall"
 
   Delete "$INSTDIR\python.exe"
   Delete "$INSTDIR\pythonw.exe"
-  Delete "$INSTDIR\python26.dll"
+  Delete "$INSTDIR\python27.dll"
   Delete "$INSTDIR\ffmpeg.exe"
   Delete "$INSTDIR\avbin.dll"
   Delete "$INSTDIR\README.html"
