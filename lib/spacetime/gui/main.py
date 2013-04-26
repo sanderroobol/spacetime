@@ -33,10 +33,10 @@ from .figure import MPLFigureEditor, DrawManager, CallbackLoopManager
 from .. import plot, modules, version, prefs, util, pypymanager, cache
 from . import support, windows
 
-import enthought.traits.api as traits
-import enthought.traits.ui.api as traitsui
+import traits.api as traits
+import traitsui.api as traitsui
 
-from enthought.pyface.api import ProgressDialog
+from pyface.api import ProgressDialog
 import matplotlib.figure
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 import wx
