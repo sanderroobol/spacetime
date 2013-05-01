@@ -203,8 +203,8 @@ def FloatEditor(**kwargs):
 
 
 class AxisLimits(traits.HasTraits):
-	min = traits.Float(0)
-	max = traits.Float(1)
+	min = traits.Float(0.)
+	max = traits.Float(1.)
 	auto = traits.Bool(True)
 	log = traits.Bool(False) # for compatibility with LogAxisLimits
 

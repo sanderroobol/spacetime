@@ -58,8 +58,8 @@ class FourierFilter(SerializableComponent):
 	]
 	window_mapping = dict((i,()) if isinstance(i, basestring) else (i[0], i[1:]) for i in windows)
 	window = traits.Enum([i if isinstance(i, basestring) else i[0] for i in windows])
-	window_p1 = traits.Float(1)
-	window_p2 = traits.Float(1)
+	window_p1 = traits.Float(1.)
+	window_p2 = traits.Float(1.)
 	needs_p1 = traits.Property(depends_on='window')	
 	needs_p2 = traits.Property(depends_on='window')
 

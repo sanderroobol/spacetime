@@ -910,9 +910,9 @@ class ImageFile(traits.HasTraits):
 	checked = traits.Bool
 	shortpath = traits.Property(depends_on='path')
 	path = traits.Str
-	timestamp = traits.Float()
+	timestamp = traits.Float(0.)
 	timestr = traits.Property(depends_on='timestamp')
-	exposure = traits.Float(0)
+	exposure = traits.Float(0.)
 	parent = traits.Any
 
 	@traits.cached_property
@@ -949,8 +949,8 @@ class RGBImageConfiguration(ActivationComponent):
 
 	time_start = traits.DelegatesTo('time_start_editor', 'mpldt')
 	time_start_editor = traits.Instance(gui.support.DateTimeSelector, args=())
-	time_exposure = traits.Float(1)
-	time_delay = traits.Float(0)
+	time_exposure = traits.Float(1.)
+	time_delay = traits.Float(0.)
 
 	traits_saved = 'directory', 'pattern', 'time_source', 'time_start', 'time_exposure', 'time_delay', 'time_source', 'active'
 
@@ -1100,7 +1100,7 @@ class RGBImageGUI(ImageGUI, SingleFrameAnimation):
 	selected_index_lock = traits.Instance(object, args=())
 	selected_filename = traits.Str('n/a')
 	file_number_max = traits.Property(depends_on='files')
-	clip_stddev = traits.Float(0)
+	clip_stddev = traits.Float(0.)
 	clip_fraction = traits.Float(0.01)
 	fft = traits.Bool(False)
 	averaging = traits.Int(1)
@@ -1257,12 +1257,12 @@ class DM3Stack(ImageGUI, SingleFrameAnimation):
 	framemax = traits.Int(0)
 	framenumber = traits.Int(0)
 
-	exposure = traits.Float(1000)
-	delay = traits.Float(0)
+	exposure = traits.Float(1000.)
+	delay = traits.Float(0.)
 	tstart = gui.support.DateTimeSelector()
 	tstart_mpldt = traits.DelegatesTo('tstart', 'mpldt')
 
-	clip = traits.Float(3)
+	clip = traits.Float(3.)
 	
 	traits_saved = 'framenumber', 'exposure', 'delay', 'tstart_mpldt', 'clip'
 

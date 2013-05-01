@@ -302,8 +302,8 @@ class ExportDialog(support.UtilityWindow):
 
 	dpi = traits.Range(low=1, high=10000000, value=72)
 
-	canvas_width = traits.Float(1024)
-	canvas_height = traits.Float(768)
+	canvas_width = traits.Float(1024.)
+	canvas_height = traits.Float(768.)
 	canvas_unit = traits.Enum('px', 'cm', 'inch')
 	figsize = traits.Property(depends_on='canvas_width, canvas_height, canvas_unit')
 
