@@ -34,8 +34,8 @@ class DM3Exception(Exception):
 # Image to Array
 def im2ar( im ):
 	if im.mode in ('L','I','F'):
-	    # Warning: only works with PIL.Image.Image whose mode is 'L', 'I' or 'F'
-    	#          => error if mode == 'I;16' for instance
+		# Warning: only works with PIL.Image.Image whose mode is 'L', 'I' or 'F'
+		#          => error if mode == 'I;16' for instance
 		return numpy.array(im)
 	raise DM3Exception('invalid mode for conversion of PIL Image to array')
 
@@ -144,7 +144,7 @@ class DM3(object):
 	def __makeGroupString(self):
 		tString = self.__curGroupAtLevelX[0]
 		for i in range( 1, self.__curGroupLevel+1 ):
-			tString += '.' + self.__curGroupAtLevelX[i]		
+			tString += '.' + self.__curGroupAtLevelX[i]
 		return tString
 
 	def __makeGroupNameString(self):
@@ -153,7 +153,7 @@ class DM3(object):
 			tString += '.' + str( self.__curGroupNameAtLevelX[i] )
 		return tString
 
-	def __readTagGroup(self):	
+	def __readTagGroup(self):
 		# go down a level
 		self.__curGroupLevel += 1
 		# increment group counter
@@ -214,7 +214,7 @@ class DM3(object):
 		return 1
 
 	def __encodedTypeSize(self, eT):
-		# returns the size in bytes of the data type	
+		# returns the size in bytes of the data type
 		if eT == 0:
 			width = 0
 		elif eT in (BOOLEAN, CHAR, OCTET):
@@ -227,11 +227,11 @@ class DM3(object):
 			width = 8
 		else:
 			# returns -1 for unrecognised types
-			width=-1	
+			width=-1
 		return width
 
 	def __readAnyData(self):
-		## higher level function dispatching to handling data types to other functions	
+		## higher level function dispatching to handling data types to other functions
 		# - get Type category (short, long, array...)
 		encodedType = readLong(self.__f)
 		# - calc size of encodedType
@@ -329,7 +329,7 @@ class DM3(object):
 			val = self.__readStringData( bufSize )
 		else:
 			# treat as binary data
-			# - store data size and offset as tags 
+			# - store data size and offset as tags
 			self.__storeTag( self.__curTagName + ".Size", bufSize )
 			self.__storeTag( self.__curTagName + ".Offset", self.__f.tell() )
 			# - skip data w/o reading
@@ -351,8 +351,8 @@ class DM3(object):
 	
 		if ( nFields > 100 ):
 			raise DM3Exception(hex(self.__f.tell())+": Too many fields")
-			
-		fieldTypes = []	
+		
+		fieldTypes = []
 		nameLength = 0
 		for i in range( nFields ):
 			nameLength = readLong(self.__f)
@@ -430,7 +430,7 @@ class DM3(object):
 			raise DM3Exception("%s does not appear to be a DM3 file."%os.path.split(self.__filename)[1])
 		elif self.debug > 0:
 			print "%s appears to be a DM3 file"%(self.__filename)
-			
+		
 		if ( debugLevel > 5 or self.debug > 1):
 			print "Header info.:"
 			print "- file version:", fileVersion
@@ -447,7 +447,7 @@ class DM3(object):
 		if self.debug>0:
 			t2 = time.time()
 			print "| parse DM3 file: %.3g s"%(t2-t1)
-				
+		
 		# dump Tags in txt file if requested
 		if dump:
 			dump_file = os.path.join(dump_dir, os.path.split(self.__filename)[1]+".tagdump.txt")
@@ -469,7 +469,7 @@ class DM3(object):
 	tags = property(getTags)
 
 	def getInfo(self, info_charset='latin1'):
-		'''Extracts useful experiment info from DM3 file and 
+		'''Extracts useful experiment info from DM3 file and
 		exports thumbnail to a PNG file if 'make_tn' set to 'True'.'''
 		
 		# define useful information
@@ -484,7 +484,7 @@ class DM3(object):
 			'mode': 'root.ImageList.1.ImageTags.Microscope Info.Operation Mode',
 			'operator': 'root.ImageList.1.ImageTags.Microscope Info.Operator',
 			'specimen': 'root.ImageList.1.ImageTags.Microscope Info.Specimen',
-		#	'image_notes': 'root.DocumentObjectList.10.Text' # = Image Notes 		
+		#	'image_notes': 'root.DocumentObjectList.10.Text' # = Image Notes
 			}
 
 		# get experiment information
@@ -515,8 +515,8 @@ class DM3(object):
 		if (tn_width*tn_height*4) != tn_size:
 			raise DM3Exception("Cannot extract thumbnail from %s"%os.path.split(self.__filename)[1])
 		else:
-			self.__f.seek( tn_offset )			
-			rawdata = self.__f.read(tn_size)	
+			self.__f.seek( tn_offset )
+			rawdata = self.__f.read(tn_size)
 			# - read as 16-bit LE unsigned integer
 			tn = Image.fromstring( 'F', (tn_width,tn_height), rawdata, 'raw', 'F;32' )
 			# - rescale and convert px data
@@ -540,7 +540,7 @@ class DM3(object):
 		return im2ar(self.thumbnail)
 
 	thumbnaildata = property(getThumbnailData)
-				
+	
 	def makePNGThumbnail(self, tn_file=''):
 		'''Save thumbnail as PNG file.'''
 		# - cleanup name
@@ -572,7 +572,7 @@ class DM3(object):
 			}
 		dataSize = {1:2, 2:4, 7:4, 10:2} # bits per point for the four dataTypes
 		
-		# get relevant Tags			
+		# get relevant Tags
 		data_offset = int( self.tags['root.ImageList.1.ImageData.Data.Offset'] )
 		data_size = int( self.tags['root.ImageList.1.ImageData.Data.Size'] )
 		data_type = int( self.tags['root.ImageList.1.ImageData.DataType'] )
@@ -584,28 +584,28 @@ class DM3(object):
 			im_stack = 1
 
 		if number >= im_stack:
-			raise DM3Exception('stack contiains %d images, requested number %d' % (im_stack, number))
+			raise DM3Exception('stack contains %d images, requested number %d' % (im_stack, number))
 
 		if self.debug>0:
 			print "Notice: image data in %s starts at %s"%(os.path.split(self.__filename)[1], hex(data_offset))
 			print "Notice: image size: %sx%s px"%(im_width,im_height)
-						
+		
 		# check if DataType is implemented, then read
 		if data_type in dataTypes.keys():
 			decoder = dataTypes[data_type]
 			if self.debug>0:
 				print "Notice: image data read as %s"%decoder
 				t1 = time.time()
-			im_data_size = im_width * im_height * dataSize[data_type] 
+			im_data_size = im_width * im_height * dataSize[data_type]
 			self.__f.seek( data_offset + number * im_data_size)
 			rawdata = self.__f.read(im_data_size)
 			im = Image.fromstring( 'F', (im_width,im_height), rawdata, 'raw', decoder )
 			if self.debug>0:
 				t2 = time.time()
 				print "| read image data: %.3g s"%(t2-t1)
-		else:	
+		else:
 			raise DM3Exception("Cannot extract image data from %s: unimplemented DataType."%os.path.split(self.__filename)[1])
-			
+		
 		return im
 		
 	image = property(getImage)
@@ -634,11 +634,11 @@ class DM3(object):
 		else:
 			unit = unit.encode('ascii')
 		if self.debug>0:
-			print "pixel size = %s %s"%(pixel_size,unit)		
+			print "pixel size = %s %s"%(pixel_size,unit)
 		return (pixel_size,unit)
 
 	pxsize = property(getPixelSize)
-			
+	
 if __name__ == '__main__':
 	print "DM3lib v.%s"%version
 
