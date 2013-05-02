@@ -563,10 +563,11 @@ class DM3(object):
 		'''Extracts image data as Image'''
 		
 		# DataTypes for image data <--> PIL decoders
+		# NOTE: see Gwyddion's dm3file.c for the complete list of data types
 		dataTypes = {
 			1: 'F;16S',    #16-bit LE signed integer
 			2: 'F;32F',
-			7: 'F;32',   #32-bit LE unsigned integer
+			7: 'F;32S',    #32-bit LE signed integer
 			10: 'F;16',    #16-bit LE unsigned integer
 			}
 		dataSize = {1:2, 2:4, 7:4, 10:2} # bits per point for the four dataTypes
