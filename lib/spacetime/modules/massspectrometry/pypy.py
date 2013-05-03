@@ -57,6 +57,9 @@ def loadscan(filename):
 			scan_header = [fp.readline() for i in range(7)]
 			if scan_header[-1] == '':
 				break
+			while scan_header[0].strip() == '': # sometimes there are extra empty lines...
+				scan_header.pop(0)
+				scan_header.append(fp.readline())
 			time_data.append(parseExtDT(scan_header[4].split('\t')[1].strip()))
 			scan_data = []
 			while 1:
