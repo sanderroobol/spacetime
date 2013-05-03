@@ -10,7 +10,7 @@
 ## Python adaptation: Pierre-Ivan Raynal <raynal@med.univ-tours.fr>
 ## http://microscopies.med.univ-tours.fr/
 ## --
-## obtained November 2012 from
+## for Spacetime: based on version 0.99 obtained November 2012 from
 ## http://imagejdocu.tudor.lu/doku.php?id=plugin:utilities:python_dm3_reader:start
 ################################################################################
 
