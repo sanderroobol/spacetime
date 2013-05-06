@@ -4,7 +4,6 @@ Python 2.6             PSF
 Matplotlib             PSF
 Numpy                  BSD
 Scipy                  PSF
-Dateutil               PSF
 Enthought Tool Suite   BSD
 WXGTK                  LGPL with exceptions
 GTK stock icons        LGPL
