@@ -23,14 +23,12 @@ import numpy
 
 from .. import util
 
-import traits.api as traits
-import traitsui.api as traitsui
-from pyface.api import ImageResource
+import enthought.traits.api as traits
+import enthought.traits.ui.api as traitsui
+from enthought.pyface.api import ImageResource
 
-from traitsui.basic_editor_factory import BasicEditorFactory
-from traitsui.wx.file_editor import SimpleEditor as SimpleFileEditor
-from traitsui.wx.time_editor import SimpleEditor as SimpleTimeEditor
-from traitsui.wx.range_editor import SimpleSpinEditor
+import enthought.traits.ui.basic_editor_factory
+import enthought.traits.ui.wx.file_editor, enthought.traits.ui.wx.time_editor, enthought.traits.ui.wx.range_editor
 import wx
 
 
@@ -88,7 +86,7 @@ class Message(traits.HasTraits):
 		return klass.exception(message='Failed to save file', desc=filename, parent=parent)
 
 
-class FileEditorImplementation(SimpleFileEditor):
+class FileEditorImplementation(enthought.traits.ui.wx.file_editor.SimpleEditor):
 	# code borrowed from enthought.traits.ui.wx.file_editor.SimpleEditor
 	# slightly modified to make the dialog remember the directory
 
@@ -144,7 +142,7 @@ class FileEditorImplementation(SimpleFileEditor):
 				self.update_editor()
 
 
-class FileEditor(BasicEditorFactory, traitsui.FileEditor):
+class FileEditor(enthought.traits.ui.basic_editor_factory.BasicEditorFactory, traitsui.FileEditor):
 	klass = FileEditorImplementation
 
 
@@ -167,12 +165,12 @@ class DirectoryEditorImplementation(FileEditorImplementation):
 		return dlg.Path
 
 
-class DirectoryEditor(BasicEditorFactory, traitsui.DirectoryEditor):
+class DirectoryEditor(enthought.traits.ui.basic_editor_factory.BasicEditorFactory, traitsui.DirectoryEditor):
 	klass = DirectoryEditorImplementation
 	entries = 0	
 
 
-class TimeEditorImplementation(SimpleTimeEditor):
+class TimeEditorImplementation(enthought.traits.ui.wx.time_editor.SimpleEditor):
 	def init(self, parent):
 		# use 24 hour clock, update on enter and lost focus, not on any keystroke
 		self.control = wx.lib.masked.TimeCtrl(parent, -1, style=wx.TE_PROCESS_TAB|wx.TE_PROCESS_ENTER, fmt24hr=True)
@@ -180,11 +178,11 @@ class TimeEditorImplementation(SimpleTimeEditor):
 		wx.EVT_TEXT_ENTER(parent, self.control.GetId(), self.time_updated)
 
 
-class TimeEditor(BasicEditorFactory, traitsui.TimeEditor):
+class TimeEditor(enthought.traits.ui.basic_editor_factory.BasicEditorFactory, traitsui.TimeEditor):
 	klass = TimeEditorImplementation
 
 
-class RangeEditorImplementation(SimpleSpinEditor):
+class RangeEditorImplementation(enthought.traits.ui.wx.range_editor.SimpleSpinEditor):
 	def update_object(self, event):
 		if event.GetEventType() != wx.EVT_TEXT.typeId:
 			return super(RangeEditorImplementation, self).update_object(event)

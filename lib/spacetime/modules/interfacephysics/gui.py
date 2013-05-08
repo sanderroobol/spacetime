@@ -16,8 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import traits.api as traits
-import traitsui.api as traitsui
+import enthought.traits.api as traits
+import enthought.traits.ui.api as traitsui
 
 from ..generic.gui import DoubleTimeTrendGUI
 from ..generic.datasources import CSVFactory

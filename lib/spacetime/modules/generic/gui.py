@@ -16,11 +16,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import traits.api as traits
-import traitsui.api as traitsui
-from traitsui.table_column import ObjectColumn
-from traitsui.extras.checkbox_column import CheckboxColumn
-from pyface.api import ProgressDialog
+import enthought.traits.api as traits
+import enthought.traits.ui.api as traitsui
+from enthought.traits.ui.table_column import ObjectColumn
+from enthought.traits.ui.extras.checkbox_column import CheckboxColumn
+from enthought.pyface.api import ProgressDialog
 
 import os
 import wx
