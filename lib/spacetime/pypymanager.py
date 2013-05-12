@@ -19,10 +19,7 @@ import sys
 import traceback
 import subprocess
 import threading
-try:
-	import cPickle as pickle
-except ImportError:
-	import pickle
+from . import upickle
 
 # this module behaves as a singleton object when imported, and also serves as
 # the entry point for the delegate (pypy) process
@@ -103,11 +100,11 @@ def run(func, *args, **kwargs):
 	return func(*args, **kwargs)
 
 def put(pipe, obj):
-	pickle.dump(obj, pipe, pickle.HIGHEST_PROTOCOL)
+	upickle.dump(obj, pipe, upickle.HIGHEST_PROTOCOL)
 	pipe.flush()
 
 def get(pipe):
-	return pickle.load(pipe)
+	return upickle.load(pipe)
 
 
 # this is where the delegate process (pypy!) enters

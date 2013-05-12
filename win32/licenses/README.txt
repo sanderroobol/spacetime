@@ -1,6 +1,7 @@
 The following packages are included in the Windows distribution of Spacetime:
 
-Python 2.6             PSF
+Python                 PSF
+pypy                   MIT
 Matplotlib             PSF
 Numpy                  BSD
 Scipy                  PSF
