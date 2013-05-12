@@ -23,6 +23,7 @@ matplotlib.rc('mathtext', fontset='stixsans', default='regular')
 import matplotlib.figure, matplotlib.transforms, matplotlib.backends.backend_wx, matplotlib.backends.backend_wxagg, matplotlib.backend_bases
 from matplotlib.backend_bases import cursors
 import wx
+import functools
 
 from enthought.traits.api import Str
 from enthought.traits.ui.wx.editor import Editor
