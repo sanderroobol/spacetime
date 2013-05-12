@@ -21,6 +21,7 @@ import numpy
 import subprocess
 import threading, Queue
 import os, platform
+import functools
 
 from .superstruct import Struct
 from .detect_timezone import detect_timezone
@@ -204,9 +205,9 @@ class FFmpegEncode(object):
 
 # decorator function, for stuff to be delegated to the pypy subprocess
 def pypy(func):
+	@functools.wraps(func)
 	def wrapper(*args, **kwargs):
 		return pypymanager.run(func, *args, **kwargs)
-	wrapper.__name__ = func.__name__
 	return wrapper
 
 def class_fqn(cls):

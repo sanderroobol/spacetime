@@ -269,6 +269,7 @@ class CallbackLoopManager(object):
 	@staticmethod
 	def decorator(*names):
 		def _decorator(func):
+			@functools.wraps(func)
 			def _decorated(self, *args, **kwargs):
 				callbacks = self.context.callbacks
 				objs = tuple(getattr(self, i) for i in names)
@@ -276,6 +277,5 @@ class CallbackLoopManager(object):
 					with callbacks.avoid(*objs):
 						return func(self, *args, **kwargs)
 			_decorated.original = func
-			_decorated.__name__ = func.__name__
 			return _decorated
 		return _decorator

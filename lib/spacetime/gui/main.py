@@ -763,7 +763,7 @@ class App(traits.HasTraits):
 		return False
 	
 	def is_known_traits_exception(self, object, trait_name, old_value, new_value):
-		if sys.platform == 'win32' and util.instance_fqcn(object) == 'traitsui.wx.table_model.TableModel' and trait_name == 'click':
+		if platform.system() == 'Windows' and util.instance_fqcn(object) == 'traitsui.wx.table_model.TableModel' and trait_name == 'click':
 			return True
 		return False
 
