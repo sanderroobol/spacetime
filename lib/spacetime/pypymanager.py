@@ -1,6 +1,6 @@
 # This file is part of Spacetime.
 #
-# Copyright (C) 2012 Sander Roobol
+# Copyright (C) 2012-2013 Sander Roobol
 #
 # Spacetime is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,10 +16,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys
+import os
 import traceback
 import subprocess
 import threading
-from . import upickle
+if __name__ != '__main__': # otherwise the relative import will fail
+	from . import upickle
 
 # this module behaves as a singleton object when imported, and also serves as
 # the entry point for the delegate (pypy) process
@@ -61,7 +63,7 @@ def launch_delegate():
 	shutdown_delegate() # cleanup any old delegates first
 
 	delegate = subprocess.Popen(
-			[_executable, '-m', 'spacetime.pypymanager'],
+			[_executable, os.path.realpath(__file__)],
 			stdin=subprocess.PIPE,
 			stdout=subprocess.PIPE,
 			stderr=subprocess.PIPE,
@@ -112,6 +114,15 @@ if __name__ == '__main__':
 	def debug(s):
 		sys.stderr.write(s)
 		sys.stderr.flush()
+
+	# locate spacetime
+	file = os.path.realpath(__file__)
+	dir = os.path.dirname(file)
+	prefix = os.path.dirname(dir)
+	if prefix not in sys.path:
+		debug("adding '{0}' to path\n".format(prefix))
+		sys.path.append(prefix)
+	import spacetime.upickle as upickle
 
 	debug("delegate running\n{0}\n".format(sys.version))
 

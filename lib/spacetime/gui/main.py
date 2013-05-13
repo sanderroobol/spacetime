@@ -902,7 +902,7 @@ class App(traits.HasTraits):
 		if options.pypy:
 			if platform.system() == 'Windows' and sys.executable:
 				prefix = os.path.dirname(sys.executable)
-				pypymanager.set_executable(os.path.join(prefix, 'pypy', 'bin', 'pypy'))
+				pypymanager.set_executable(os.path.join(prefix, 'pypy', 'pypy.exe'))
 			else:
 				pypymanager.set_executable('pypy')
 			pypymanager.launch_delegate()
