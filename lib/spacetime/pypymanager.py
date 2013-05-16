@@ -62,8 +62,12 @@ def launch_delegate():
 	global delegate, stderrthread
 	shutdown_delegate() # cleanup any old delegates first
 
+	self = os.path.realpath(__file__)
+	if self.endswith('.pyc'):
+		# refer to the .py because PyPy/CPython cannot read each other's .pyc files
+		self = self[:-1]
 	delegate = subprocess.Popen(
-			[_executable, os.path.realpath(__file__)],
+			[_executable, self],
 			stdin=subprocess.PIPE,
 			stdout=subprocess.PIPE,
 			stderr=subprocess.PIPE,
@@ -131,6 +135,10 @@ if __name__ == '__main__':
 		import numpypy
 	except ImportError: # we're probably not running in PyPy, who cares
 		pass
+	
+	# to allow print statements for debugging
+	pipe = sys.stdout
+	sys.stdout = sys.stderr
 
 	while 1:
 		# don't check if jobs.get() raises an exception, we better quit if something goes wrong here
@@ -154,4 +162,4 @@ if __name__ == '__main__':
 		finally:
 			# by now, result is guaranteed to be defined as a 3-tuple
 			# there's no exception handling: we want to abort if something goes wrong
-			put(sys.stdout, result)
+			put(pipe, result)
