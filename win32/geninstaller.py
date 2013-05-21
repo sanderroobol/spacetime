@@ -123,11 +123,11 @@ if not upgrade:
 	print r"""
   File python-dist\python.exe
   File python-dist\pythonw.exe
-  File python-dist\python26.dll
+  File python-dist\python27.dll
   File python-dist\ffmpeg.exe
   File python-dist\avbin.dll
   File /r /x .* python-dist\Lib
-  File /r /x .* python-dist\pypy
+;  File /r /x .* python-dist\pypy
 """
 
 print r"""
@@ -150,7 +150,7 @@ print r"""
   CreateDirectory "$SMPROGRAMS\Spacetime"
   CreateShortCut "$SMPROGRAMS\Spacetime\Spacetime.lnk" "$INSTDIR\pythonw.exe" "-m spacetime.gui.main" "$INSTDIR\spacetime\icons\spacetime-icon.ico"
   CreateShortCut "$SMPROGRAMS\Spacetime\Spacetime (debug mode).lnk" "$INSTDIR\debug.bat" "" "$INSTDIR\spacetime\icons\spacetime-icon.ico"
-  CreateShortCut "$SMPROGRAMS\Spacetime\Spacetime (pypy, experimental).lnk" "$INSTDIR\pythonw.exe" "-m spacetime.gui.main --pypy" "$INSTDIR\spacetime\icons\spacetime-icon.ico"
+;  CreateShortCut "$SMPROGRAMS\Spacetime\Spacetime (pypy, experimental).lnk" "$INSTDIR\pythonw.exe" "-m spacetime.gui.main --pypy" "$INSTDIR\spacetime\icons\spacetime-icon.ico"
   CreateShortCut "$SMPROGRAMS\Spacetime\Reset preferences.lnk" "$INSTDIR\pythonw.exe" "reset_preferences.py"
   CreateShortCut "$SMPROGRAMS\Spacetime\Uninstall.lnk" "$INSTDIR\Uninstall.exe"
   
@@ -172,14 +172,14 @@ Section "Uninstall"
 
   Delete "$INSTDIR\python.exe"
   Delete "$INSTDIR\pythonw.exe"
-  Delete "$INSTDIR\python26.dll"
+  Delete "$INSTDIR\python27.dll"
   Delete "$INSTDIR\ffmpeg.exe"
   Delete "$INSTDIR\avbin.dll"
   Delete "$INSTDIR\README.html"
   Delete "$INSTDIR\LICENSE.txt"
   Delete "$INSTDIR\CREDITS.txt"
   RMDir /r "$INSTDIR\Lib"
-  RMDir /r "$INSTDIR\pypy"
+;  RMDir /r "$INSTDIR\pypy"
 
   Delete "$INSTDIR\debug.bat"
   Delete "$INSTDIR\reset_preferences.py"

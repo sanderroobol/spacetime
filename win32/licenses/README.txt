@@ -12,4 +12,5 @@ pytz                   MIT
 ffmpeg                 GPL/LGPL
 pyglet                 BSD/MIT
 AVbin                  LGPL
+setuptools             PSF
 Camera Python module   to be decided
