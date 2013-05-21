@@ -3,6 +3,7 @@ sys.path.append(os.path.realpath('lib'))
 import spacetime.version
 
 upgrade = '--upgrade' in sys.argv
+pypy = '--pypy' in sys.argv
 
 class Installer(object):
 	def __init__(self):
@@ -127,8 +128,9 @@ if not upgrade:
   File python-dist\ffmpeg.exe
   File python-dist\avbin.dll
   File /r /x .* python-dist\Lib
-;  File /r /x .* python-dist\pypy
 """
+	if pypy:
+		print r'  File /r /x .* python-dist\pypy'
 
 print r"""
   File debug.bat
@@ -150,7 +152,11 @@ print r"""
   CreateDirectory "$SMPROGRAMS\Spacetime"
   CreateShortCut "$SMPROGRAMS\Spacetime\Spacetime.lnk" "$INSTDIR\pythonw.exe" "-m spacetime.gui.main" "$INSTDIR\spacetime\icons\spacetime-icon.ico"
   CreateShortCut "$SMPROGRAMS\Spacetime\Spacetime (debug mode).lnk" "$INSTDIR\debug.bat" "" "$INSTDIR\spacetime\icons\spacetime-icon.ico"
-;  CreateShortCut "$SMPROGRAMS\Spacetime\Spacetime (pypy, experimental).lnk" "$INSTDIR\pythonw.exe" "-m spacetime.gui.main --pypy" "$INSTDIR\spacetime\icons\spacetime-icon.ico"
+"""
+if pypy:
+	print r'  CreateShortCut "$SMPROGRAMS\Spacetime\Spacetime (pypy, experimental).lnk" "$INSTDIR\pythonw.exe" "-m spacetime.gui.main --pypy" "$INSTDIR\spacetime\icons\spacetime-icon.ico"'
+
+print r"""
   CreateShortCut "$SMPROGRAMS\Spacetime\Reset preferences.lnk" "$INSTDIR\pythonw.exe" "reset_preferences.py"
   CreateShortCut "$SMPROGRAMS\Spacetime\Uninstall.lnk" "$INSTDIR\Uninstall.exe"
   
@@ -179,8 +185,10 @@ Section "Uninstall"
   Delete "$INSTDIR\LICENSE.txt"
   Delete "$INSTDIR\CREDITS.txt"
   RMDir /r "$INSTDIR\Lib"
-;  RMDir /r "$INSTDIR\pypy"
-
+"""
+if pypy:
+	print r'  RMDir /r "$INSTDIR\pypy"'
+print r"""
   Delete "$INSTDIR\debug.bat"
   Delete "$INSTDIR\reset_preferences.py"
   Delete "$INSTDIR\Spacetime.lnk"

@@ -17,6 +17,10 @@ wininst:
 	python win32/geninstaller.py > win32/installer.nsi
 	cd win32 && makensis installer.nsi
 
+winpypy:
+	python win32/geninstaller.py --pypy > win32/installer-pypy.nsi
+	cd win32 && makensis installer-pypy.nsi	
+
 winupgr:
 	python win32/geninstaller.py --upgrade > win32/installer-upgrade.nsi
 	cd win32 && makensis installer-upgrade.nsi
