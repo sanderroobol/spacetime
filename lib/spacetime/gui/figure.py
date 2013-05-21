@@ -25,9 +25,9 @@ from matplotlib.backend_bases import cursors
 import wx
 import functools
 
-from enthought.traits.api import Str
-from enthought.traits.ui.wx.editor import Editor
-from enthought.traits.ui.basic_editor_factory import BasicEditorFactory
+from traits.api import Str
+from traitsui.wx.editor import Editor
+from traitsui.basic_editor_factory import BasicEditorFactory
 
 from .. import util
 
