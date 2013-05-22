@@ -224,6 +224,8 @@ class SubplotGUI(SubplotBase):
 	size = traits.Range(1, 10)
 	number = 0
 
+	sinkfactory = None
+
 	# Magic attribute with "class level" "extension inheritance". Does this make any sense?
 	# It means that when you derive a class from this class, you only have to
 	# specify the attributes that are "new" in the derived class, any
@@ -272,6 +274,10 @@ class SubplotGUI(SubplotBase):
 	def _size_changed(self):
 		self.plot.size = self.size
 		self.rebuild_figure()
+
+	def export(self, destdir):
+		if self.sinkfactory and self.visible:
+			return self.sinkfactory().save(self.plot, destdir, self.label)
 
 
 def TimeTrendChannelListEditor():
@@ -414,10 +420,6 @@ class TimeTrendGUI(SubplotGUI, YlimitsMixin):
 			legend = self.legend
 		self.plot.set_legend(legend)
 		self.redraw()
-
-	def export(self, destdir):
-		if self.visible:
-			return self.sinkfactory().save(self.plot, destdir, self.label)
 
 	def get_general_view_group(self):
 		return traitsui.Group(
@@ -845,6 +847,7 @@ class ImageGUI(SubplotGUI, XlimitsMixin, YlimitsMixin):
 	xlimits = traits.Instance(gui.support.AxisLimits, args=())
 	ylimits = traits.Instance(gui.support.AxisLimits, args=())
 	data = traits.Instance(datasources.DataSource)
+	sinkfactory = datasinks.SingleFrameSink
 	
 	traits_saved = 'scalebar',
 

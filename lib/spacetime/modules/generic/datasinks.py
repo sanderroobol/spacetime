@@ -30,10 +30,10 @@ class MultiTrendTextSink(DataSink):
 	def save(self, plot, destdir, prefix):
 		channelnamecounts = {}
 		
-		if getattr(plot, 'secondarydata', False):
+		if hasattr(plot, 'secondarydata'):
 			chaniter = itertools.chain(plot.data.iterchannels(), plot.secondarydata.iterchannels())
 		else:
-			chainter = plot.data.iterchannels()
+			chaniter = plot.data.iterchannels()
 
 		for d in chaniter:
 			if d.id in channelnamecounts:
@@ -44,3 +44,10 @@ class MultiTrendTextSink(DataSink):
 				label = d.id
 			path = os.path.join(destdir, u'{0} - {1}.txt'.format(prefix, label))
 			numpy.savetxt(path, numpy.vstack((plot.get_xdata(d), plot.get_ydata(d))).transpose())
+
+
+class SingleFrameSink(DataSink):
+	def save(self, plot, destdir, prefix):
+		frame = next(plot.data.iterframes())
+		dest = os.path.join(destdir, u'{0}.txt'.format(prefix))
+		numpy.savetxt(dest, frame.image)
