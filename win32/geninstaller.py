@@ -71,6 +71,11 @@ if upgrade:
   Name "Spacetime upgrade {version}"
   OutFile "Spacetime-upgrade-{version}.exe"
 """.format(version=spacetime.version.version)
+elif pypy:
+	print r"""
+  Name "Spacetime with PyPy {version}"
+  OutFile "Spacetime-pypy-{version}.exe"
+""".format(version=spacetime.version.version)
 else:
 	print r"""
   Name "Spacetime {version}"
