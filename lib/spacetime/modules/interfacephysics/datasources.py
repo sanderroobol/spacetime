@@ -75,7 +75,7 @@ class OldGasCabinet(MultiTrend):
 
 
 class TEMHeater(MultiTrend):
-	month_names = dict((m, i+1) for (i, m) in enumerate(('Jan', 'Feb', 'Mar', 'Apr', 'May', 'June', 'July', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec')))
+	month_names = dict((m, i+1) for (i, m) in enumerate(('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec')))
 	month_names.update(dict((m, i+1) for (i, m) in enumerate(('jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'))))
 	decimal_separator = '.'
 
