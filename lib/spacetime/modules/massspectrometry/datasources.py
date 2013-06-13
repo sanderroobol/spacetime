@@ -123,7 +123,7 @@ class SRSScan(MultiTrend):
 			next(fp) # column headers
 			next(fp) # blank
 
-			self.data = util.loadtxt((line.rstrip(', \t\r\n') for line in fp), delimiter=',')
+			self.data = util.loadtxt(line.replace(',', '') for line in fp)
 
 		time = self.data[:, 0] / 86400 + starttime
 		self.channels = []
