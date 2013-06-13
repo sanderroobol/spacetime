@@ -461,9 +461,16 @@ class MainWindowHandler(traitsui.Handler):
 
 	def do_reload(self, info):
 		app = info.ui.context['object']
+		progress = ProgressDialog(title="Reload", message="Reloading data", max=len(app.tabs)+1, can_cancel=True, parent=app.context.uiparent)
+		progress.open()
 		with app.drawmgr.hold():
-			for tab in app.tabs:
+			for i, tab in enumerate(app.tabs):
 				tab.reload = True
+				cont, skip = progress.update(i+1)
+				if not cont or skip:
+					break
+		progress.update(progress.max)
+		progress.close()
 
 	def do_copy(self, info):
 		context = info.ui.context['object'].context
