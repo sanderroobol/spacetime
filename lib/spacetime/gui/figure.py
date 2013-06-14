@@ -128,7 +128,7 @@ class ModifiedToolbar(matplotlib.backends.backend_wx.NavigationToolbar2Wx):
 		# the drag callback in pan/zoom mode, enhanced to allow single-axis operation
 		# TODO: turn this into a patch for matplotlib issue 1502
 		for a, ind in self._xypress:
-			if event.key is None or (event.key.isdigit() and event.key == str(ind)) or (event.key == 'l' and ind == 1) or (event.key == 'r' and ind == 2):
+			if event.key is None or (event.key.isdigit() and event.key == str(ind+1)) or (event.key == 'l' and ind == 0) or (event.key == 'r' and ind == 1):
 				a.drag_pan(self._button_pressed, event.key, event.x, event.y)
 		self.dynamic_update()
 
