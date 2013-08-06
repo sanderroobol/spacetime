@@ -5,6 +5,49 @@ import spacetime.version
 upgrade = '--upgrade' in sys.argv
 pypy = '--pypy' in sys.argv
 
+
+#### NSIS DETECT ACCOUNT TYPE
+#
+#Name "UserInfo.dll test"
+#OutFile UserInfo.exe
+#
+#Section
+#	ClearErrors
+#	UserInfo::GetName
+#	IfErrors Win9x
+#	Pop $0
+#	UserInfo::GetAccountType
+#	Pop $1
+#	StrCmp $1 "Admin" 0 +3
+#		MessageBox MB_OK 'User "$0" is in the Administrators group'
+#		Goto done
+#	StrCmp $1 "Power" 0 +3
+#		MessageBox MB_OK 'User "$0" is in the Power Users group'
+#		Goto done
+#	StrCmp $1 "User" 0 +3
+#		MessageBox MB_OK 'User "$0" is just a regular user'
+#		Goto done
+#	StrCmp $1 "Guest" 0 +3
+#		MessageBox MB_OK 'User "$0" is a guest'
+#		Goto done
+#	MessageBox MB_OK "Unknown error"
+#	Goto done
+#
+#	Win9x:
+#		# This one means you don't need to care about admin or
+#		# not admin because Windows 9x doesn't either
+#		MessageBox MB_OK "Error! This DLL can't run under Windows 9x!"
+#
+#	done:
+#SectionEnd
+#
+#
+#### STRCPY INTO $INSTDIR
+# strCpy $INSTDIR "C:\Your\Path"
+#
+####
+
+
 class Installer(object):
 	def __init__(self):
 		self.install_commands = []
@@ -90,7 +133,7 @@ print r"""
   InstallDirRegKey HKCU "Software\Spacetime" ""
 
   ;Request application privileges for Windows Vista
-  RequestExecutionLevel user
+  RequestExecutionLevel admin
 
 ;--------------------------------
 ;Interface Settings
@@ -173,6 +216,13 @@ print r"""
 
   ;Create uninstaller
   WriteUninstaller "$INSTDIR\Uninstall.exe"
+
+  ExecWait '"$INSTDIR\python.exe" -m compileall "$INSTDIR\Spacetime" "$INSTDIR\Lib"'
+"""
+if pypy:
+	print r"""  ExecWait '"$INSTDIR\pypy\pypy.exe" -m compileall "$INSTDIR\pypy"'"""
+
+print r"""
 
 SectionEnd
 
