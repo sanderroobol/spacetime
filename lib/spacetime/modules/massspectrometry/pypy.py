@@ -69,7 +69,10 @@ def loadscan(filename):
 				scan_data.append(numpy.array(line.split(), dtype=float))
 			scan_data = numpy.array(scan_data)
 			masses = scan_data[:, 0]
-			if not ion_data:
+			if ion_data:
+				if not (global_masses[:2] == masses[:2]).all():
+					raise ValueError('File not supported: mass range was changed during acquisition.')
+			else:
 				global_masses = numpy.array(masses) # copy
 			ion_data.append(scan_data[:, 1])
 			scan_lengths.add(len(masses))
