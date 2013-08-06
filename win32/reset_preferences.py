@@ -8,7 +8,6 @@ try: # put in some extra effort to always show a wx.MessageBox
 	file = spacetime.util.get_persistant_path('preferences')
 	if os.path.exists(file):
 		try:
-			raise Exception()
 			os.remove(file)
 		except Exception as e:
 			wx.MessageBox('Unable to reset preferences: {0}'.format(e), 'Spacetime', wx.OK | wx.ICON_ERROR)
