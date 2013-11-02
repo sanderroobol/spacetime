@@ -35,7 +35,7 @@ def parseExtDT(s):
 	return multistrptime(s, ('%m/%d/%Y %I:%M:%S.%f %p', '%m/%d/%Y %H:%M:%S.%f', '%d-%m-%Y %H:%M:%S.%f', '%m-%d-%Y %H:%M:%S.%f'))
 
 def floatnan(s):
-	if not s:
+	if not s or s == '---':
 		return numpy.nan
 	return float(s)
 
@@ -115,9 +115,14 @@ def loadmid(filename):
 		headerlines = [fp.readline() for i in range(6)]
 		header = util.Struct()
 		header.source     =            headerlines[0].split('\t')[1].strip()
-		header.exporttime =    parseDT(headerlines[1].split('\t')[1].strip())
+		header.exporttime = headerlines[1].split('\t')[1].strip()
 		header.starttime  = parseExtDT(headerlines[3].split('\t')[1].strip())
 		header.stoptime   = parseExtDT(headerlines[4].split('\t')[1].strip())
+
+		# for Quadera 4.5: there might be an extra empty line here
+		line = fp.readline()
+		if line.strip():
+			fp.seek(-len(line), 1)
 
 		masses = fp.readline().strip().split('\t\t\t')
 		columntitles = fp.readline() # not used
