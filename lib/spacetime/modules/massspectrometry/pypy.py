@@ -29,10 +29,10 @@ def multistrptime(s, formats):
 	raise ValueError("cannot parse timestamp {0} using format strings {1!r}".format(s, formats))
 	
 def parseDT(s):
-	return multistrptime(s, ('%m/%d/%Y %I:%M:%S %p', '%m/%d/%Y %H:%M:%S', '%d-%m-%Y %H:%M:%S'))
+	return multistrptime(s, ('%m/%d/%Y %I:%M:%S %p', '%m/%d/%Y %H:%M:%S', '%d-%m-%Y %H:%M:%S', '%m-%d-%Y %H:%M:%S'))
 
 def parseExtDT(s):
-	return multistrptime(s, ('%m/%d/%Y %I:%M:%S.%f %p', '%m/%d/%Y %H:%M:%S.%f', '%d-%m-%Y %H:%M:%S.%f'))
+	return multistrptime(s, ('%m/%d/%Y %I:%M:%S.%f %p', '%m/%d/%Y %H:%M:%S.%f', '%d-%m-%Y %H:%M:%S.%f', '%m-%d-%Y %H:%M:%S.%f'))
 
 def floatnan(s):
 	if not s:
@@ -49,6 +49,14 @@ def loadscan(filename):
 	with open(filename) as fp:
 
 		file_header = [fp.readline() for i in range(3)]
+
+		# since Quadera 4.5:
+		field = 'Start Time\t'
+		fourpointfive = (fp.read(len(field)) == field)
+		fp.seek(-len(field), 1)
+		if fourpointfive:
+			file_header.extend(fp.readline() for i in range(4))
+
 		time_data = []
 		ion_data = []
 		scan_lengths = set()
