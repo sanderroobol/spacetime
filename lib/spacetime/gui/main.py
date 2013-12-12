@@ -349,7 +349,10 @@ class MainWindowHandler(traitsui.Handler):
 		drawmgr = context.canvas.relocate(redraw=newfig.canvas.draw)
 
 		finalpath = dlg.GetPath()
-		temppath = finalpath + '.temp'
+		if '%' in finalpath: # to support stuff like -f image2 -c:v png file_%02.png
+			temppath = False
+		else:
+			temppath = finalpath + '.temp'
 
 		class UserCanceled(Exception): pass
 		class FFmpegFailed(Exception): pass
@@ -359,7 +362,7 @@ class MainWindowHandler(traitsui.Handler):
 			progress.open()
 			context.plot.relocate(newfig)
 			movie = util.FFmpegEncode(
-				temppath,
+				temppath or finalpath,
 				moviedialog.format,
 				moviedialog.codec,
 				moviedialog.frame_rate,
@@ -389,7 +392,8 @@ class MainWindowHandler(traitsui.Handler):
 				raise FFmpegFailed('ffmpeg returned {0}'.format(ret))
 			stdout = stdout_cb()
 			stdout_cb = None
-			shutil.move(temppath, finalpath)
+			if temppath:
+				shutil.move(temppath, finalpath)
 			progress.update(progress.max)
 
 		except UserCanceled:
