@@ -79,7 +79,9 @@ class TraitsSavedMeta(traits.HasTraits.__metaclass__):
 		
 		for base in bases:
 			for i in reversed(base.__dict__.get('traits_saved', ())):
-				if i not in not_saved and i not in saved:
+				if i not in not_saved:
+					if i in saved:
+						saved.remove(i)
 					saved.append(i)
 
 		dict['traits_saved'] = tuple(reversed(saved))
