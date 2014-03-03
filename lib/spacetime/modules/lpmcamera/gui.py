@@ -383,9 +383,9 @@ class CameraTrendGUI(DoubleTimeTrendGUI, CameraGUI, XlimitsMixin):
 
 		if self.fourierfilter:
 			self.data.fourierfilter = self.fourierfilter.get_callable('f')
-			self.data.fourierwindow = self.fourierfilter.get_window_tuple()
 		else:
 			self.data.fourierfilter = False
+		self.data.fourierwindow = self.fourierfilter.get_window_tuple()
 
 		y1 = data.selectchannels(lambda chan: chan.id in self.selected_primary_channels)
 		y2 = data.selectchannels(lambda chan: chan.id in self.selected_secondary_channels)
