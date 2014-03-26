@@ -19,9 +19,48 @@
 from __future__ import division
 
 import numpy
-import matplotlib.cm, matplotlib.colors, matplotlib.dates, matplotlib.font_manager, matplotlib.offsetbox, matplotlib.patches, matplotlib.transforms
+import matplotlib.cbook, matplotlib.cm, matplotlib.colors, matplotlib.dates, matplotlib.font_manager, matplotlib.offsetbox, matplotlib.patches, matplotlib.transforms
 
 from ... import util
+
+class LogNorm(matplotlib.colors.LogNorm):
+	# directly copied from matplotlib.colors.LogNorm.__call__, but with the ma.masked_less_equal line commented out to fix clipping
+    def __call__(self, value, clip=None):
+        if clip is None:
+            clip = self.clip
+
+        result, is_scalar = self.process_value(value)
+
+        #result = ma.masked_less_equal(result, 0, copy=False)
+
+        self.autoscale_None(result)
+        vmin, vmax = self.vmin, self.vmax
+        if vmin > vmax:
+            raise ValueError("minvalue must be less than or equal to maxvalue")
+        elif vmin <= 0:
+            raise ValueError("values must all be positive")
+        elif vmin == vmax:
+            result.fill(0)
+        else:
+            if clip:
+                mask = numpy.ma.getmask(result)
+                result = numpy.ma.array(numpy.clip(result.filled(vmax), vmin, vmax),
+                                  mask=mask)
+            # in-place equivalent of above can be much faster
+            resdat = result.data
+            mask = result.mask
+            if mask is numpy.ma.nomask:
+                mask = (resdat <= 0)
+            else:
+                mask |= resdat <= 0
+            matplotlib.cbook._putmask(resdat, mask, 1)
+            numpy.log(resdat, resdat)
+            resdat -= numpy.log(vmin)
+            resdat /= (numpy.log(vmax) - numpy.log(vmin))
+            result = numpy.ma.array(resdat, mask=mask, copy=False)
+        if is_scalar:
+            result = result[0]
+        return result
 
 class AxesRequirements(object):
 	independent_x = False
@@ -443,9 +482,9 @@ class ImageBase(Subplot):
 			min = self.clim_min
 			max = self.clim_max
 		if self.clim_log:
-			return matplotlib.colors.LogNorm(min, max)
+			return LogNorm(min, max, clip=True)
 		else:
-			return matplotlib.colors.Normalize(min, max)
+			return matplotlib.colors.Normalize(min, max, clip=True)
 
 
 class Time2D(YAxisHandling, ImageBase):
