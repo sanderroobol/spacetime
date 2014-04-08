@@ -131,6 +131,15 @@ class Markers(object):
 		return iter(self.markers)
 	
 
+AutoDateFormatterScaling = {
+	365.0  : '%Y',
+	30.    : '%b %Y',
+	1.0    : '%b %d %Y',
+	1./24. : '%H:%M:%S',
+	1. / (24. * 60. * 60.): '%H:%M:%S',
+	1. / (24. * 60. * 60. * 2): '%H:%M:%S.%f',
+}
+
 class Plot(object):
 	shared_xlim_callback_ext = None
 	shared_xmin = 0.
@@ -248,7 +257,9 @@ class Plot(object):
 			# Timezone support is not working properly with xaxis_date(), so override manually
 			locator = matplotlib.dates.AutoDateLocator(tz=util.localtz)
 			axes.xaxis.set_major_locator(locator)
-			axes.xaxis.set_major_formatter(matplotlib.dates.AutoDateFormatter(locator, tz=util.localtz))
+			formatter = matplotlib.dates.AutoDateFormatter(locator, tz=util.localtz)
+			formatter.scaled = AutoDateFormatterScaling
+			axes.xaxis.set_major_formatter(formatter)
 
 		if hasattr(axes, 'is_last_row') and axes.is_last_row():
 			if not self.rezero:
