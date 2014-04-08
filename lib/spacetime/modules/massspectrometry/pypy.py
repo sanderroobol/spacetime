@@ -40,7 +40,7 @@ def floatnan(s):
 	return float(s)
 
 def parseLine(line):
-	data = line.rstrip('\r\n').split('\t')
+	data = line.rstrip('\r\n\t').split('\t')
 	assert len(data) % 3 == 0
 	return [floatnan(d) for (i,d) in enumerate(data) if (i % 3) in (1, 2)]
 
