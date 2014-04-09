@@ -19,7 +19,7 @@
 import traits.api as traits
 import traitsui.api as traitsui
 
-from ..generic.gui import TimeTrendGUI, Time2DGUI, SerializableBase
+from ..generic.gui import SubplotGUI, TimeTrendGUI, Time2DGUI, SerializableBase
 from ... import gui
 
 from . import subplots, datasources
@@ -119,3 +119,27 @@ class SRSScanGUI(NormalizationTrendGUI):
 	desc = 'Reads ASCII exported data from Stanford Research Systems Residual Gas Analyzers.'
 	filter = 'ASCII text files (*.txt)', '*.txt',
 	datafactory = datasources.SRSScan
+
+class SRSDirectory(object):
+	def get_general_view_group(self):
+		return traitsui.Group(
+			traitsui.Item('visible'),
+			traitsui.Item('filename', label='Directory', editor=gui.support.DirectoryEditor()),
+			traitsui.Item('reload', show_label=False),
+			traitsui.Item('legend'),
+			traitsui.Item('size'),
+			show_border=True,
+			label='General',
+		)
+
+class SRSAnalogGUI(SRSDirectory, NormalizationTrendGUI):
+	id = 'srs_analog'
+	label = 'SRS analog'
+	desc = 'Reads a folder of ASCII files from SRS analog scans.'
+	datafactory = datasources.SRSAnalog
+
+class SRS2DAnalogGUI(SRSDirectory, Normalization2DGUI):
+	id = 'srs_analog2d'
+	label = 'SRS analog 2D (experimental)'
+	desc = 'Reads a folder of ASCII files from SRS analog scans, makes pretty 2D plots.'
+	datafactory = datasources.SRSAnalog

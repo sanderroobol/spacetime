@@ -20,6 +20,8 @@ from __future__ import division
 
 import datetime
 import numpy
+import glob
+import os
 
 from ... import util
 from ..generic.datasources import MultiTrend, DataChannel
@@ -129,3 +131,50 @@ class SRSScan(MultiTrend):
 		self.channels = []
 		for i, v in enumerate(self.channel_labels):
 			self.channels.append(DataChannel(time=time, value=self.data[:, i+1], id=v))
+
+
+class SRSAnalog(MultiTrend):
+	def __init__(self, *args, **kwargs):
+		super(SRSAnalog, self).__init__(*args, **kwargs)
+
+		if os.path.isdir(self.filename):
+			files = glob.glob('{}/*.txt'.format(self.filename))
+		else:
+			raise ValueError('{} is not a directory'.format(self.filename))
+		
+		prevmasses = None
+		signals = []
+		timestamps = []
+		
+		for fn in files:
+			with open(fn) as fp:
+				header = []
+				while header[-2:] != ['','']:
+					line = fp.readline()
+					if not line:
+						raise ValueError('invalid file')
+					header.append(line.strip())
+				timestamp = util.mpldtstrptime(header[0], '%b %d, %Y  %I:%M:%S %p') #  Jan 17, 2014  01:00:01 PM
+				masses, signal = numpy.loadtxt(fp, delimiter=',', usecols=(0,1)).T
+				if prevmasses is not None and (masses != prevmasses).any():
+					raise ValueError('file format not supported: mass range has changed during measurement')
+				prevmasses = masses
+				signals.append(signal)
+				timestamps.append(timestamp)
+
+		self.signal = numpy.array(signals).T
+		self.time = numpy.array(timestamps)
+		sorting = self.time.argsort()
+		self.time = self.time[sorting]
+		self.signal = self.signal[:, sorting]
+		self.masses = masses
+		self.channels = [util.Struct(id=str(m), time=self.time, value=signal) for (m, signal) in zip(masses, self.signal)]
+
+	def iterimages(self):
+		d = util.Struct()
+		d.data = self.signal
+		d.tstart = self.time[0]
+		d.tend = self.time[-1]
+		d.ybottom = self.masses[0]
+		d.ytop = self.masses[-1]
+		yield d
