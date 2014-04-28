@@ -919,7 +919,7 @@ class App(traits.HasTraits):
 			pypymanager.launch_delegate()
 
 		try:
-			app = wx.PySimpleApp()
+			app = wx.App(False)
 
 			self.moduleloader = modules.loader.Loader()
 			self.ui = self.edit_traits()
