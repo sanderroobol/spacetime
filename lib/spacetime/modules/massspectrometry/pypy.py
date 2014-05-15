@@ -46,7 +46,7 @@ def parseLine(line):
 
 @util.pypy
 def loadscan(filename):
-	with open(filename) as fp:
+	with util.LineCounter(filename) as fp:
 
 		file_header = [fp.readline() for i in range(3)]
 
@@ -111,7 +111,7 @@ def loadscan(filename):
 
 @util.pypy
 def loadmid(filename):
-	with open(filename) as fp:
+	with util.LineCounter(filename) as fp:
 		headerlines = [fp.readline() for i in range(6)]
 		header = util.Struct()
 		header.source     =            headerlines[0].split('\t')[1].strip()

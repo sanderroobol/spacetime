@@ -70,7 +70,7 @@ class MKSPeakJump(MultiTrend):
 
 	def __init__(self, *args, **kwargs):
 		super(MKSPeakJump, self).__init__(*args, **kwargs)
-		with open(self.filename) as fp:
+		with util.LineCounter(self.filename) as fp:
 			while 1:
 				line = fp.readline()
 				if line == '':
@@ -99,7 +99,7 @@ class MKSPeakJump(MultiTrend):
 class SRSScan(MultiTrend):
 	def __init__(self, *args, **kwargs):
 		super(SRSScan, self).__init__(*args, **kwargs)
-		with open(self.filename) as fp:
+		with util.LineCounter(self.filename) as fp:
 			# parse header looking for start time
 			line = ''
 			while not line.startswith('Start time, '):
@@ -147,7 +147,7 @@ class SRSAnalog(MultiTrend):
 		timestamps = []
 		
 		for fn in files:
-			with open(fn) as fp:
+			with util.LineCounter(fn) as fp:
 				header = []
 				while header[-2:] != ['','']:
 					line = fp.readline()

@@ -224,14 +224,14 @@ class CSV(MultiTrend):
 		obj.delimiter = delimiter
 		obj.skip_lines = skip_lines
 		try:
-			with open(filename) as fp:
+			with util.LineCounter(filename) as fp:
 				obj.read_header(fp)
 				return obj.channel_labels
 		except:
 			return []
 
 	def load(self, probe=False):
-		with open(self.filename) as fp:
+		with util.LineCounter(self.filename) as fp:
 			self.read_header(fp)
 
 			time_columns = self.get_time_columns()

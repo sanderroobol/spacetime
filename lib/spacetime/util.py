@@ -22,6 +22,7 @@ import subprocess
 import threading, Queue
 import os, platform
 import functools
+import traceback
 
 from .superstruct import Struct
 from .detect_timezone import detect_timezone
@@ -345,3 +346,24 @@ def get_persistant_path(id):
 		else:
 			return os.path.join(stdir, id)
 	return os.path.join(os.path.expanduser('~'), '.spacetime.{0}'.format(id))
+
+
+class LineCounterError(Exception):
+	pass
+
+class LineCounter(file):
+	_linecount = 0
+
+	def readline(self, *args, **kwargs):
+		self._linecount += 1 
+		return super(LineCounter, self).readline(*args, **kwargs)
+
+	def next(self):
+		self._linecount += 1
+		return super(LineCounter, self).next()
+
+	def __exit__(self, type, value, tb):
+		super(LineCounter, self).__exit__(type, value, tb)
+		if type is not None:
+			info = traceback.format_exception(type, value, tb)
+			raise LineCounterError('An error occured on line {} of file {}. \n{}'.format(self._linecount, self.name, info))
