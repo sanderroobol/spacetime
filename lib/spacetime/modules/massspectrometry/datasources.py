@@ -22,6 +22,7 @@ import datetime
 import numpy
 import glob
 import os
+import itertools
 
 from ... import util
 from ..generic.datasources import MultiTrend, DataChannel
@@ -53,20 +54,19 @@ class QuaderaMID(MultiTrend):
 
 
 class MKSPeakJump(MultiTrend):
-	lastdt = None
-	ampm = None
+	# This fileformat uses a 12-hour clock but without AM/PM. 
+	# The following code deals with situations such as:
+	# day N 11:59 (AM) -> day N 12:00 (PM)
+	# day N 11:59 (PM) -> day N+1 12:00 (AM)
+	# day N 12:59 (AM) -> day N 1:00 (AM) (correct 12:59 to 0:59)
+	# day N 12:59 (PM) -> day N 1:00 (PM) (correct 1:00 to 13:00)
 
 	def parsetime(self, s):
 		s = s.strip('"')
-		dt = util.localtz.localize(datetime.datetime.strptime(s, '%Y-%m-%d %H:%M:%S'))
-		# FIXME: this fileformat uses a 12-hour clock but without AM/PM...
-		# Try to guess AM/PM when we pass noon/midnight
-		# Tricky situations to deal with:
-		# day N 11:59 (AM) -> day N 12:00 (PM)
-		# day N 11:59 (PM) -> day N+1 12:00 (AM)
-		# day N 12:59 (AM) -> day N 1:00 (AM) (correct 12:59 to 0:59)
-		# day N 12:59 (PM) -> day N 1:00 (PM) (correct 1:00 to 13:00)
-		return util.mpldtfromdatetime(dt)
+		dt = datetime.datetime.strptime(s, '%Y-%m-%d %H:%M:%S')
+		if dt.hour == 12:
+			dt = dt.replace(hour = 0)
+		return util._to_ordinalf(dt), util.mpldtfromdatetime(util.localtz.localize(dt))
 
 	def __init__(self, *args, **kwargs):
 		super(MKSPeakJump, self).__init__(*args, **kwargs)
@@ -82,16 +82,34 @@ class MKSPeakJump(MultiTrend):
 			self.masses = [h.strip('"') for h in header[2:-1]]
 			data = []
 			times = []
+			tztimes = []
 			while 1:
 				line = fp.readline()
 				if line == '':
 					break
 				ld = line.split(',')
-				times.append(self.parsetime(ld[0]))
+				t, ttz = self.parsetime(ld[0])
+				times.append(t)
+				tztimes.append(ttz)
 				data.append([float(i) for i in ld[2:-1]])
 
+		tztimes = numpy.array(tztimes)
+		midnight = numpy.where(numpy.diff(numpy.floor(times)) == 1)[0] + 1
+		error = numpy.where(numpy.abs(numpy.diff(times)) > 0.4)[0] + 1
+		midday = numpy.array(list(e for e in error if not e in midnight))
+
+		if len(midday) == 0 and len(midnight) == 1:
+			tztimes[slice(None, midnight[0])] += 0.5
+		elif len(midnight) == 0 and len(midday) == 1:
+			tztimes[slice(midday[0], None)] += 0.5
+		if len(midday) > 0 and len(midnight) > 0:
+			if midday[0] > midnight[0]:
+				midday = numpy.append([None], midday)
+			for start, stop in itertools.izip_longest(midday, midnight, fillvalue = None):
+				tztimes[slice(start, stop)] += 0.5
+
 		self.data = numpy.array(data)
-		self.time = numpy.array(times)
+		self.time = numpy.array(tztimes)
 
 		self.channels = [DataChannel(time=self.time, value=self.data[:, i], id=m) for i, m in enumerate(self.masses)]
 
