@@ -163,7 +163,7 @@ Section
 
   SetOutPath "$INSTDIR"
 
-  File ..\README.html
+  File ..\README.md
   File ..\LICENSE.txt
   File ..\CREDITS.txt
 """
