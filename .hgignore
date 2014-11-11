@@ -1,6 +1,0 @@
-\.pyc$
-\.swp$
-^win32/python-dist/
-^win32/installer(-upgrade|-pypy)?\.nsi$
-\.DS_Store$
-^pylint/pylint_.*\.html$
