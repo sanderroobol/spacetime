@@ -2,7 +2,7 @@ default:
 	@echo "no target given"
 
 tgz:
-	hg archive -t tgz spacetime-`cd lib && python -c 'import spacetime.version; print spacetime.version.version'`.tgz
+	git archive master | gzip > spacetime-`cd lib && python -c 'import spacetime.version; print spacetime.version.version'`.tgz
 
 lint:
 	sh -c 'export PYTHONPATH="`pwd`/lib:$$PYTHONPATH"; cd pylint; pylint --rcfile pylintrc spacetime'
