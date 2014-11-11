@@ -6,7 +6,7 @@ Spacetime can work with quite a few different data files, the most important typ
 
 In addition, a couple of other data sources are implemented, mainly focussing on the gas control and analysis systems of the ReactorSTM and -AFM of the Interface Physics group at Leiden Univeristy. There is some support for plain text files as well.
 
-The software is written in a very modular way and it's easy to add support for different data types. It's written in Python and runs on all common operating systems. Spacetime is still beta quality, but it's quite useful already.
+The software is written in a very modular way and it's easy to add support for different data types. It's written in Python and runs on all common operating systems.
 
 ## Requirements
 
@@ -30,11 +30,11 @@ The software is written in a very modular way and it's easy to add support for d
 
 ### Windows installer
 
-There is a fully self-contained Windows installer for Spacetime. The only external dependency is the [Microsoft Visual C++ 2008 SP1 Redistributable Package (x86)](http://www.microsoft.com/downloads/en/details.aspx?familyid=A5C84275-3B97-4AB7-A40D-3802B2AF5FC2&displaylang=en).
+There is a fully self-contained Windows installer for Spacetime, get it from the [Spacetime website](http://spacetime.uithetblauw.nl/). The only external dependency is the [Microsoft Visual C++ 2008 SP1 Redistributable Package (x86)](http://www.microsoft.com/en-us/download/details.aspx?id=5582).
 
 ### Linux, Mac OS X, other unix...
 
-There are no packages yet. Make sure the spacetime module is in your PYTHONPATH and run the included `spacetime executable/script`.
+There are no packages yet. Make sure the spacetime module is in your PYTHONPATH and run the included `spacetime` executable/script.
 
 ## About
 
