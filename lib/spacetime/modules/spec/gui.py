@@ -52,6 +52,7 @@ class Specfile(TimeTrendGUI):
 		if self.firstscan > self.lastscan:
 			self.lastscan = self.firstscan
 		self.data.loaddata(self.firstscan, self.lastscan)
+		self.update_channel_names()
 		self.settings_changed()
 
 	@traits.on_trait_change('lastscan')
@@ -59,6 +60,7 @@ class Specfile(TimeTrendGUI):
 		if self.firstscan > self.lastscan:
 			self.firstscan = self.lastscan
 		self.data.loaddata(self.firstscan, self.lastscan)
+		self.update_channel_names()
 		self.settings_changed()
 
 	@traits.on_trait_change('filename')
