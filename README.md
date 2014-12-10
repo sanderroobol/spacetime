@@ -4,7 +4,7 @@ Spacetime is a program that allows you to easily correlate microscopy images wit
 
 Spacetime can work with quite a few different data files, the most important type being LPM Camera .raw files. You can of course plot images from such a file, but you can also plot one or more channels as function of time, frequency (performing FFT) or versus another channel.
 
-In addition, a couple of other data sources are implemented, mainly focussing on the gas control and analysis systems of the ReactorSTM and -AFM of the Interface Physics group at Leiden Univeristy. There is some support for plain text files as well.
+In addition, a couple of other data sources are implemented, mainly focusing on the gas control and analysis systems of the ReactorSTM and -AFM of the Interface Physics group at Leiden University. There is some support for plain text files as well.
 
 The software is written in a very modular way and it's easy to add support for different data types. It's written in Python and runs on all common operating systems.
 
