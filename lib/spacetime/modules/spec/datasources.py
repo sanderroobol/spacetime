@@ -20,7 +20,11 @@ from __future__ import division
 
 import datetime
 import numpy
-from PyMca import specfilewrapper
+
+try:
+    from PyMca import specfilewrapper
+except ImportError:
+    from PyMca5.PyMca import specfilewrapper
 
 from ... import util
 from ..generic.datasources import MultiTrend, DataChannel
